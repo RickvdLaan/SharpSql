@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "+S/PIOYcyTAleAAkE8VyD0FKmm1WX1GGV96fb0dKzEBocz0gwHhCtM1X5mc83zZ1Uls4iUoG5YG0a/ZxE8sx9Q==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Rick\\Source\\Repos\\Albileon\\ORM\\ORMSolution\\ORM\\ORM.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Rick\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "C:\\Users\\Rick\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}
