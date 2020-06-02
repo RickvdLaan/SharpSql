@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using ORM;
+using System;
 
 namespace ORMConsole
 {
@@ -6,6 +8,12 @@ namespace ORMConsole
     {
         static void Main(string[] args)
         {
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .Build();
+
+            ORMInitialize database = new ORMInitialize(configuration);
+
             Console.WriteLine("Hello World!");
         }
     }
