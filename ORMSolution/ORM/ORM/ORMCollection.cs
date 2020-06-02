@@ -12,14 +12,10 @@ namespace ORM
 
         public virtual ORMCollection Fetch()
         {
-            SQLBuilder sqlBuilder = new SQLBuilder(this);
-            sqlBuilder.OpenConnection();
-
-            // Do stuff
-
-            sqlBuilder.CloseConnection();
-
-            return null;
+            using (SQLBuilder sqlBuilder = new SQLBuilder(this))
+            {
+                return sqlBuilder.ExecuteCollectionQuery();
+            }
         }
     }
 }

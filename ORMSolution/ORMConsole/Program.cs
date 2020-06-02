@@ -14,6 +14,9 @@ namespace ORMConsole
 
             ORMInitialize database = new ORMInitialize(configuration);
 
+            Users users = new Users();
+            users.Fetch();
+
             Console.WriteLine("Hello World!");
         }
     }
