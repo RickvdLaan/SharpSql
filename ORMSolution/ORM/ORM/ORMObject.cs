@@ -5,16 +5,6 @@ namespace ORM
 {
     public class ORMObject : object
     {
-        public string GetQuery()
-        {
-            throw new NotImplementedException();
-        }
-
-        public string GetStacktrace()
-        {
-            throw new NotImplementedException();
-        }
-
         public bool IsInTransaction()
         {
             throw new NotImplementedException();
@@ -35,11 +25,11 @@ namespace ORM
             throw new NotImplementedException();
         }
 
-        public DataTable DirectQuery(string query)
+        public DataTable DirectQuery(string query, params object[] parameters)
         {
             using (SQLBuilder sqlBuilder = new SQLBuilder())
             {
-                return sqlBuilder.ExecuteDirectQuery(query);
+                return sqlBuilder.ExecuteDirectQuery(query, parameters);
             }
         }
     }

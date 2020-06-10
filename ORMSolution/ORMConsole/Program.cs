@@ -12,12 +12,23 @@ namespace ORMConsole
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
 
-            ORMInitialize database = new ORMInitialize(configuration);
+            new ORMInitialize(configuration);
 
             Users users = new Users();
-            users.Fetch();
+            users.Fetch(5);
 
-            Console.WriteLine("Hello World!");
+            foreach (User user in users)
+            {
+                Console.WriteLine($"[{ nameof(user.Id) }] { user.Id }");
+                Console.WriteLine($"[{ nameof(user.Username) }] { user.Username }");
+                Console.WriteLine($"[{ nameof(user.Password) }] { user.Password }");
+                Console.WriteLine("-------------------");
+            }
+
+            Console.WriteLine($"Generated query: { users.GetQuery }");
+            Console.WriteLine("-------------------");
+
+            Console.Read();
         }
     }
 }
