@@ -16,7 +16,21 @@ namespace ORMConsole
 
             Users users = new Users();
             users.Fetch(5);
+            ShowOutput(users);
 
+            users = new Users();
+            users.Where(x => x.Id, 1);
+            ShowOutput(users);
+
+            users = new Users();
+            users.Where(x => x.Id, 2);
+            ShowOutput(users);
+
+            Console.Read();
+        }
+
+        private static void ShowOutput(Users users)
+        {
             foreach (User user in users)
             {
                 Console.WriteLine($"[{ nameof(user.Id) }] { user.Id }");
@@ -27,8 +41,6 @@ namespace ORMConsole
 
             Console.WriteLine($"Generated query: { users.GetQuery }");
             Console.WriteLine("-------------------");
-
-            Console.Read();
         }
     }
 }

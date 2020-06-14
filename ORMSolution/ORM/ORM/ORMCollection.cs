@@ -2,11 +2,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace ORM
 {
     [Serializable]
-    public class ORMCollection<T> : IEnumerable<ORMEntity>
+    public class ORMCollection<T> : IEnumerable<ORMEntity> where T : ORMEntity
     {
         internal List<ORMEntity> _collection;
         internal List<ORMEntity> Collection
@@ -16,7 +17,7 @@ namespace ORM
         }
 
         internal string _getQuery;
-        public string GetQuery 
+        public string GetQuery
         {
             get { return _getQuery.ToUpper(); }
             internal set { _getQuery = value; }
@@ -54,6 +55,19 @@ namespace ORM
 
             using (SQLBuilder sqlBuilder = new SQLBuilder())
             {
+                sqlBuilder.ExecuteCollectionQuery(ref _collection, ref _getQuery, attribute, maxNumberOfItemsToReturn);
+            }
+        }
+
+        public void Where<TField>(Expression<Func<T, TField>> field, TField value, long maxNumberOfItemsToReturn = -1)
+        {
+            ORMTableAttribute attribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
+            SQLClauseBuilder<T> clauseBuilder = new SQLClauseBuilder<T>();
+
+            using (SQLBuilder sqlBuilder = new SQLBuilder())
+            {
+                sqlBuilder.AddSQLClauses(clauseBuilder.Where(field, value));
+
                 sqlBuilder.ExecuteCollectionQuery(ref _collection, ref _getQuery, attribute, maxNumberOfItemsToReturn);
             }
         }

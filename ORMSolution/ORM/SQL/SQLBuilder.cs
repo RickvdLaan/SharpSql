@@ -3,6 +3,7 @@ using ORM.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -64,23 +65,32 @@ namespace ORM
             throw new NotImplementedException();
         }
 
+        internal void AddSQLClause(SQLClause clause)
+        {
+            AddSQLClauses(clause);
+        }
+
+        internal void AddSQLClauses(params SQLClause[] clauses)
+        {
+            SQLClauses.AddRange(clauses);
+        }
+
         internal void ExecuteCollectionQuery(ref List<ORMEntity> ormCollection, ref string query, ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            SQLClauseBuilderBase clauseBuilder = new SQLClauseBuilderBase();
 
-            SQLClauses.Add(new SQLClause(Select(maxNumberOfItemsToReturn)));
-            SQLClauses.Add(new SQLClause(From(tableAttribute.TableName)));
-            SQLClauses.Add(new SQLClause(Semicolon()));
+            AddSQLClauses(
+                clauseBuilder.Select(maxNumberOfItemsToReturn),
+                clauseBuilder.From(tableAttribute.TableName),
+                clauseBuilder.Semicolon());
 
-            foreach (SQLClause sqlClause in SQLClauses)
-            {
-                stringBuilder.Append(sqlClause.Sql);
-            }
-
-            query = stringBuilder.ToString();
+            List<SqlParameter> parameters = new List<SqlParameter>();
+            BuildSelectQuery(ref query, ref parameters);
 
             using (SqlCommand command = new SqlCommand(query, SqlConnection))
             {
+                command.Parameters.AddRange(parameters.ToArray());
+
                 using (SqlDataReader reader = command.ExecuteReader())
                 {
                     while (reader.Read())
@@ -88,7 +98,7 @@ namespace ORM
                         ORMEntity entity = (ORMEntity)Activator.CreateInstance(tableAttribute.EntityType);
 
                         for (int i = 0; i < reader.VisibleFieldCount; i++)
-                        { 
+                        {
                             PropertyInfo prop = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.Public | BindingFlags.Instance);
 
                             if (null == prop)
@@ -109,19 +119,34 @@ namespace ORM
             }
         }
 
-        public string From(string tableName)
+        private void BuildSelectQuery(ref string query, ref List<SqlParameter> parameters)
         {
-            return string.Format("from {0}", tableName);
-        }
+            StringBuilder stringBuilder = new StringBuilder();
 
-        public string Select(long top = -1)
-        {
-            return string.Format("select {0}* ", top >= 0 ? $"top { top } " : string.Empty);
-        }
+            SQLClause select = SQLClauses.Where(x => x.Type == SQLClauseType.Select).First();
+            SQLClause from = SQLClauses.Where(x => x.Type == SQLClauseType.From).First();
+            List<SQLClause> where = SQLClauses.Where(x => x.Type == SQLClauseType.Where).ToList();
+            SQLClause semicolon = SQLClauses.Where(x => x.Type == SQLClauseType.Semicolon).First();
 
-        public string Semicolon()
-        {
-            return ";";
+            stringBuilder.Append(select.Sql);
+            stringBuilder.Append(from.Sql);
+
+            if (where.Any())
+            {
+                SQLClause clause = where.First();
+
+                stringBuilder.Append($"WHERE ({clause.Sql})");
+
+                for (int i = 0; i < clause.Parameters.Length; i++)
+                {
+                    string paramName = $"@param{i + 1}";
+                    parameters.Add(new SqlParameter(paramName, clause.Parameters[i]));
+                }
+            }
+
+            stringBuilder.Append(semicolon.Sql);
+
+            query = stringBuilder.ToString();
         }
 
         private void LogException(Exception exception)
