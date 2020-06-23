@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using ORM.Attributes;
+using ORM.SQL;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,11 +19,10 @@ namespace ORM
             set { _collection = value; }
         }
 
-        internal string _getQuery;
+        private string _getQuery = null;
         public string GetQuery
         {
             get { return _getQuery.ToUpper(); }
-            internal set { _getQuery = value; }
         }
 
         public ORMCollection()
@@ -53,34 +53,31 @@ namespace ORM
 
         public void Fetch(long maxNumberOfItemsToReturn)
         {
-            ORMTableAttribute attribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
+            ORMTableAttribute tableAttribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
 
-            using (SQLBuilder sqlBuilder = new SQLBuilder())
+            using (SQLConnection connection = new SQLConnection())
             {
-                sqlBuilder.ExecuteCollectionQuery(ref _collection, out _getQuery, null, attribute, maxNumberOfItemsToReturn);
-            }
-        }
+                var sqlBuilder = new SQLBuilder();
 
-        private void Where(SQLClause whereClause, long maxNumberOfItemsToReturn = -1)
-        {
-            ORMTableAttribute attribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
+                sqlBuilder.BuildQuery(tableAttribute, maxNumberOfItemsToReturn);
+                _getQuery = sqlBuilder.ToString();
 
-            using (SQLBuilder sqlBuilder = new SQLBuilder())
-            {
-                sqlBuilder.AddSQLClause(whereClause);
-                sqlBuilder.ExecuteCollectionQuery(ref _collection, out _getQuery, null, attribute, maxNumberOfItemsToReturn);
+                connection.ExecuteCollectionQuery(ref _collection, sqlBuilder, tableAttribute);
             }
         }
 
         public void Where(Expression<Func<T, bool>> field, long maxNumberOfItemsToReturn = -1)
         {
-            ORMTableAttribute attribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
+            ORMTableAttribute tableAttribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
 
-            using (SQLBuilder sqlBuilder = new SQLBuilder())
+            using (SQLConnection connection = new SQLConnection())
             {
-                _getQuery = sqlBuilder.BuildQuery(field.Body);
-                sqlBuilder.AddSQLClause(new SQLClause(_getQuery, SQLClauseType.Where, sqlBuilder.SqlParameters));
-                sqlBuilder.ExecuteCollectionQuery(ref _collection, out _getQuery, sqlBuilder.SqlParameters, attribute, maxNumberOfItemsToReturn);
+                var sqlBuilder = new SQLBuilder();
+
+                sqlBuilder.BuildQuery(field.Body, tableAttribute, maxNumberOfItemsToReturn);
+                _getQuery = sqlBuilder.ToString();
+
+                connection.ExecuteCollectionQuery(ref _collection, sqlBuilder, tableAttribute);
             }
         }
     }

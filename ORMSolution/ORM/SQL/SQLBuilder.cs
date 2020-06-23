@@ -2,68 +2,30 @@
 using ORM.Attributes;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 namespace ORM
 {
-    internal class SQLBuilder : IDisposable
+    internal class SQLBuilder
     {
-        #region Variables & Objects
+        private string _generatedQuery = null;
 
-        internal bool _isDisposed;
+        private List<object> _sqlParameters = new List<object>(10);
 
         internal List<SQLClause> SQLClauses { get; set; }
 
-        #endregion
-
-        #region Properties
-
-        internal SqlConnection SqlConnection { get; set; }
-
-        #endregion
-
-        #region Constructor
+        public SqlParameter[] SqlParameters { get; private set; }
 
         public SQLBuilder()
         {
             SQLClauses = new List<SQLClause>();
-            OpenConnection();
         }
 
-        #endregion
-
-        #region Methods
-
-        private void OpenConnection()
+        public override string ToString()
         {
-            SqlConnection = new SqlConnection(Utilities.ConnectionString);
-
-            if (SqlConnection.State == ConnectionState.Closed)
-            {
-                SqlConnection.Open();
-            }
-        }
-
-        internal void CloseConnection()
-        {
-            if (SqlConnection.State == ConnectionState.Open)
-            {
-                SqlConnection.Close();
-            }
-        }
-
-        internal DataTable ExecuteDirectQuery(string query, params object[] parameters)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal ORMEntity ExecuteEntityQuery()
-        {
-            throw new NotImplementedException();
+            return _generatedQuery;
         }
 
         internal void AddSQLClause(SQLClause clause)
@@ -76,8 +38,9 @@ namespace ORM
             SQLClauses.AddRange(clauses);
         }
 
-        internal void ExecuteCollectionQuery(ref List<ORMEntity> ormCollection, out string query, SqlParameter[] sqlParameters, ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
+        internal void BuildQuery(ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
         {
+            StringBuilder stringBuilder = new StringBuilder();
             SQLClauseBuilderBase clauseBuilder = new SQLClauseBuilderBase();
 
             AddSQLClauses(
@@ -85,43 +48,30 @@ namespace ORM
                 clauseBuilder.From(tableAttribute.TableName),
                 clauseBuilder.Semicolon());
 
-            BuildSelectQuery(out query, out sqlParameters);
+            SQLClause select = SQLClauses.Where(x => x.Type == SQLClauseType.Select).First();
+            SQLClause from = SQLClauses.Where(x => x.Type == SQLClauseType.From).First();
+            SQLClause semicolon = SQLClauses.Where(x => x.Type == SQLClauseType.Semicolon).First();
 
-            using (SqlCommand command = new SqlCommand(query, SqlConnection))
-            {
-                command.Parameters.AddRange(sqlParameters);
+            stringBuilder.Append(select.Sql);
+            stringBuilder.Append(from.Sql);
+            stringBuilder.Append(semicolon.Sql);
 
-                using (SqlDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        ORMEntity entity = (ORMEntity)Activator.CreateInstance(tableAttribute.EntityType);
-
-                        for (int i = 0; i < reader.VisibleFieldCount; i++)
-                        {
-                            PropertyInfo prop = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.Public | BindingFlags.Instance);
-
-                            if (null == prop)
-                            {
-                                throw new NotImplementedException(string.Format("Column [{0}] has not been implemented in [{1}].", reader.GetName(i), tableAttribute.EntityType.FullName));
-                            }
-                            else if (!prop.CanWrite)
-                            {
-                                throw new ReadOnlyException(string.Format("Property [{0}] is read-only.", reader.GetName(i), tableAttribute.EntityType.FullName));
-                            }
-
-                            prop.SetValue(entity, reader.GetValue(i));
-                        }
-
-                        ormCollection.Add(entity);
-                    }
-                }
-            }
+            _generatedQuery = stringBuilder.ToString();
         }
 
-        internal void BuildSelectQuery(out string query, out SqlParameter[] sqlParameters)
+        internal void BuildQuery(Expression body, ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
         {
+            var parsedExpression = ParseExpression(body);
+            GenerateSqlParameters();
+
             StringBuilder stringBuilder = new StringBuilder();
+            SQLClauseBuilderBase clauseBuilder = new SQLClauseBuilderBase();
+
+            AddSQLClauses(
+                clauseBuilder.Select(maxNumberOfItemsToReturn),
+                clauseBuilder.From(tableAttribute.TableName),
+                new SQLClause(parsedExpression, SQLClauseType.Where, SqlParameters),
+                clauseBuilder.Semicolon());
 
             SQLClause select = SQLClauses.Where(x => x.Type == SQLClauseType.Select).First();
             SQLClause from = SQLClauses.Where(x => x.Type == SQLClauseType.From).First();
@@ -141,37 +91,9 @@ namespace ORM
                 tempList.AddRange(clause.Parameters.ToList());
             }
 
-            sqlParameters = tempList.ToArray();
             stringBuilder.Append(semicolon.Sql);
 
-            query = stringBuilder.ToString();
-        }
-
-
-        public SqlParameter[] SqlParameters
-        {
-            get; private set;
-        }
-
-        private List<object> _sqlParameters = new List<object>(10);
-
-        private void GenerateSqlParameters()
-        {
-            SqlParameters = new SqlParameter[_sqlParameters.Count];
-
-            for (int i = 0; i < _sqlParameters.Count; i++)
-            {
-                string paramName = $"@param{i + 1}";
-                SqlParameters[i] = (new SqlParameter(paramName, _sqlParameters[i]));
-            }
-        }
-
-        internal string BuildQuery(Expression body)
-        {
-            string query = ParseExpression(body);
-            GenerateSqlParameters();
-
-            return query;
+            _generatedQuery = stringBuilder.ToString();
         }
 
         private string ParseExpression(Expression body)
@@ -184,7 +106,7 @@ namespace ORM
                         var left = type.Left as MemberExpression;
                         var right = type.Right as ConstantExpression;
 
-                        return $"({BuildQuery(left)} = {BuildQuery(right)})";
+                        return $"({ParseExpression(left)} = {ParseExpression(right)})";
                     }
                 case ExpressionType.Or:
                 case ExpressionType.OrElse:
@@ -193,7 +115,7 @@ namespace ORM
                         var left = type.Left;
                         var right = type.Right;
 
-                        return $"({BuildQuery(left)} OR {BuildQuery(right)})";
+                        return $"({ParseExpression(left)} OR {ParseExpression(right)})";
                     }
                 case ExpressionType.And:
                 case ExpressionType.AndAlso:
@@ -202,7 +124,7 @@ namespace ORM
                         var left = type.Left;
                         var right = type.Right;
 
-                        return $"({BuildQuery(left)} AND {BuildQuery(right)})";
+                        return $"({ParseExpression(left)} AND {ParseExpression(right)})";
                     }
                 case ExpressionType.MemberAccess:
                     {
@@ -223,36 +145,15 @@ namespace ORM
             }
         }
 
-        private void LogException(Exception exception)
+        private void GenerateSqlParameters()
         {
-            Console.WriteLine("Exception Type: {0}", exception.GetType());
-            Console.WriteLine("Message: {0}", exception.Message);
-        }
+            SqlParameters = new SqlParameter[_sqlParameters.Count];
 
-        #endregion
-
-        #region IDisposable
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_isDisposed) return;
-
-            if (disposing)
+            for (int i = 0; i < _sqlParameters.Count; i++)
             {
-                // Free managed resources.
-                CloseConnection();
-                SqlConnection.Dispose();
+                string paramName = $"@param{i + 1}";
+                SqlParameters[i] = (new SqlParameter(paramName, _sqlParameters[i]));
             }
-
-            _isDisposed = true;
         }
-
-        #endregion
     }
 }

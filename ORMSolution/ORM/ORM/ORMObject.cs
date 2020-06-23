@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ORM.SQL;
+using System;
 using System.Data;
 
 namespace ORM
@@ -27,9 +28,9 @@ namespace ORM
 
         public DataTable DirectQuery(string query, params object[] parameters)
         {
-            using (SQLBuilder sqlBuilder = new SQLBuilder())
+            using (SQLConnection connection = new SQLConnection())
             {
-                return sqlBuilder.ExecuteDirectQuery(query, parameters);
+                return connection.ExecuteDirectQuery(query, parameters);
             }
         }
     }
