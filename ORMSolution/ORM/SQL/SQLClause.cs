@@ -1,16 +1,18 @@
-﻿namespace ORM
+﻿using Microsoft.Data.SqlClient;
+
+namespace ORM
 {
     public struct SQLClause
     {
         internal SQLClauseType Type { get; set; }
         internal string Sql { get; set; }
-        internal object[] Parameters { get; set; }
+        internal SqlParameter[] Parameters { get; set; }
 
-        public SQLClause(string sql, SQLClauseType type, object[] parameters = null)
+        public SQLClause(string sql, SQLClauseType type, params SqlParameter[] sqlParameters)
         {
             Sql = sql;
-            Parameters = parameters;
             Type = type;
+            Parameters = sqlParameters;
         }
     }
 }

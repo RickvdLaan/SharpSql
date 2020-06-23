@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
@@ -75,7 +76,7 @@ namespace ORM
             SQLClauses.AddRange(clauses);
         }
 
-        internal void ExecuteCollectionQuery(ref List<ORMEntity> ormCollection, ref string query, ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
+        internal void ExecuteCollectionQuery(ref List<ORMEntity> ormCollection, out string query, SqlParameter[] sqlParameters, ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
         {
             SQLClauseBuilderBase clauseBuilder = new SQLClauseBuilderBase();
 
@@ -84,12 +85,11 @@ namespace ORM
                 clauseBuilder.From(tableAttribute.TableName),
                 clauseBuilder.Semicolon());
 
-            List<SqlParameter> parameters = new List<SqlParameter>();
-            BuildSelectQuery(ref query, ref parameters);
+            BuildSelectQuery(out query, out sqlParameters);
 
             using (SqlCommand command = new SqlCommand(query, SqlConnection))
             {
-                command.Parameters.AddRange(parameters.ToArray());
+                command.Parameters.AddRange(sqlParameters);
 
                 using (SqlDataReader reader = command.ExecuteReader())
                 {
@@ -119,7 +119,7 @@ namespace ORM
             }
         }
 
-        private void BuildSelectQuery(ref string query, ref List<SqlParameter> parameters)
+        internal void BuildSelectQuery(out string query, out SqlParameter[] sqlParameters)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -131,22 +131,96 @@ namespace ORM
             stringBuilder.Append(select.Sql);
             stringBuilder.Append(from.Sql);
 
+            var tempList = new List<SqlParameter>();
+
             if (where.Any())
             {
                 SQLClause clause = where.First();
 
                 stringBuilder.Append($"WHERE ({clause.Sql})");
-
-                for (int i = 0; i < clause.Parameters.Length; i++)
-                {
-                    string paramName = $"@param{i + 1}";
-                    parameters.Add(new SqlParameter(paramName, clause.Parameters[i]));
-                }
+                tempList.AddRange(clause.Parameters.ToList());
             }
 
+            sqlParameters = tempList.ToArray();
             stringBuilder.Append(semicolon.Sql);
 
             query = stringBuilder.ToString();
+        }
+
+
+        public SqlParameter[] SqlParameters
+        {
+            get; private set;
+        }
+
+        private List<object> _sqlParameters = new List<object>(10);
+
+        private void GenerateSqlParameters()
+        {
+            SqlParameters = new SqlParameter[_sqlParameters.Count];
+
+            for (int i = 0; i < _sqlParameters.Count; i++)
+            {
+                string paramName = $"@param{i + 1}";
+                SqlParameters[i] = (new SqlParameter(paramName, _sqlParameters[i]));
+            }
+        }
+
+        internal string BuildQuery(Expression body)
+        {
+            string query = ParseExpression(body);
+            GenerateSqlParameters();
+
+            return query;
+        }
+
+        private string ParseExpression(Expression body)
+        {
+            switch (body.NodeType)
+            {
+                case ExpressionType.Equal:
+                    {
+                        var type = body as BinaryExpression;
+                        var left = type.Left as MemberExpression;
+                        var right = type.Right as ConstantExpression;
+
+                        return $"({BuildQuery(left)} = {BuildQuery(right)})";
+                    }
+                case ExpressionType.Or:
+                case ExpressionType.OrElse:
+                    {
+                        var type = body as BinaryExpression;
+                        var left = type.Left;
+                        var right = type.Right;
+
+                        return $"({BuildQuery(left)} OR {BuildQuery(right)})";
+                    }
+                case ExpressionType.And:
+                case ExpressionType.AndAlso:
+                    {
+                        var type = body as BinaryExpression;
+                        var left = type.Left;
+                        var right = type.Right;
+
+                        return $"({BuildQuery(left)} AND {BuildQuery(right)})";
+                    }
+                case ExpressionType.MemberAccess:
+                    {
+                        var type = body as MemberExpression;
+
+                        return type.Member.Name;
+                    }
+                case ExpressionType.Constant:
+                    {
+                        var type = body as ConstantExpression;
+
+                        _sqlParameters.Add(type.Value);
+
+                        return $"@param{_sqlParameters.Count}";
+                    }
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         private void LogException(Exception exception)

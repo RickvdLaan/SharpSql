@@ -19,11 +19,11 @@ namespace ORMConsole
             ShowOutput(users);
 
             users = new Users();
-            users.Where(x => x.Id, 1);
+            users.Where(x => x.Id == 1 || x.Id == 5);
             ShowOutput(users);
 
             users = new Users();
-            users.Where(x => x.Id, 2);
+            users.Where(x => (((x.Id == 1 || x.Id == 2) || (x.Id == 3 && x.Id == 4)) || x.Id == 5));
             ShowOutput(users);
 
             Console.Read();

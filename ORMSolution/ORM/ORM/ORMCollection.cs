@@ -1,8 +1,10 @@
-﻿using ORM.Attributes;
+﻿using Microsoft.Data.SqlClient;
+using ORM.Attributes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace ORM
 {
@@ -55,20 +57,30 @@ namespace ORM
 
             using (SQLBuilder sqlBuilder = new SQLBuilder())
             {
-                sqlBuilder.ExecuteCollectionQuery(ref _collection, ref _getQuery, attribute, maxNumberOfItemsToReturn);
+                sqlBuilder.ExecuteCollectionQuery(ref _collection, out _getQuery, null, attribute, maxNumberOfItemsToReturn);
             }
         }
 
-        public void Where<TField>(Expression<Func<T, TField>> field, TField value, long maxNumberOfItemsToReturn = -1)
+        private void Where(SQLClause whereClause, long maxNumberOfItemsToReturn = -1)
         {
             ORMTableAttribute attribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
-            SQLClauseBuilder<T> clauseBuilder = new SQLClauseBuilder<T>();
 
             using (SQLBuilder sqlBuilder = new SQLBuilder())
             {
-                sqlBuilder.AddSQLClauses(clauseBuilder.Where(field, value));
+                sqlBuilder.AddSQLClause(whereClause);
+                sqlBuilder.ExecuteCollectionQuery(ref _collection, out _getQuery, null, attribute, maxNumberOfItemsToReturn);
+            }
+        }
 
-                sqlBuilder.ExecuteCollectionQuery(ref _collection, ref _getQuery, attribute, maxNumberOfItemsToReturn);
+        public void Where(Expression<Func<T, bool>> field, long maxNumberOfItemsToReturn = -1)
+        {
+            ORMTableAttribute attribute = (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
+
+            using (SQLBuilder sqlBuilder = new SQLBuilder())
+            {
+                _getQuery = sqlBuilder.BuildQuery(field.Body);
+                sqlBuilder.AddSQLClause(new SQLClause(_getQuery, SQLClauseType.Where, sqlBuilder.SqlParameters));
+                sqlBuilder.ExecuteCollectionQuery(ref _collection, out _getQuery, sqlBuilder.SqlParameters, attribute, maxNumberOfItemsToReturn);
             }
         }
     }

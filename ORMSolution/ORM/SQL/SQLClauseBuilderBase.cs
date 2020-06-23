@@ -9,7 +9,7 @@
 
         public SQLClause Select(long top = -1)
         {
-            return new SQLClause(string.Format("select {0}* ", top >= 0 ? $"top { top } " : string.Empty), SQLClauseType.Select);
+            return new SQLClause(string.Format("select {0}* ", top >= 0 ? $"top { top }" : string.Empty), SQLClauseType.Select);
         }
 
         public SQLClause Semicolon()
