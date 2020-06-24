@@ -40,17 +40,17 @@ namespace ORM
             SQLClauses.AddRange(clauses);
         }
 
-        internal void BuildQuery(ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
+        internal void BuildQuery(ORMTableAttribute tableAttribute, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
         {
-            BuildQuery(tableAttribute, maxNumberOfItemsToReturn, null);
+            BuildQuery(tableAttribute, sortExpression, maxNumberOfItemsToReturn, null);
         }
 
-        internal void BuildQuery(Expression body, ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
+        internal void BuildQuery(Expression body, ORMTableAttribute tableAttribute, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
         {
-            BuildQuery(tableAttribute, maxNumberOfItemsToReturn, SQLClauseBuilderBase.Where(ParseExpression, body, GenerateSqlParameters));
+            BuildQuery(tableAttribute, sortExpression, maxNumberOfItemsToReturn, SQLClauseBuilderBase.Where(ParseExpression, body, GenerateSqlParameters));
         }
 
-        private void BuildQuery(ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn, params SQLClause[] clauses)
+        private void BuildQuery(ORMTableAttribute tableAttribute, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn, params SQLClause[] clauses)
         {
             AddSQLClauses(SQLClauseBuilderBase.Select(maxNumberOfItemsToReturn),
                           SQLClauseBuilderBase.From(tableAttribute.TableName));
@@ -58,6 +58,11 @@ namespace ORM
             for (int i = 0; i < clauses?.Length; i++)
             {
                 AddSQLClause(clauses[i]);
+            }
+
+            if (sortExpression.HasSorters)
+            {
+                AddSQLClause(SQLClauseBuilderBase.OrderBy(sortExpression));
             }
 
             AddSQLClause(SQLClauseBuilderBase.Semicolon());
@@ -124,7 +129,7 @@ namespace ORM
             for (int i = 0; i < _sqlParameters.Count; i++)
             {
                 string parameterName = $"@PARAM{i + 1}";
-                SqlParameters[i] = (new SqlParameter(parameterName, _sqlParameters[i]));
+                SqlParameters[i] = new SqlParameter(parameterName, _sqlParameters[i]);
             }
 
             return SqlParameters;

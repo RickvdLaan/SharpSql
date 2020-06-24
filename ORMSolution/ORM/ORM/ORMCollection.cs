@@ -12,6 +12,8 @@ namespace ORM
     {
         public string GetQuery { get; internal set; }
 
+        public ORMSortExpression SortExpression { get; set; }
+
         internal Expression<Func<T, bool>> WhereExpression { get; set; }
 
         internal ORMTableAttribute TableAttribute
@@ -29,6 +31,7 @@ namespace ORM
         public ORMCollection()
         {
             Collection = new List<ORMEntity>();
+            SortExpression = new ORMSortExpression();
         }
 
         public ORMEntity this[int index]
@@ -60,11 +63,11 @@ namespace ORM
 
                 if (WhereExpression == null)
                 {
-                    sqlBuilder.BuildQuery(TableAttribute, maxNumberOfItemsToReturn);
+                    sqlBuilder.BuildQuery(TableAttribute, SortExpression, maxNumberOfItemsToReturn);
                 }
                 else
                 {
-                    sqlBuilder.BuildQuery(WhereExpression.Body, TableAttribute, maxNumberOfItemsToReturn);
+                    sqlBuilder.BuildQuery(WhereExpression.Body, TableAttribute, SortExpression, maxNumberOfItemsToReturn);
                 }
 
                 GetQuery = sqlBuilder.ToString();

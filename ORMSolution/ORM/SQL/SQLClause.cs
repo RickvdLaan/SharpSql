@@ -2,7 +2,7 @@
 
 namespace ORM
 {
-    public struct SQLClause
+    internal struct SQLClause
     {
         internal SQLClauseType Type { get; set; }
         internal string Sql { get; set; }

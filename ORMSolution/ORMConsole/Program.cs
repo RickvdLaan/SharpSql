@@ -15,10 +15,13 @@ namespace ORMConsole
             new ORMInitialize(configuration);
 
             Users users = new Users();
+            users.SortExpression.Add(User.Fields.Id, ORMOrderByType.Descending);
             users.Fetch();
             ShowOutput(users);
 
             users = new Users();
+            users.SortExpression.Add(User.Fields.Username, ORMOrderByType.Descending);
+            users.SortExpression.Add(User.Fields.Password, ORMOrderByType.Ascending);
             users.Fetch(1);
             ShowOutput(users);
 

@@ -1,10 +1,11 @@
 ﻿namespace ORM
 {
-    public enum SQLClauseType
+    internal enum SQLClauseType
     {
         Select,
         From,
         Where,
+        OrderBy,
         Semicolon
     }
 }

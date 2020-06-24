@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace ORM
 {
-    public class SQLClauseBuilderBase
+    internal class SQLClauseBuilderBase
     {
         public SQLClause From(string tableName)
         {
@@ -21,6 +21,22 @@ namespace ORM
             var query = $" WHERE ({parseExpression.Invoke(body)})";
 
             return new SQLClause(query, SQLClauseType.Where, generateSqlParameters.Invoke());
+        }
+
+        public SQLClause OrderBy(ORMSortExpression sortExpression)
+        {
+            var query = " ORDER BY ";
+
+            for (int i = 0; i < sortExpression.Sorters.Count; i++)
+            {
+                var column = sortExpression.Sorters[i].Column;
+                var orderBy = sortExpression.Sorters[i].OrderBy.Description();
+                var addon = ((sortExpression.Sorters.Count - 1 == i) ? string.Empty : ", ");
+
+                query += $"{column} {orderBy}{addon}";
+            }
+
+            return new SQLClause(query, SQLClauseType.OrderBy);
         }
 
         public SQLClause Semicolon()
