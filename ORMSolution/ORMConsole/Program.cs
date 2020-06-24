@@ -15,15 +15,26 @@ namespace ORMConsole
             new ORMInitialize(configuration);
 
             Users users = new Users();
-            users.Fetch(5);
+            users.Fetch();
+            ShowOutput(users);
+
+            users = new Users();
+            users.Fetch(1);
+            ShowOutput(users);
+
+            users = new Users();
+            users.Where(x => x.Id == 1 || x.Id == 2);
+            users.Fetch();
             ShowOutput(users);
 
             users = new Users();
             users.Where(x => x.Id == 1 || x.Id == 5);
+            users.Fetch(1);
             ShowOutput(users);
 
             users = new Users();
             users.Where(x => (((x.Id == 2 || x.Id == 3) || (x.Id == 3 && x.Id == 4)) || x.Id == 5));
+            users.Fetch();
             ShowOutput(users);
 
             Console.Read();

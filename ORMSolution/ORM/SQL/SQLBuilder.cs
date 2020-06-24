@@ -2,7 +2,6 @@
 using ORM.Attributes;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -10,22 +9,25 @@ namespace ORM
 {
     internal class SQLBuilder
     {
-        private string _generatedQuery = null;
-
-        private List<object> _sqlParameters = new List<object>(10);
+        private string GeneratedQuery { get; set; }
+        
+        public SqlParameter[] SqlParameters { get; private set; }
 
         internal List<SQLClause> SQLClauses { get; set; }
 
-        public SqlParameter[] SqlParameters { get; private set; }
+        internal SQLClauseBuilderBase SQLClauseBuilderBase { get; set; }
+
+        private readonly List<object> _sqlParameters = new List<object>(10);
 
         public SQLBuilder()
         {
             SQLClauses = new List<SQLClause>();
+            SQLClauseBuilderBase = new SQLClauseBuilderBase();
         }
 
         public override string ToString()
         {
-            return _generatedQuery;
+            return GeneratedQuery.ToUpper();
         }
 
         internal void AddSQLClause(SQLClause clause)
@@ -40,60 +42,34 @@ namespace ORM
 
         internal void BuildQuery(ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            SQLClauseBuilderBase clauseBuilder = new SQLClauseBuilderBase();
-
-            AddSQLClauses(
-                clauseBuilder.Select(maxNumberOfItemsToReturn),
-                clauseBuilder.From(tableAttribute.TableName),
-                clauseBuilder.Semicolon());
-
-            SQLClause select = SQLClauses.Where(x => x.Type == SQLClauseType.Select).First();
-            SQLClause from = SQLClauses.Where(x => x.Type == SQLClauseType.From).First();
-            SQLClause semicolon = SQLClauses.Where(x => x.Type == SQLClauseType.Semicolon).First();
-
-            stringBuilder.Append(select.Sql);
-            stringBuilder.Append(from.Sql);
-            stringBuilder.Append(semicolon.Sql);
-
-            _generatedQuery = stringBuilder.ToString();
+            BuildQuery(tableAttribute, maxNumberOfItemsToReturn, null);
         }
 
         internal void BuildQuery(Expression body, ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn)
         {
-            var parsedExpression = ParseExpression(body);
-            GenerateSqlParameters();
+            BuildQuery(tableAttribute, maxNumberOfItemsToReturn, SQLClauseBuilderBase.Where(ParseExpression, body, GenerateSqlParameters));
+        }
 
-            StringBuilder stringBuilder = new StringBuilder();
-            SQLClauseBuilderBase clauseBuilder = new SQLClauseBuilderBase();
+        private void BuildQuery(ORMTableAttribute tableAttribute, long maxNumberOfItemsToReturn, params SQLClause[] clauses)
+        {
+            AddSQLClauses(SQLClauseBuilderBase.Select(maxNumberOfItemsToReturn),
+                          SQLClauseBuilderBase.From(tableAttribute.TableName));
 
-            AddSQLClauses(
-                clauseBuilder.Select(maxNumberOfItemsToReturn),
-                clauseBuilder.From(tableAttribute.TableName),
-                new SQLClause(parsedExpression, SQLClauseType.Where, SqlParameters),
-                clauseBuilder.Semicolon());
-
-            SQLClause select = SQLClauses.Where(x => x.Type == SQLClauseType.Select).First();
-            SQLClause from = SQLClauses.Where(x => x.Type == SQLClauseType.From).First();
-            List<SQLClause> where = SQLClauses.Where(x => x.Type == SQLClauseType.Where).ToList();
-            SQLClause semicolon = SQLClauses.Where(x => x.Type == SQLClauseType.Semicolon).First();
-
-            stringBuilder.Append(select.Sql);
-            stringBuilder.Append(from.Sql);
-
-            var tempList = new List<SqlParameter>();
-
-            if (where.Any())
+            for (int i = 0; i < clauses?.Length; i++)
             {
-                SQLClause clause = where.First();
-
-                stringBuilder.Append($"WHERE ({clause.Sql})");
-                tempList.AddRange(clause.Parameters.ToList());
+                AddSQLClause(clauses[i]);
             }
 
-            stringBuilder.Append(semicolon.Sql);
+            AddSQLClause(SQLClauseBuilderBase.Semicolon());
 
-            _generatedQuery = stringBuilder.ToString();
+            var stringBuilder = new StringBuilder();
+
+            foreach (SQLClause sqlClause in SQLClauses)
+            {
+                stringBuilder.Append(sqlClause.Sql);
+            }
+
+            GeneratedQuery = stringBuilder.ToString();
         }
 
         private string ParseExpression(Expression body)
@@ -128,32 +104,30 @@ namespace ORM
                     }
                 case ExpressionType.MemberAccess:
                     {
-                        var type = body as MemberExpression;
-
-                        return type.Member.Name;
+                        return (body as MemberExpression).Member.Name;
                     }
                 case ExpressionType.Constant:
                     {
-                        var type = body as ConstantExpression;
+                        _sqlParameters.Add((body as ConstantExpression).Value);
 
-                        _sqlParameters.Add(type.Value);
-
-                        return $"@param{_sqlParameters.Count}";
+                        return $"@PARAM{_sqlParameters.Count}";
                     }
                 default:
                     throw new NotImplementedException();
             }
         }
 
-        private void GenerateSqlParameters()
+        private SqlParameter[] GenerateSqlParameters()
         {
             SqlParameters = new SqlParameter[_sqlParameters.Count];
 
             for (int i = 0; i < _sqlParameters.Count; i++)
             {
-                string paramName = $"@param{i + 1}";
-                SqlParameters[i] = (new SqlParameter(paramName, _sqlParameters[i]));
+                string parameterName = $"@PARAM{i + 1}";
+                SqlParameters[i] = (new SqlParameter(parameterName, _sqlParameters[i]));
             }
+
+            return SqlParameters;
         }
     }
 }
