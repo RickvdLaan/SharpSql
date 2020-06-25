@@ -8,9 +8,9 @@ namespace ORM
     {
         internal static string SQL(this Enum source)
         {
-            FieldInfo fieldInfo = source.GetType().GetField(source.ToString());
+            var fieldInfo = source.GetType().GetField(source.ToString());
 
-            ORMSQLAttribute[] attributes = (ORMSQLAttribute[])fieldInfo.GetCustomAttributes(typeof(ORMSQLAttribute), false);
+            var attributes = (ORMSQLAttribute[])fieldInfo.GetCustomAttributes(typeof(ORMSQLAttribute), false);
 
             if (attributes != null && attributes.Length > 0)
             {

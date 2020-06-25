@@ -17,16 +17,16 @@ namespace ORM
 
         public static DataTable ExecuteDirectQuery(string query, params object[] parameters)
         {
-            using (SQLConnection connection = new SQLConnection())
+            using (var connection = new SQLConnection())
             {
-                using (SqlCommand command = new SqlCommand(query, connection.SqlConnection))
+                using (var command = new SqlCommand(query, connection.SqlConnection))
                 {
                     if (parameters != null)
                     {
                         command.Parameters.AddRange(parameters);
                     }
 
-                    using (SqlDataReader reader = command.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
                     {
                         var dataTable = new DataTable();
                         dataTable.Load(reader);
@@ -42,29 +42,31 @@ namespace ORM
             where EntityType : ORMEntity
         {
             var collection = new CollectionType();
-            var reader = dataTable.CreateDataReader();
 
-            while (reader.Read())
+            using (var reader = dataTable.CreateDataReader())
             {
-                ORMEntity entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
-
-                for (int i = 0; i < reader.VisibleFieldCount; i++)
+                while (reader.Read())
                 {
-                    PropertyInfo entityPropertyInfo = typeof(EntityType).GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    var entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
 
-                    if (null == entityPropertyInfo)
+                    for (int i = 0; i < reader.VisibleFieldCount; i++)
                     {
-                        throw new NotImplementedException(string.Format("Column [{0}] has not been implemented in [{1}].", reader.GetName(i), typeof(EntityType).FullName));
-                    }
-                    else if (!entityPropertyInfo.CanWrite)
-                    {
-                        throw new ReadOnlyException(string.Format("Property [{0}] is read-only.", reader.GetName(i), typeof(EntityType).FullName));
+                        var entityPropertyInfo = typeof(EntityType).GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                        if (null == entityPropertyInfo)
+                        {
+                            throw new NotImplementedException(string.Format("Column [{0}] has not been implemented in [{1}].", reader.GetName(i), typeof(EntityType).FullName));
+                        }
+                        else if (!entityPropertyInfo.CanWrite)
+                        {
+                            throw new ReadOnlyException(string.Format("Property [{0}] is read-only.", reader.GetName(i), typeof(EntityType).FullName));
+                        }
+
+                        entityPropertyInfo.SetValue(entity, reader.GetValue(i));
                     }
 
-                    entityPropertyInfo.SetValue(entity, reader.GetValue(i));
+                    collection.Add(entity);
                 }
-
-                collection.Add(entity);
             }
 
             return collection;

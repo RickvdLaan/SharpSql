@@ -65,7 +65,7 @@ namespace ORM
 
         public void Fetch(long maxNumberOfItemsToReturn)
         {
-            using (SQLConnection connection = new SQLConnection())
+            using (var connection = new SQLConnection())
             {
                 var sqlBuilder = new SQLBuilder();
 

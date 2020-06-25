@@ -69,7 +69,7 @@ namespace ORM
 
             var stringBuilder = new StringBuilder();
 
-            foreach (SQLClause sqlClause in SQLClauses)
+            foreach (var sqlClause in SQLClauses)
             {
                 stringBuilder.Append(sqlClause.Sql);
             }

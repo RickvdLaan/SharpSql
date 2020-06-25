@@ -30,36 +30,36 @@ namespace ORM.SQL
 
         internal void ExecuteCollectionQuery(ref List<ORMEntity> ormCollection, SQLBuilder sqlBuilder, ORMTableAttribute tableAttribute)
         {
-            using (SqlCommand command = new SqlCommand(sqlBuilder.ToString(), SqlConnection))
+            using (var command = new SqlCommand(sqlBuilder.ToString(), SqlConnection))
             {
                 if (sqlBuilder.SqlParameters != null)
                 {
                     command.Parameters.AddRange(sqlBuilder.SqlParameters);
                 }
 
-                using (SqlDataReader reader = command.ExecuteReader())
+                using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        ORMEntity entityPropertyInfo = (ORMEntity)Activator.CreateInstance(tableAttribute.EntityType);
+                        var entity = (ORMEntity)Activator.CreateInstance(tableAttribute.EntityType);
 
                         for (int i = 0; i < reader.VisibleFieldCount; i++)
                         {
-                            PropertyInfo prop = entityPropertyInfo.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                            var entityPropertyInfo = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-                            if (null == prop)
+                            if (null == entityPropertyInfo)
                             {
                                 throw new NotImplementedException(string.Format("Column [{0}] has not been implemented in [{1}].", reader.GetName(i), tableAttribute.EntityType.FullName));
                             }
-                            else if (!prop.CanWrite)
+                            else if (!entityPropertyInfo.CanWrite)
                             {
                                 throw new ReadOnlyException(string.Format("Property [{0}] is read-only.", reader.GetName(i), tableAttribute.EntityType.FullName));
                             }
 
-                            prop.SetValue(entityPropertyInfo, reader.GetValue(i));
+                            entityPropertyInfo.SetValue(entity, reader.GetValue(i));
                         }
 
-                        ormCollection.Add(entityPropertyInfo);
+                        ormCollection.Add(entity);
                     }
                 }
             }
