@@ -45,7 +45,7 @@ namespace ORM.SQL
 
                         for (int i = 0; i < reader.VisibleFieldCount; i++)
                         {
-                            PropertyInfo prop = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.Public | BindingFlags.Instance);
+                            PropertyInfo prop = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                             if (null == prop)
                             {

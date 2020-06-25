@@ -1,11 +1,11 @@
-﻿using System;
+﻿using ORM.Interfaces;
 using System.Collections.Generic;
 
 namespace ORM
 {
     public sealed class ORMSortExpression
     {
-        internal List<(string Column, ORMOrderByType OrderBy)> Sorters { get; private set; }
+        internal List<IORMSortClause> Sorters { get; private set; }
 
         internal bool HasSorters
         {
@@ -14,12 +14,17 @@ namespace ORM
 
         public ORMSortExpression()
         {
-            Sorters = new List<(string Column, ORMOrderByType OrderBy)>(5);
+            Sorters = new List<IORMSortClause>(5);
         }
 
-        public void Add(string column, ORMOrderByType orderBy)
+        public void Add(IORMSortClause sortClause)
         {
-            Sorters.Add((column, orderBy));
+            Sorters.Add(sortClause);
+        }
+
+        public void AddRange(IORMSortClause[] sortClauses)
+        {
+            Sorters.AddRange(sortClauses);
         }
     }
 }

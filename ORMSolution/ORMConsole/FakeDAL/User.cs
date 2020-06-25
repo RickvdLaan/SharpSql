@@ -4,14 +4,16 @@ namespace ORMConsole
 {
     public class User : ORMEntity
     {
-        public static class Fields
+        public class Fields
         {
-            public static string Id = nameof(Id);
-            public static string Username = nameof(Username);
-            public static string Password = nameof(Password);
+            public static ORMEntityField Id { get { return new ORMEntityField(nameof(Id)); } }
+
+            public static ORMEntityField Username { get { return new ORMEntityField(nameof(Username)); } }
+
+            public static ORMEntityField Password { get { return new ORMEntityField(nameof(Password)); } }
         }
 
-        public int Id { get; private set; }
+        public int Id { get; private set; } = -1;
 
         public string Username { get; set; }
 

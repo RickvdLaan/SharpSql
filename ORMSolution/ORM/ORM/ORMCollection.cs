@@ -1,4 +1,5 @@
 ﻿using ORM.Attributes;
+using ORM.Interfaces;
 using ORM.SQL;
 using System;
 using System.Collections;
@@ -13,6 +14,8 @@ namespace ORM
         public string GetQuery { get; internal set; }
 
         public ORMSortExpression SortExpression { get; set; }
+
+        internal ORMEntityField[] SelectExpression { get; set; }
 
         internal Expression<Func<T, bool>> WhereExpression { get; set; }
 
@@ -63,11 +66,11 @@ namespace ORM
 
                 if (WhereExpression == null)
                 {
-                    sqlBuilder.BuildQuery(TableAttribute, SortExpression, maxNumberOfItemsToReturn);
+                    sqlBuilder.BuildQuery(TableAttribute, SelectExpression, SortExpression, maxNumberOfItemsToReturn);
                 }
                 else
                 {
-                    sqlBuilder.BuildQuery(WhereExpression.Body, TableAttribute, SortExpression, maxNumberOfItemsToReturn);
+                    sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression.Body, SortExpression, maxNumberOfItemsToReturn);
                 }
 
                 GetQuery = sqlBuilder.ToString();
@@ -76,9 +79,19 @@ namespace ORM
             }
         }
 
+        public void Select(params ORMEntityField[] fields)
+        {
+            SelectExpression = fields;
+        }
+
         public void Where(Expression<Func<T, bool>> expression)
         {
             WhereExpression = expression;
+        }
+
+        public void OrderBy(params IORMSortClause[] sortClauses)
+        {
+            SortExpression.AddRange(sortClauses);
         }
     }
 }

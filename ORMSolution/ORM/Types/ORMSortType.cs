@@ -2,7 +2,7 @@
 
 namespace ORM
 {
-    public enum ORMOrderByType
+    public enum ORMSortType
     {
         [ORMSQL("ASC")]
         Ascending,

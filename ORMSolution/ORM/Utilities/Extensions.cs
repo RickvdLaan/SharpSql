@@ -6,7 +6,7 @@ namespace ORM
 {
     internal static class Extensions
     {
-        internal static string Description(this Enum source)
+        internal static string SQL(this Enum source)
         {
             FieldInfo fieldInfo = source.GetType().GetField(source.ToString());
 

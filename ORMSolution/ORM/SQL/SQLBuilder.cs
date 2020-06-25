@@ -40,19 +40,19 @@ namespace ORM
             SQLClauses.AddRange(clauses);
         }
 
-        internal void BuildQuery(ORMTableAttribute tableAttribute, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
+        internal void BuildQuery(ORMTableAttribute tableAttribute, ORMEntityField[] selectExpression, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
         {
-            BuildQuery(tableAttribute, sortExpression, maxNumberOfItemsToReturn, null);
+            BuildQuery(tableAttribute, selectExpression, sortExpression, maxNumberOfItemsToReturn, null);
         }
 
-        internal void BuildQuery(Expression body, ORMTableAttribute tableAttribute, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
+        internal void BuildQuery(ORMTableAttribute tableAttribute, ORMEntityField[] selectExpression, Expression whereExpression, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
         {
-            BuildQuery(tableAttribute, sortExpression, maxNumberOfItemsToReturn, SQLClauseBuilderBase.Where(ParseExpression, body, GenerateSqlParameters));
+            BuildQuery(tableAttribute, selectExpression, sortExpression, maxNumberOfItemsToReturn, SQLClauseBuilderBase.Where(ParseExpression, whereExpression, GenerateSqlParameters));
         }
 
-        private void BuildQuery(ORMTableAttribute tableAttribute, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn, params SQLClause[] clauses)
+        private void BuildQuery(ORMTableAttribute tableAttribute, ORMEntityField[] selectExpression, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn, params SQLClause[] clauses)
         {
-            AddSQLClauses(SQLClauseBuilderBase.Select(maxNumberOfItemsToReturn),
+            AddSQLClauses(SQLClauseBuilderBase.Select(selectExpression, maxNumberOfItemsToReturn),
                           SQLClauseBuilderBase.From(tableAttribute.TableName));
 
             for (int i = 0; i < clauses?.Length; i++)
