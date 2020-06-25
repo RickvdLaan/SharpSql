@@ -41,11 +41,11 @@ namespace ORM.SQL
                 {
                     while (reader.Read())
                     {
-                        ORMEntity entity = (ORMEntity)Activator.CreateInstance(tableAttribute.EntityType);
+                        ORMEntity entityPropertyInfo = (ORMEntity)Activator.CreateInstance(tableAttribute.EntityType);
 
                         for (int i = 0; i < reader.VisibleFieldCount; i++)
                         {
-                            PropertyInfo prop = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                            PropertyInfo prop = entityPropertyInfo.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                             if (null == prop)
                             {
@@ -56,10 +56,10 @@ namespace ORM.SQL
                                 throw new ReadOnlyException(string.Format("Property [{0}] is read-only.", reader.GetName(i), tableAttribute.EntityType.FullName));
                             }
 
-                            prop.SetValue(entity, reader.GetValue(i));
+                            prop.SetValue(entityPropertyInfo, reader.GetValue(i));
                         }
 
-                        ormCollection.Add(entity);
+                        ormCollection.Add(entityPropertyInfo);
                     }
                 }
             }
@@ -71,11 +71,6 @@ namespace ORM.SQL
             {
                 SqlConnection.Close();
             }
-        }
-
-        internal DataTable ExecuteDirectQuery(string query, params object[] parameters)
-        {
-            throw new NotImplementedException();
         }
 
         public void Dispose()

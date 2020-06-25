@@ -1,6 +1,4 @@
-﻿using ORM.SQL;
-using System;
-using System.Data;
+﻿using System;
 
 namespace ORM
 {
@@ -24,14 +22,6 @@ namespace ORM
         public void TransactionRollback()
         {
             throw new NotImplementedException();
-        }
-
-        public DataTable DirectQuery(string query, params object[] parameters)
-        {
-            using (SQLConnection connection = new SQLConnection())
-            {
-                return connection.ExecuteDirectQuery(query, parameters);
-            }
         }
     }
 }

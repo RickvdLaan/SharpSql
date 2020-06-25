@@ -11,7 +11,7 @@ namespace ORM
     [Serializable]
     public class ORMCollection<T> : IEnumerable<ORMEntity> where T : ORMEntity
     {
-        public string GetQuery { get; internal set; }
+        public string GeneratedQuery { get; internal set; } = "A direct query was executed.";
 
         public ORMSortExpression SortExpression { get; set; }
 
@@ -25,16 +25,21 @@ namespace ORM
         }
 
         internal List<ORMEntity> _collection;
-        internal List<ORMEntity> Collection
+        public List<ORMEntity> Collection
         {
             get { return _collection; }
-            set { _collection = value; }
+            internal set { _collection = value; }
         }
 
         public ORMCollection()
         {
             Collection = new List<ORMEntity>();
             SortExpression = new ORMSortExpression();
+        }
+
+        internal void Add(ORMEntity entity)
+        {
+            Collection.Add(entity);
         }
 
         public ORMEntity this[int index]
@@ -73,7 +78,7 @@ namespace ORM
                     sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression.Body, SortExpression, maxNumberOfItemsToReturn);
                 }
 
-                GetQuery = sqlBuilder.ToString();
+                GeneratedQuery = sqlBuilder.ToString();
 
                 connection.ExecuteCollectionQuery(ref _collection, sqlBuilder, TableAttribute);
             }

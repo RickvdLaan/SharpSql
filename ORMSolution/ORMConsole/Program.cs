@@ -42,6 +42,9 @@ namespace ORMConsole
             users.Fetch();
             ShowOutput(users);
 
+            users = ORMUtilities.ExecuteDirectQuery<Users, User>("SELECT TOP 10 * FROM Users;");
+            ShowOutput(users);
+
             Console.Read();
         }
 
@@ -55,7 +58,7 @@ namespace ORMConsole
                 Console.WriteLine("-------------------");
             }
 
-            Console.WriteLine($"Generated query: { users.GetQuery }");
+            Console.WriteLine($"Generated query: { users.GeneratedQuery }");
             Console.WriteLine("-------------------");
         }
     }

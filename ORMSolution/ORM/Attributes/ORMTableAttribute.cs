@@ -4,29 +4,39 @@ namespace ORM.Attributes
 {
     public sealed class ORMTableAttribute : Attribute
     {
-        public string TableName { get; set; }
+        public string TableName { get { return CollectionType.Name; } }
 
-        public Type EntityType { get; set; }
+        public Type CollectionType { get; private set; }
 
-        public ORMTableAttribute(string tableName, Type entityType)
+        public Type CollectionTypeLeft { get; private set; }
+
+        public Type CollectionTypeRight { get; private set; }
+
+        public Type EntityType { get; private set; }
+
+        public ORMTableAttribute(Type collectionType, Type entityType)
         {
             if (!entityType.IsSubclassOf(typeof(ORMEntity)))
             {
                 throw new ArgumentException();
             }
 
-            TableName = tableName;
+            CollectionType = collectionType;
             EntityType = entityType;
         }
 
-        public ORMTableAttribute(string tableName, ORMCollection<ORMEntity> left, ORMCollection<ORMEntity> right)
+        public ORMTableAttribute(Type collectionType, Type collectionTypeLeft, Type collectionTypeRight)
         {
-            // Koppeltabel, voorbeeld:
-            // Users->User
-            // UserRole
-            // Roles->Role
+            // Example usage:
+            // Users->User (CollectionTypeLeft)
+            // UserRole (CollectionType)
+            // Roles->Role (CollectionTypeRight)
             // 
             // ORMTable(nameof(UserRole), typeof(Users), typeof(Roles)
+
+            CollectionType = collectionType;
+            CollectionTypeLeft = collectionTypeLeft;
+            CollectionTypeRight = collectionTypeRight;
         }
     }
 }

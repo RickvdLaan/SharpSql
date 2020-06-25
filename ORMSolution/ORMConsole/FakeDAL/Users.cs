@@ -3,7 +3,7 @@ using ORM.Attributes;
 
 namespace ORMConsole
 {
-    [ORMTable(nameof(Users), typeof(User))]
+    [ORMTable(typeof(Users), typeof(User))]
     public class Users : ORMCollection<User>
     {
         public Users() { }
