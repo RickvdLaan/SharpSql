@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.SqlClient;
-using ORM.Attributes;
 using System;
 using System.Data;
 

@@ -11,7 +11,7 @@ namespace ORM
     [Serializable]
     public class ORMCollection<T> : IEnumerable<ORMEntity> where T : ORMEntity
     {
-        public string ExecutedQuery { get; internal set; } = "An unknown direct query was executed.";
+        public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
         public ORMSortExpression SortExpression { get; set; }
 
