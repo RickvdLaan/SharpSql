@@ -42,7 +42,7 @@ namespace ORMConsole
             users.Fetch();
             ShowOutput(users);
 
-            users = ORMUtilities.ExecuteDirectQuery<Users, User>("SELECT TOP 10 * FROM Users;");
+            users = ORMUtilities.ExecuteDirectQuery<Users, User>("SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;", 1, 2);
             ShowOutput(users);
 
             Console.Read();
@@ -58,7 +58,7 @@ namespace ORMConsole
                 Console.WriteLine("-------------------");
             }
 
-            Console.WriteLine($"Generated query: { users.GeneratedQuery }");
+            Console.WriteLine($"Executed query: { users.ExecutedQuery }");
             Console.WriteLine("-------------------");
         }
     }

@@ -8,7 +8,7 @@ namespace ORM
     {
         public SQLClause From(string tableName)
         {
-            return new SQLClause(string.Format("FROM {0}", tableName), SQLClauseType.From);
+            return new SQLClause($"FROM {tableName}", SQLClauseType.From);
         }
 
         public SQLClause Select(long top = -1)

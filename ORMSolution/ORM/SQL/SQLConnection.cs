@@ -1,9 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using ORM.Attributes;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Reflection;
 
 namespace ORM.SQL
 {
@@ -20,7 +18,7 @@ namespace ORM.SQL
 
         private void OpenConnection()
         {
-            SqlConnection = new SqlConnection(Utilities.ConnectionString);
+            SqlConnection = new SqlConnection(ORMUtilities.ConnectionString);
 
             if (SqlConnection.State == ConnectionState.Closed)
             {
@@ -28,7 +26,8 @@ namespace ORM.SQL
             }
         }
 
-        internal void ExecuteCollectionQuery(ref List<ORMEntity> ormCollection, SQLBuilder sqlBuilder, ORMTableAttribute tableAttribute)
+        internal void ExecuteCollectionQuery<T>(ORMCollection<T> ormCollection, SQLBuilder sqlBuilder)
+            where T : ORMEntity
         {
             using (var command = new SqlCommand(sqlBuilder.ToString(), SqlConnection))
             {
@@ -39,28 +38,7 @@ namespace ORM.SQL
 
                 using (var reader = command.ExecuteReader())
                 {
-                    while (reader.Read())
-                    {
-                        var entity = (ORMEntity)Activator.CreateInstance(tableAttribute.EntityType);
-
-                        for (int i = 0; i < reader.VisibleFieldCount; i++)
-                        {
-                            var entityPropertyInfo = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-
-                            if (null == entityPropertyInfo)
-                            {
-                                throw new NotImplementedException(string.Format("Column [{0}] has not been implemented in [{1}].", reader.GetName(i), tableAttribute.EntityType.FullName));
-                            }
-                            else if (!entityPropertyInfo.CanWrite)
-                            {
-                                throw new ReadOnlyException(string.Format("Property [{0}] is read-only.", reader.GetName(i), tableAttribute.EntityType.FullName));
-                            }
-
-                            entityPropertyInfo.SetValue(entity, reader.GetValue(i));
-                        }
-
-                        ormCollection.Add(entity);
-                    }
+                    ORMUtilities.DataReader<ORMCollection<T>, T>(ormCollection, reader, typeof(T));
                 }
             }
         }

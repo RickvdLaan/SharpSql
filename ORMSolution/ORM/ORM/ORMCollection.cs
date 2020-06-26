@@ -11,7 +11,7 @@ namespace ORM
     [Serializable]
     public class ORMCollection<T> : IEnumerable<ORMEntity> where T : ORMEntity
     {
-        public string GeneratedQuery { get; internal set; } = "A direct query was executed.";
+        public string ExecutedQuery { get; internal set; } = "An unknown direct query was executed.";
 
         public ORMSortExpression SortExpression { get; set; }
 
@@ -78,9 +78,9 @@ namespace ORM
                     sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression.Body, SortExpression, maxNumberOfItemsToReturn);
                 }
 
-                GeneratedQuery = sqlBuilder.ToString();
+                ExecutedQuery = sqlBuilder.ToString();
 
-                connection.ExecuteCollectionQuery(ref _collection, sqlBuilder, TableAttribute);
+                connection.ExecuteCollectionQuery(this, sqlBuilder);
             }
         }
 

@@ -1,10 +1,9 @@
 ﻿using ORM.Attributes;
 using System;
-using System.Reflection;
 
 namespace ORM
 {
-    internal static class Extensions
+    internal static class EnumExtensions
     {
         internal static string SQL(this Enum source)
         {

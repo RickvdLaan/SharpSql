@@ -4,11 +4,11 @@ namespace ORM
 {
     public sealed class ORMInitialize
     {
-        internal Utilities Utilities { get; set; }
+        internal ORMUtilities Utilities { get; set; }
 
         public ORMInitialize(IConfiguration configuration)
         {
-            Utilities = new Utilities(configuration);
+            Utilities = new ORMUtilities(configuration);
         }
     }
 }
