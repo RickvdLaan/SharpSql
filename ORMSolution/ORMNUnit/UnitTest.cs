@@ -1,4 +1,7 @@
+using Microsoft.Extensions.Configuration;
+using Moq;
 using NUnit.Framework;
+using ORM;
 
 namespace ORMNUnit
 {

@@ -2,6 +2,7 @@
 using ORM.Attributes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -116,6 +117,19 @@ namespace ORM
                         _sqlParameters.Add((body as ConstantExpression).Value);
 
                         return $"@PARAM{_sqlParameters.Count}";
+                    }
+                case ExpressionType.Call:
+                    {
+                        var type = body as MethodCallExpression;
+                        switch (type.Method.Name)
+                        {
+                            case "Contains":
+                                _sqlParameters.Add(type.Arguments.FirstOrDefault());
+
+                                return $"{ParseExpression(type.Object)}='%@PARAM{_sqlParameters.Count}%'";
+                            default:
+                                throw new NotImplementedException();
+                        }
                     }
                 default:
                     throw new NotImplementedException();

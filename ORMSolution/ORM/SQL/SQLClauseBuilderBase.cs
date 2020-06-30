@@ -58,6 +58,22 @@ namespace ORM
             return new SQLClause(query, SQLClauseType.OrderBy);
         }
 
+        public SQLClause WhereLike(ORMSortExpression sortExpression)
+        {
+            var query = " LIKE ";
+
+            for (int i = 0; i < sortExpression.Sorters.Count; i++)
+            {
+                var field = sortExpression.Sorters[i].Field.Name;
+                var sortType = sortExpression.Sorters[i].SortType.SQL();
+                var addon = ((sortExpression.Sorters.Count - 1 == i) ? string.Empty : ", ");
+
+                query += $"{field} {sortType}{addon}";
+            }
+
+            return new SQLClause(query, SQLClauseType.OrderBy);
+        }
+
         public SQLClause Semicolon()
         {
             return new SQLClause(";", SQLClauseType.Semicolon);

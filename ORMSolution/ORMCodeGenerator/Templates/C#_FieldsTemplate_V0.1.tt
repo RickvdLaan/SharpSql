@@ -20,16 +20,18 @@
 
 namespace <#= _namespace #>
 {
-    public class <#= className #>Fields
-    {
-<#
+    <#
     for (int tableIndex = 0; tableIndex < tables.Count; tableIndex++)
     {
-        for (int columnIndex = 0; columnIndex < tables[columnIndex].Count; columnIndex++)
-        #>
-            public static ORMEntityField <#= tables[columnIndex][columnIndex] #> { get { return new ORMEntityField(nameof(<#= tables[columnIndex][columnIndex] #>)); } }
-        <#
+    #>
+        public class <#= className #>Fields
+        {
+            for (int columnIndex = 0; columnIndex < tables[tableIndex].Count; columnIndex++)
+            #>
+                public static ORMEntityField <#= tables[tableIndex][columnIndex] #> { get { return new ORMEntityField(nameof(<#= tables[tableIndex][columnIndex] #>)); } }
+            <#
+        }
+    <#
     }
-#>
-    }
+    #>
 }

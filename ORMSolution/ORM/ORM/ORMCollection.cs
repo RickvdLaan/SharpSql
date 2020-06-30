@@ -13,7 +13,7 @@ namespace ORM
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
-        public ORMSortExpression SortExpression { get; set; }
+        internal ORMSortExpression SortExpression { get; set; }
 
         internal ORMEntityField[] SelectExpression { get; set; }
 
