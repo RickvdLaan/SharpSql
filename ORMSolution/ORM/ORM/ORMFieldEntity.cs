@@ -21,12 +21,12 @@
 
         public ORMSortClause Ascending()
         {
-            return new ORMSortClause(this, ORMSortType.Ascending);
+            return this & ORMSortType.Ascending;
         }
 
         public ORMSortClause Descending()
         {
-            return new ORMSortClause(this, ORMSortType.Descending);
+            return this & ORMSortType.Descending;
         }
     }
 }
