@@ -8,12 +8,12 @@ namespace ORM
     {
         public SQLClause From(string tableName)
         {
-            return new SQLClause($"FROM {tableName}", SQLClauseType.From);
+            return new SQLClause($"FROM [dbo].[{tableName}]", SQLClauseType.From);
         }
 
         public SQLClause Select(long top = -1)
         {
-            return new SQLClause(top >= 0 ? $"SELECT TOP {top} * " : "SELECT * ", SQLClauseType.Select);
+            return new SQLClause(top >= 0 ? $"SELECT TOP ({top}) * " : "SELECT * ", SQLClauseType.Select);
         }
 
         public SQLClause Select(ORMEntityField[] selectExpression, long top = -1)
@@ -27,12 +27,12 @@ namespace ORM
 
             for (int i = 0; i < selectExpression.Length; i++)
             {
-                var field = selectExpression[i].Name;
+                var field = $"[{selectExpression[i].Name}]";
                 var addon = ((selectExpression.Length - 1 == i) ? string.Empty : ", ");
                 fields += field + addon;
             }
 
-            return new SQLClause(top >= 0 ? $"SELECT TOP {top} {fields} " : $"SELECT {fields} ", SQLClauseType.Select);
+            return new SQLClause(top >= 0 ? $"SELECT TOP ({top}) {fields} " : $"SELECT {fields} ", SQLClauseType.Select);
         }
 
         public SQLClause Where(Func<Expression, string> parseExpression, Expression whereExpression, Func<SqlParameter[]> generateSqlParameters)

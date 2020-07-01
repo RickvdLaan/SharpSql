@@ -10,6 +10,10 @@ namespace ORM
 {
     internal class SQLBuilder
     {
+        private const string Param = "@PARAM";
+
+        private readonly List<object> _sqlParameters = new List<object>(10);
+
         private string GeneratedQuery { get; set; }
         
         public SqlParameter[] SqlParameters { get; private set; }
@@ -17,8 +21,6 @@ namespace ORM
         internal List<SQLClause> SQLClauses { get; set; }
 
         internal SQLClauseBuilderBase SQLClauseBuilderBase { get; set; }
-
-        private readonly List<object> _sqlParameters = new List<object>(10);
 
         public SQLBuilder()
         {
@@ -110,26 +112,31 @@ namespace ORM
                     }
                 case ExpressionType.MemberAccess:
                     {
-                        return (body as MemberExpression).Member.Name;
+                        return $"[{(body as MemberExpression).Member.Name}]";
                     }
                 case ExpressionType.Constant:
                     {
                         _sqlParameters.Add((body as ConstantExpression).Value);
 
-                        return $"@PARAM{_sqlParameters.Count}";
+                        return $"{Param + _sqlParameters.Count}";
                     }
                 case ExpressionType.Call:
                     {
                         var type = body as MethodCallExpression;
-                        _sqlParameters.Add((type.Arguments.FirstOrDefault() as ConstantExpression).Value);
+                        if (type.Arguments.FirstOrDefault() != null)
+                        {
+                            _sqlParameters.Add((type.Arguments.First() as ConstantExpression).Value);
+                        }
                         switch (type.Method.Name)
                         {
-                            case "Contains":
-                                return $"({ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count}+'%')";
-                            case "StartsWith":
-                                return $"({ParseExpression(type.Object)} LIKE @PARAM{_sqlParameters.Count}+'%')";
-                            case "EndsWith":
-                                return $"({ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count})";
+                            case nameof(string.Contains):
+                                return $"({ParseExpression(type.Object)} LIKE '%' + {Param + _sqlParameters.Count} + '%')";
+                            case nameof(string.StartsWith):
+                                return $"({ParseExpression(type.Object)} LIKE {Param + _sqlParameters.Count} + '%')";
+                            case nameof(string.EndsWith):
+                                return $"({ParseExpression(type.Object)} LIKE '%' + {Param + _sqlParameters.Count})";
+                            case nameof(string.ToString):
+                                return ParseExpression(type.Object);
                             default:
                                 throw new NotImplementedException(type.Method.Name);
                         }
@@ -145,8 +152,7 @@ namespace ORM
 
             for (int i = 0; i < _sqlParameters.Count; i++)
             {
-                string parameterName = $"@PARAM{i + 1}";
-                SqlParameters[i] = new SqlParameter(parameterName, _sqlParameters[i]);
+                SqlParameters[i] = new SqlParameter(Param + (i + 1), _sqlParameters[i]);
             }
 
             return SqlParameters;
