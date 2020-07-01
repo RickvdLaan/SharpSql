@@ -37,7 +37,7 @@ namespace ORM
 
         public SQLClause Where(Func<Expression, string> parseExpression, Expression whereExpression, Func<SqlParameter[]> generateSqlParameters)
         {
-            var query = $" WHERE ({parseExpression.Invoke(whereExpression)})";
+            var query = $" WHERE {parseExpression.Invoke(whereExpression)}";
             return new SQLClause(query, SQLClauseType.Where, generateSqlParameters.Invoke());
         }
 

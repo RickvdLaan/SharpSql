@@ -121,15 +121,15 @@ namespace ORM
                 case ExpressionType.Call:
                     {
                         var type = body as MethodCallExpression;
+                        _sqlParameters.Add((type.Arguments.FirstOrDefault() as ConstantExpression).Value);
                         switch (type.Method.Name)
                         {
                             case "Contains":
-                                _sqlParameters.Add((type.Arguments.FirstOrDefault() as ConstantExpression).Value);
-                                return $"{ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count}+'%'";
+                                return $"({ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count}+'%')";
                             case "StartsWith":
-                                return $"{ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count}";
+                                return $"({ParseExpression(type.Object)} LIKE @PARAM{_sqlParameters.Count}+'%')";
                             case "EndsWith":
-                                return $"{ParseExpression(type.Object)} LIKE @PARAM{_sqlParameters.Count}+'%'";
+                                return $"({ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count})";
                             default:
                                 throw new NotImplementedException(type.Method.Name);
                         }
