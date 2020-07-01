@@ -27,7 +27,7 @@ namespace ORMConsole
 
             users = new Users();
             users.Select(User.Fields.Username, User.Fields.Password);
-            users.Where(x => x.Password.Contains("test") || x.Id == 2);
+            users.Where(x => x.Password.Contains("welkom"));// || x.Password.Contains("welkom"));
             users.OrderBy(User.Fields.Username.Descending(), User.Fields.Password.Ascending());
             users.Fetch();
             ShowOutput(users);

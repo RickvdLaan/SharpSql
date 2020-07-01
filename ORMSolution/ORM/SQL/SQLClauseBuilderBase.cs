@@ -38,29 +38,12 @@ namespace ORM
         public SQLClause Where(Func<Expression, string> parseExpression, Expression whereExpression, Func<SqlParameter[]> generateSqlParameters)
         {
             var query = $" WHERE ({parseExpression.Invoke(whereExpression)})";
-
             return new SQLClause(query, SQLClauseType.Where, generateSqlParameters.Invoke());
         }
 
         public SQLClause OrderBy(ORMSortExpression sortExpression)
         {
             var query = " ORDER BY ";
-
-            for (int i = 0; i < sortExpression.Sorters.Count; i++)
-            {
-                var field = sortExpression.Sorters[i].Field.Name;
-                var sortType = sortExpression.Sorters[i].SortType.SQL();
-                var addon = ((sortExpression.Sorters.Count - 1 == i) ? string.Empty : ", ");
-
-                query += $"{field} {sortType}{addon}";
-            }
-
-            return new SQLClause(query, SQLClauseType.OrderBy);
-        }
-
-        public SQLClause WhereLike(ORMSortExpression sortExpression)
-        {
-            var query = " LIKE ";
 
             for (int i = 0; i < sortExpression.Sorters.Count; i++)
             {

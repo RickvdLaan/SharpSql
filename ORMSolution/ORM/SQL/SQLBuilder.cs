@@ -124,11 +124,14 @@ namespace ORM
                         switch (type.Method.Name)
                         {
                             case "Contains":
-                                _sqlParameters.Add(type.Arguments.FirstOrDefault());
-
-                                return $"{ParseExpression(type.Object)}='%@PARAM{_sqlParameters.Count}%'";
+                                _sqlParameters.Add((type.Arguments.FirstOrDefault() as ConstantExpression).Value);
+                                return $"{ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count}+'%'";
+                            case "StartsWith":
+                                return $"{ParseExpression(type.Object)} LIKE '%'+@PARAM{_sqlParameters.Count}";
+                            case "EndsWith":
+                                return $"{ParseExpression(type.Object)} LIKE @PARAM{_sqlParameters.Count}+'%'";
                             default:
-                                throw new NotImplementedException();
+                                throw new NotImplementedException(type.Method.Name);
                         }
                     }
                 default:
