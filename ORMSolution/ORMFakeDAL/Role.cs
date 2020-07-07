@@ -1,6 +1,6 @@
 ﻿using ORM;
 
-namespace ORMConsole
+namespace ORMFakeDAL
 {
     public class Role : ORMEntity
     {

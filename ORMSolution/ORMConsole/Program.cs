@@ -1,12 +1,13 @@
 ﻿using Microsoft.Extensions.Configuration;
 using ORM;
+using ORMFakeDAL;
 using System;
 
 namespace ORMConsole
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)

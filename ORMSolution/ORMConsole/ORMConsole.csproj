@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ORMFakeDAL\ORMFakeDAL.csproj" />
     <ProjectReference Include="..\ORM\ORM.csproj" />
   </ItemGroup>
 

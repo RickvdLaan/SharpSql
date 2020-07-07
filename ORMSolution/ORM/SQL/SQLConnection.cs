@@ -19,7 +19,7 @@ namespace ORM
         {
             SqlConnection = new SqlConnection(ORMUtilities.ConnectionString);
 
-            if (SqlConnection.State == ConnectionState.Closed)
+            if (!ORMUtilities.IsUnitTesting() && SqlConnection.State == ConnectionState.Closed)
             {
                 SqlConnection.Open();
             }
@@ -28,6 +28,11 @@ namespace ORM
         internal void ExecuteCollectionQuery<T>(ORMCollection<T> ormCollection, SQLBuilder sqlBuilder)
             where T : ORMEntity
         {
+            if (ORMUtilities.IsUnitTesting())
+            {
+                return;
+            }
+
             using (var command = new SqlCommand(sqlBuilder.ToString(), SqlConnection))
             {
                 if (sqlBuilder.SqlParameters != null)

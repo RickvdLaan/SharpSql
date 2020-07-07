@@ -1,10 +1,13 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using ORM.Attributes;
 using System;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace ORM
@@ -24,7 +27,7 @@ namespace ORM
         {
             var collection = ConvertTo<CollectionType, EntityType>(ExecuteDirectQuery(query, parameters));
 
-            collection.ExecutedQuery = $"DirectQuery: '{query}'.";
+            collection.ExecutedQuery = query;
 
             return collection;
         }
@@ -54,6 +57,11 @@ namespace ORM
                     for (int i = 0; i < parameters.Length; i++)
                     {
                         command.Parameters.Add(new SqlParameter(regexMatches[i], parameters[i]));
+                    }
+
+                    if (IsUnitTesting())
+                    {
+                        return new DataTable();
                     }
 
                     using (var reader = command.ExecuteReader())
@@ -108,5 +116,9 @@ namespace ORM
                 collection.Add(entity);
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsUnitTesting() =>
+            new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(ORMUnitTestAttribute), false).Any());
     }
 }

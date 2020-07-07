@@ -1,7 +1,7 @@
 ﻿using ORM;
 using ORM.Attributes;
 
-namespace ORMConsole
+namespace ORMFakeDAL
 {
     [ORMTable(typeof(Roles), typeof(Role))]
     public class Roles : ORMCollection<Role>
