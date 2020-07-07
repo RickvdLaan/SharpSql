@@ -2,7 +2,7 @@
 using System;
 using System.Data;
 
-namespace ORM.SQL
+namespace ORM
 {
     internal class SQLConnection : IDisposable
     {
@@ -37,7 +37,7 @@ namespace ORM.SQL
 
                 using (var reader = command.ExecuteReader())
                 {
-                    ORMUtilities.DataReader<ORMCollection<T>, T>(ormCollection, reader, typeof(T));
+                    ORMUtilities.DataReader<ORMCollection<T>, T>(ormCollection, reader);
                 }
             }
         }

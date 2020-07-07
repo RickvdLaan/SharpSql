@@ -1,6 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using ORM.SQL;
 using System;
 using System.Data;
 using System.Data.Common;
@@ -76,31 +75,31 @@ namespace ORM
 
             using (var reader = dataTable.CreateDataReader())
             {
-                DataReader<CollectionType, EntityType>(collection, reader, typeof(EntityType));
+                DataReader<CollectionType, EntityType>(collection, reader);
             }
 
             return collection;
         }
 
-        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, Type entityType)
+        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
             while (reader.Read())
             {
-                var entity = (ORMEntity)Activator.CreateInstance(entityType);
+                var entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
 
                 for (int i = 0; i < reader.VisibleFieldCount; i++)
                 {
-                    var entityPropertyInfo = entityType.GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    var entityPropertyInfo = typeof(EntityType).GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                     if (null == entityPropertyInfo)
                     {
-                        throw new NotImplementedException($"Column [{reader.GetName(i)}] has not been implemented in [{entityType.FullName}].");
+                        throw new NotImplementedException($"Column [{reader.GetName(i)}] has not been implemented in [{typeof(EntityType).FullName}].");
                     }
                     else if (!entityPropertyInfo.CanWrite)
                     {
-                        throw new ReadOnlyException($"Property [{reader.GetName(i)}] is read-only in [{entityType.FullName}].");
+                        throw new ReadOnlyException($"Property [{reader.GetName(i)}] is read-only in [{typeof(EntityType).FullName}].");
                     }
 
                     entityPropertyInfo.SetValue(entity, reader.GetValue(i));
