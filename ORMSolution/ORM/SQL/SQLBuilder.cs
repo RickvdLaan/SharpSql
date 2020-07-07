@@ -55,7 +55,7 @@ namespace ORM
 
             if (sortExpression.HasSorters)
             {
-                AddSQLClause(SQLClauseBuilderBase.OrderBy(sortExpression));
+                AddSQLClause(SQLClauseBuilderBase.OrderBy(tableAttribute.TableName, sortExpression));
             }
 
             AddSQLClause(SQLClauseBuilderBase.Semicolon());
@@ -102,8 +102,11 @@ namespace ORM
                     }
                 case ExpressionType.MemberAccess:
                     {
-                        var memberExpressionMember = (body as MemberExpression).Member;
-                        return $"{SQLClauseBuilderBase.QueryTableNames[ORMUtilities.EntityTypes[memberExpressionMember.ReflectedType].Name]}.[{memberExpressionMember.Name}]";
+                        var type = body as MemberExpression;
+                        var entityType = type.Member.ReflectedType;
+                        var collectionType = ORMUtilities.CollectionEntityRelations[entityType];
+
+                        return $"[{SQLClauseBuilderBase.QueryTableNames[collectionType.Name]}].[{type.Member.Name}]";
                     }
                 case ExpressionType.Constant:
                     {

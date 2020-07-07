@@ -16,11 +16,36 @@ namespace ORM
     public sealed class ORMUtilities
     {
         internal static string ConnectionString { get; private set; }
-        internal static Dictionary<Type, Type> EntityTypes { get; set; }
 
-        public ORMUtilities(IConfiguration configuration)
+        internal static Dictionary<Type, Type> CollectionEntityRelations { get; private set; }
+
+        public ORMUtilities(IConfiguration configuration) : this()
         {
             ConnectionString = configuration.GetConnectionString("DefaultConnection");
+        }
+
+        public ORMUtilities()
+        {
+            CollectionEntityRelations = new Dictionary<Type, Type>();
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    var attributes = type.GetCustomAttributes(typeof(ORMTableAttribute), true);
+                    if (attributes.Length > 0)
+                    {
+                        var tableAttribute = (attributes.First() as ORMTableAttribute);
+
+                        if (tableAttribute.CollectionTypeLeft == null
+                         && tableAttribute.CollectionTypeRight == null)
+                        {
+                            CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
+                            CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
+                        }
+                    }
+                }
+            }
         }
 
         public static CollectionType ExecuteDirectQuery<CollectionType, EntityType>(string query, params object[] parameters)

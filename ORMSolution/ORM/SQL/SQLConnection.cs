@@ -28,21 +28,19 @@ namespace ORM
         internal void ExecuteCollectionQuery<T>(ORMCollection<T> ormCollection, SQLBuilder sqlBuilder)
             where T : ORMEntity
         {
-            if (ORMUtilities.IsUnitTesting())
+            if (!ORMUtilities.IsUnitTesting())
             {
-                return;
-            }
-
-            using (var command = new SqlCommand(sqlBuilder.ToString(), SqlConnection))
-            {
-                if (sqlBuilder.SqlParameters != null)
+                using (var command = new SqlCommand(sqlBuilder.ToString(), SqlConnection))
                 {
-                    command.Parameters.AddRange(sqlBuilder.SqlParameters);
-                }
+                    if (sqlBuilder.SqlParameters != null)
+                    {
+                        command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                    }
 
-                using (var reader = command.ExecuteReader())
-                {
-                    ORMUtilities.DataReader<ORMCollection<T>, T>(ormCollection, reader);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        ORMUtilities.DataReader<ORMCollection<T>, T>(ormCollection, reader);
+                    }
                 }
             }
         }

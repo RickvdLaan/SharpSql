@@ -14,7 +14,7 @@ namespace ORM
         {
             AddQueryTableName(tableName);
 
-            return new SQLClause($"FROM [dbo].[{tableName}] AS {QueryTableNames[tableName]}", SQLClauseType.From);
+            return new SQLClause($"FROM [dbo].[{tableName}] AS [{QueryTableNames[tableName]}]", SQLClauseType.From);
         }
 
         public SQLClause Select(long top = -1)
@@ -47,13 +47,13 @@ namespace ORM
             return new SQLClause(query, SQLClauseType.Where, generateSqlParameters.Invoke());
         }
 
-        public SQLClause OrderBy(ORMSortExpression sortExpression)
+        public SQLClause OrderBy(string tableName, ORMSortExpression sortExpression)
         {
             var query = " ORDER BY ";
 
             for (int i = 0; i < sortExpression.Sorters.Count; i++)
             {
-                var field = sortExpression.Sorters[i].Field.Name;
+                var field = $"[{QueryTableNames[tableName]}].[{sortExpression.Sorters[i].Field.Name}]";
                 var sortType = sortExpression.Sorters[i].SortType.SQL();
                 var addon = ((sortExpression.Sorters.Count - 1 == i) ? string.Empty : ", ");
 
@@ -81,7 +81,7 @@ namespace ORM
                 _tableCharCounts[firstChar] = 1;
             }
 
-            QueryTableNames[tableName] = new string(tableName[0], _tableCharCounts[firstChar]);
+            QueryTableNames[tableName] = new string(firstChar, _tableCharCounts[firstChar]);
         }
 
     }
