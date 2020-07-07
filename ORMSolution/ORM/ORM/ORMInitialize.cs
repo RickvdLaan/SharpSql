@@ -19,9 +19,8 @@ namespace ORM
 
         internal ORMInitialize()
         {
-            Dictionary<Type, Type> entityTypes = new Dictionary<Type, Type>();
-            var a = AppDomain.CurrentDomain.GetAssemblies();
-            var b = a.Select(x => x.FullName).OrderBy(x => x).ToList();
+            ORMUtilities.EntityTypes = new Dictionary<Type, Type>();
+
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes())
@@ -30,13 +29,11 @@ namespace ORM
                     if (attributes.Length > 0)
                     {
                         var tableAttribute = (attributes.First() as ORMTableAttribute);
-                        entityTypes.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
-                        entityTypes.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
+                        ORMUtilities.EntityTypes.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
+                        ORMUtilities.EntityTypes.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
                     }
                 }
             }
-
-            ORMUtilities.EntityTypes = entityTypes;
         }
     }
 }

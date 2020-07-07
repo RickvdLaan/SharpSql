@@ -50,7 +50,7 @@ namespace ORM
 
             if (whereExpression != null)
             {
-                SQLClauseBuilderBase.Where(ParseExpression, whereExpression, GenerateSqlParameters);
+                AddSQLClause(SQLClauseBuilderBase.Where(ParseExpression, whereExpression, GenerateSqlParameters));
             }
 
             if (sortExpression.HasSorters)
