@@ -68,15 +68,8 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                if (WhereExpression == null)
-                {
-                    sqlBuilder.BuildQuery(TableAttribute, SelectExpression, SortExpression, maxNumberOfItemsToReturn);
-                }
-                else
-                {
-                    sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression.Body, SortExpression, maxNumberOfItemsToReturn);
-                }
-
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression?.Body, SortExpression, maxNumberOfItemsToReturn);
+                
                 ExecutedQuery = sqlBuilder.ToString();
 
                 connection.ExecuteCollectionQuery(this, sqlBuilder);

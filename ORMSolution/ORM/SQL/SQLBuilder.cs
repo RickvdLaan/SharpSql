@@ -43,24 +43,14 @@ namespace ORM
             SQLClauses.AddRange(clauses);
         }
 
-        internal void BuildQuery(ORMTableAttribute tableAttribute, ORMEntityField[] selectExpression, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
-        {
-            BuildQuery(tableAttribute, selectExpression, sortExpression, maxNumberOfItemsToReturn, null);
-        }
-
-        internal void BuildQuery(ORMTableAttribute tableAttribute, ORMEntityField[] selectExpression, Expression whereExpression, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
-        {
-            BuildQuery(tableAttribute, selectExpression, sortExpression, maxNumberOfItemsToReturn, SQLClauseBuilderBase.Where(ParseExpression, whereExpression, GenerateSqlParameters));
-        }
-
-        private void BuildQuery(ORMTableAttribute tableAttribute, ORMEntityField[] selectExpression, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn, params SQLClause[] clauses)
+        public void BuildQuery(ORMTableAttribute tableAttribute, ORMEntityField[] selectExpression, Expression whereExpression, ORMSortExpression sortExpression, long maxNumberOfItemsToReturn)
         {
             AddSQLClauses(SQLClauseBuilderBase.Select(selectExpression, maxNumberOfItemsToReturn),
                           SQLClauseBuilderBase.From(tableAttribute.TableName));
 
-            for (int i = 0; i < clauses?.Length; i++)
+            if (whereExpression != null)
             {
-                AddSQLClause(clauses[i]);
+                SQLClauseBuilderBase.Where(ParseExpression, whereExpression, GenerateSqlParameters);
             }
 
             if (sortExpression.HasSorters)
@@ -87,8 +77,8 @@ namespace ORM
                 case ExpressionType.Equal:
                     {
                         var type = body as BinaryExpression;
-                        var left = type.Left as MemberExpression;
-                        var right = type.Right as ConstantExpression;
+                        var left = type.Left;
+                        var right = type.Right;
 
                         return $"({ParseExpression(left)} = {ParseExpression(right)})";
                     }
@@ -112,7 +102,8 @@ namespace ORM
                     }
                 case ExpressionType.MemberAccess:
                     {
-                        return $"[{(body as MemberExpression).Member.Name}]";
+                        var memberExpressionMember = (body as MemberExpression).Member;
+                        return $"{SQLClauseBuilderBase.QueryTableNames[ORMUtilities.EntityTypes[memberExpressionMember.ReflectedType].Name]}.[{memberExpressionMember.Name}]";
                     }
                 case ExpressionType.Constant:
                     {

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using ORM.Attributes;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
@@ -15,6 +16,7 @@ namespace ORM
     public sealed class ORMUtilities
     {
         internal static string ConnectionString { get; private set; }
+        internal static Dictionary<Type, Type> EntityTypes { get; set; }
 
         public ORMUtilities(IConfiguration configuration)
         {
