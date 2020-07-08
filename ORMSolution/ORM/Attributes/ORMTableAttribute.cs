@@ -16,6 +16,12 @@ namespace ORM.Attributes
 
         public ORMTableAttribute(Type collectionType, Type entityType)
         {
+            // Example usage:
+            // Users (CollectionType)
+            // User (EntityType)
+            // 
+            // ORMTable(typeof(Users), typeof(User))
+
             if (!entityType.IsSubclassOf(typeof(ORMEntity)))
             {
                 throw new ArgumentException();

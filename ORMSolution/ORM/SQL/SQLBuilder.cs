@@ -72,71 +72,71 @@ namespace ORM
 
         private string ParseExpression(Expression body)
         {
-            switch (body.NodeType)
+            switch (body)
             {
-                case ExpressionType.Equal:
-                    {
-                        var type = body as BinaryExpression;
-                        var left = type.Left;
-                        var right = type.Right;
+                case BinaryExpression binaryExpression:
+                    var left = binaryExpression.Left;
+                    var right = binaryExpression.Right;
 
-                        return $"({ParseExpression(left)} = {ParseExpression(right)})";
-                    }
-                case ExpressionType.Or:
-                case ExpressionType.OrElse:
+                    switch (binaryExpression.NodeType)
                     {
-                        var type = body as BinaryExpression;
-                        var left = type.Left;
-                        var right = type.Right;
+                        case ExpressionType.Equal:
+                            return $"({ParseExpression(left)} = {ParseExpression(right)})";
+                        case ExpressionType.LessThan:
+                            return $"({ParseExpression(left)} < {ParseExpression(right)})";
+                        case ExpressionType.GreaterThan:
+                            return $"({ParseExpression(left)} > {ParseExpression(right)})";
+                        case ExpressionType.LessThanOrEqual:
+                            return $"({ParseExpression(left)} <= {ParseExpression(right)})";
+                        case ExpressionType.GreaterThanOrEqual:
+                            return $"({ParseExpression(left)} >= {ParseExpression(right)})";
+                        case ExpressionType.Or:
+                        case ExpressionType.OrElse:
+                            return $"({ParseExpression(left)} OR {ParseExpression(right)})";
+                        case ExpressionType.And:
+                        case ExpressionType.AndAlso:
+                            return $"({ParseExpression(left)} AND {ParseExpression(right)})";
+                        default:
+                            throw new NotImplementedException(body.NodeType.ToString());
 
-                        return $"({ParseExpression(left)} OR {ParseExpression(right)})";
                     }
-                case ExpressionType.And:
-                case ExpressionType.AndAlso:
+                case MemberExpression memberExpression:
                     {
-                        var type = body as BinaryExpression;
-                        var left = type.Left;
-                        var right = type.Right;
-
-                        return $"({ParseExpression(left)} AND {ParseExpression(right)})";
-                    }
-                case ExpressionType.MemberAccess:
-                    {
-                        var type = body as MemberExpression;
-                        var entityType = type.Member.ReflectedType;
+                        var entityType = memberExpression.Member.ReflectedType;
                         var collectionType = ORMUtilities.CollectionEntityRelations[entityType];
 
-                        return $"[{SQLClauseBuilderBase.QueryTableNames[collectionType.Name]}].[{type.Member.Name}]";
+                        return $"[{SQLClauseBuilderBase.QueryTableNames[collectionType.Name]}].[{memberExpression.Member.Name}]";
                     }
-                case ExpressionType.Constant:
+                case ConstantExpression constantExpression:
                     {
-                        _sqlParameters.Add((body as ConstantExpression).Value);
+                        _sqlParameters.Add(constantExpression.Value);
 
                         return $"{Param + _sqlParameters.Count}";
                     }
-                case ExpressionType.Call:
+                case MethodCallExpression methodCallExpression:
                     {
-                        var type = body as MethodCallExpression;
-                        if (type.Arguments.FirstOrDefault() != null)
+                        if (methodCallExpression.Arguments.FirstOrDefault() != null)
                         {
-                            _sqlParameters.Add((type.Arguments.First() as ConstantExpression).Value);
+                            ParseExpression(methodCallExpression.Arguments.First());
                         }
-                        switch (type.Method.Name)
+                        switch (methodCallExpression.Method.Name)
                         {
                             case nameof(string.Contains):
-                                return $"({ParseExpression(type.Object)} LIKE '%' + {Param + _sqlParameters.Count} + '%')";
+                                return $"({ParseExpression(methodCallExpression.Object)} LIKE '%' + {Param + _sqlParameters.Count} + '%')";
                             case nameof(string.StartsWith):
-                                return $"({ParseExpression(type.Object)} LIKE {Param + _sqlParameters.Count} + '%')";
+                                return $"({ParseExpression(methodCallExpression.Object)} LIKE {Param + _sqlParameters.Count} + '%')";
                             case nameof(string.EndsWith):
-                                return $"({ParseExpression(type.Object)} LIKE '%' + {Param + _sqlParameters.Count})";
+                                return $"({ParseExpression(methodCallExpression.Object)} LIKE '%' + {Param + _sqlParameters.Count})";
                             case nameof(string.ToString):
-                                return ParseExpression(type.Object);
+                                return ParseExpression(methodCallExpression.Object);
                             default:
-                                throw new NotImplementedException(type.Method.Name);
+                                throw new NotImplementedException(methodCallExpression.Method.Name);
                         }
                     }
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(body.NodeType.ToString());
+                case null:
+                    throw new ArgumentNullException(nameof(body));
             }
         }
 

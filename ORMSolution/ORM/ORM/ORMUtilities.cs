@@ -19,6 +19,8 @@ namespace ORM
 
         internal static Dictionary<Type, Type> CollectionEntityRelations { get; private set; }
 
+        internal static Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)> ManyToManyRelations { get; private set; }
+
         public ORMUtilities(IConfiguration configuration) : this()
         {
             ConnectionString = configuration.GetConnectionString("DefaultConnection");
@@ -27,6 +29,7 @@ namespace ORM
         public ORMUtilities()
         {
             CollectionEntityRelations = new Dictionary<Type, Type>();
+            ManyToManyRelations = new Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)>();
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -42,6 +45,10 @@ namespace ORM
                         {
                             CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
                             CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
+                        }
+                        else
+                        {
+                            ManyToManyRelations.Add(tableAttribute.CollectionType, (tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight));
                         }
                     }
                 }
@@ -86,18 +93,18 @@ namespace ORM
                         command.Parameters.Add(new SqlParameter(regexMatches[i], parameters[i]));
                     }
 
-                    if (IsUnitTesting())
+                    if (!IsUnitTesting())
                     {
-                        return new DataTable();
+                        using (var reader = command.ExecuteReader())
+                        {
+                            var dataTable = new DataTable();
+                            dataTable.Load(reader);
+
+                            return dataTable;
+                        }
                     }
 
-                    using (var reader = command.ExecuteReader())
-                    {
-                        var dataTable = new DataTable();
-                        dataTable.Load(reader);
-
-                        return dataTable;
-                    }
+                    return new DataTable();
                 }
             }
         }
