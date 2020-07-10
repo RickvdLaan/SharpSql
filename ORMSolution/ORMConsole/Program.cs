@@ -16,20 +16,20 @@ namespace ORMConsole
             new ORMInitialize(configuration);
 
             Users users = new Users();
-            users.OrderBy(User.Fields.Id & ORMSortType.Ascending);
+            users.Select(x => x.Username);
+            users.OrderBy(x => x.Id.Ascending());
             users.Fetch();
             ShowOutput(users);
 
             users = new Users();
-            users.OrderBy(User.Fields.Username & ORMSortType.Descending);
-            users.OrderBy(User.Fields.Password.Ascending());
+            users.OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch(1);
             ShowOutput(users);
 
             users = new Users();
-            users.Select(User.Fields.Username, User.Fields.Password);
-            users.Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"));
-            users.OrderBy(User.Fields.Username.Descending(), User.Fields.Password.Ascending());
+            users.Select(x => new object[] { x.Username, x.Password });
+            users.Where(x => x.Id.StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"));
+            users.OrderBy(x => new object[] { x.Username.Descending(), x.Id.Ascending() });
             users.Fetch();
             ShowOutput(users);
 

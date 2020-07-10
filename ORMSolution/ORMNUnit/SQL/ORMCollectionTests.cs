@@ -48,7 +48,7 @@ namespace ORMNUnit.SQL
             var users = new Users();
             users.Where(x => x.Id == 19 && x.Id == 12);
             users.Fetch();
-            
+
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -109,8 +109,8 @@ namespace ORMNUnit.SQL
                 "ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
 
             var users = new Users();
-            users.OrderBy(User.Fields.Username.Descending(), User.Fields.Password.Ascending());
-            users.Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"));
+            users.Where(x => x.Id.StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"));
+            users.OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch();
             
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
@@ -119,10 +119,10 @@ namespace ORMNUnit.SQL
         [Test]
         public void Basic_Select()
         {
-            var expectedQuery = "SELECT [USERNAME], [PASSWORD] FROM [DBO].[USERS] AS [U];";
+            var expectedQuery = "SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];";
 
             var users = new Users();
-            users.Select(User.Fields.Username, User.Fields.Password);
+            users.Select(x => new object[] { x.Username, x.Password });
             users.Fetch();
             
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
@@ -134,7 +134,7 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
 
             var users = new Users();
-            users.OrderBy(User.Fields.Username.Descending(), User.Fields.Password.Ascending());
+            users.OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch();
 
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);

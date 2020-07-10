@@ -30,7 +30,7 @@ namespace ORM
         {
             if (!ORMUtilities.IsUnitTesting())
             {
-                using (var command = new SqlCommand(sqlBuilder.ToString(), SqlConnection))
+                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection))
                 {
                     if (sqlBuilder.SqlParameters != null)
                     {

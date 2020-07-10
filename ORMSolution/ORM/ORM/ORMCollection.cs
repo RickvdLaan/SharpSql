@@ -1,5 +1,4 @@
 ﻿using ORM.Attributes;
-using ORM.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,11 +11,11 @@ namespace ORM
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
-        internal ORMSortExpression SortExpression { get; set; }
-
-        internal ORMEntityField[] SelectExpression { get; set; }
+        internal Expression<Func<T, object>> SelectExpression { get; set; }
 
         internal Expression<Func<T, bool>> WhereExpression { get; set; }
+
+        internal Expression<Func<T, object>> SortExpression { get; set; }
 
         internal ORMTableAttribute TableAttribute
         { 
@@ -33,7 +32,6 @@ namespace ORM
         public ORMCollection()
         {
             Collection = new List<ORMEntity>();
-            SortExpression = new ORMSortExpression();
         }
 
         internal void Add(ORMEntity entity)
@@ -68,17 +66,17 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression?.Body, SortExpression, maxNumberOfItemsToReturn);
-                
-                ExecutedQuery = sqlBuilder.ToString();
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
                 connection.ExecuteCollectionQuery(this, sqlBuilder);
+
+                ExecutedQuery = sqlBuilder.GeneratedQuery;
             }
         }
 
-        public void Select(params ORMEntityField[] fields)
+        public void Select(Expression<Func<T, object>> expression)
         {
-            SelectExpression = fields;
+            SelectExpression = expression;
         }
 
         public void Where(Expression<Func<T, bool>> expression)
@@ -86,9 +84,9 @@ namespace ORM
             WhereExpression = expression;
         }
 
-        public void OrderBy(params IORMSortClause[] sortClauses)
+        public void OrderBy(Expression<Func<T, object>> expression)
         {
-            SortExpression.AddRange(sortClauses);
+            SortExpression = expression;
         }
     }
 }
