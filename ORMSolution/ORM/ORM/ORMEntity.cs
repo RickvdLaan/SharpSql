@@ -18,7 +18,7 @@ namespace ORM
             InternalPkName = pkName;
         }
 
-        protected EntityType FetchEntityByEntityId<CollectionType, EntityType>(object id)
+        protected EntityType FetchEntityById<CollectionType, EntityType>(object id)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity, new()
         {

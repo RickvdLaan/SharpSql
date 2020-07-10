@@ -15,7 +15,7 @@ namespace ORMFakeDAL
 
         public Role(int id) : base(nameof(Id))
         {
-            base.FetchEntityByEntityId<Roles, Role>(id);
+            base.FetchEntityById<Roles, Role>(id);
         }
     }
 }

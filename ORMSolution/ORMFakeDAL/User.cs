@@ -14,7 +14,7 @@ namespace ORMFakeDAL
 
         public User(int fetchByUserId) : base(nameof(Id))
         {
-            base.FetchEntityByEntityId<Users, User>(fetchByUserId);
+            base.FetchEntityById<Users, User>(fetchByUserId);
         }
     }
 }
