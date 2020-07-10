@@ -15,6 +15,12 @@ namespace ORMConsole
 
             new ORMInitialize(configuration);
 
+            // Currently still has a bug where the entity isn't being set.
+            // but the focus of this check-in was making it possible to execute
+            // the correct query for all entity types.
+            User user = new User(1);
+            ShowOutput(user);
+
             Users users = new Users();
             users.Select(x => x.Username);
             users.OrderBy(x => x.Id.Ascending());
@@ -53,14 +59,25 @@ namespace ORMConsole
         {
             foreach (User user in users)
             {
-                Console.WriteLine($"[{ nameof(user.Id) }] { user.Id }");
-                Console.WriteLine($"[{ nameof(user.Username) }] { user.Username }");
-                Console.WriteLine($"[{ nameof(user.Password) }] { user.Password }");
-                Console.WriteLine("-------------------");
+                ShowOutput(user, false);
             }
 
             Console.WriteLine($"Executed query: { users.ExecutedQuery }");
             Console.WriteLine("-------------------");
+        }
+
+        private static void ShowOutput(User user, bool displayExecutedQuery = true)
+        {
+            Console.WriteLine($"[{ nameof(user.Id) }] { user.Id }");
+            Console.WriteLine($"[{ nameof(user.Username) }] { user.Username }");
+            Console.WriteLine($"[{ nameof(user.Password) }] { user.Password }");
+            Console.WriteLine("-------------------");
+
+            if (displayExecutedQuery)
+            {
+                Console.WriteLine($"Executed query: { user.ExecutedQuery }");
+                Console.WriteLine("-------------------");
+            }
         }
     }
 }

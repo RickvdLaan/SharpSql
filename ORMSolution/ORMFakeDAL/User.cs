@@ -10,9 +10,11 @@ namespace ORMFakeDAL
 
         public string Password { get; set; }
 
-        public User()
-        {
+        public User() { }
 
+        public User(int fetchByUserId) : base(nameof(Id))
+        {
+            base.FetchEntityByEntityId<Users, User>(fetchByUserId);
         }
     }
 }

@@ -79,9 +79,10 @@ namespace ORMNUnit.SQL
         [Test]
         public void Basic_Where_LessThanOrEqual()
         {
-            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] <= @PARAM1);";
+            var expectedQuery = "SELECT [U].[USERNAME] FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] <= @PARAM1);";
 
             var users = new Users();
+            users.Select(x => x.Username);
             users.Where(x => x.Id <= 1);
             users.Fetch();
 

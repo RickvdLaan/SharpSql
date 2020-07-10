@@ -15,6 +15,8 @@ namespace ORM
 
         internal Expression<Func<T, bool>> WhereExpression { get; set; }
 
+        internal Expression InternalWhereExpression { get; set; }
+
         internal Expression<Func<T, object>> SortExpression { get; set; }
 
         internal ORMTableAttribute TableAttribute
@@ -66,7 +68,7 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression, SortExpression, maxNumberOfItemsToReturn);
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
                 connection.ExecuteCollectionQuery(this, sqlBuilder);
 
@@ -82,6 +84,11 @@ namespace ORM
         public void Where(Expression<Func<T, bool>> expression)
         {
             WhereExpression = expression;
+        }
+
+        public void InternalWhere(BinaryExpression expression)
+        {
+            InternalWhereExpression = expression;
         }
 
         public void OrderBy(Expression<Func<T, object>> expression)
