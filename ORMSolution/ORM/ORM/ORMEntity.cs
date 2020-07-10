@@ -24,6 +24,11 @@ namespace ORM
         {
             var property = typeof(EntityType).GetProperties().Where(x => x.Name == InternalPkName).FirstOrDefault();
 
+            if (property == null)
+            {
+                throw new ArgumentException($"No PK-property found for name: \"{InternalPkName}\" in {typeof(EntityType).Name}.");
+            }
+
             var left = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), property);
             var right = Expression.Constant(id, id.GetType());
 
