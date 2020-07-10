@@ -86,7 +86,7 @@ namespace ORM
             WhereExpression = expression;
         }
 
-        public void InternalWhere(BinaryExpression expression)
+        internal void InternalWhere(BinaryExpression expression)
         {
             InternalWhereExpression = expression;
         }
