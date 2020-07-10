@@ -25,6 +25,26 @@ namespace ORM
             }
         }
 
+        internal void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)
+            where EntityType : ORMEntity
+        {
+            if (!ORMUtilities.IsUnitTesting())
+            {
+                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection))
+                {
+                    if (sqlBuilder.SqlParameters != null)
+                    {
+                        command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                    }
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        ORMUtilities.DataReader(entity, reader);
+                    }
+                }
+            }
+        }
+
         internal void ExecuteCollectionQuery<T>(ORMCollection<T> ormCollection, SQLBuilder sqlBuilder)
             where T : ORMEntity
         {

@@ -18,7 +18,7 @@ namespace ORM
             InternalPkName = pkName;
         }
 
-        protected EntityType FetchEntityById<CollectionType, EntityType>(object id)
+        protected void FetchEntityById<CollectionType, EntityType>(object id)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity, new()
         {
@@ -34,11 +34,9 @@ namespace ORM
 
             var collection = new CollectionType();
             collection.InternalWhere(Expression.Equal(left, right));
-            collection.Fetch(1);
+            collection.Fetch(this, 1);
 
             ExecutedQuery = collection.ExecutedQuery;
-
-            return (EntityType)collection[0];
         }
 
         public virtual void Save()

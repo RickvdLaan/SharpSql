@@ -15,9 +15,6 @@ namespace ORMConsole
 
             new ORMInitialize(configuration);
 
-            // Currently still has a bug where the entity isn't being set.
-            // but the focus of this check-in was making it possible to execute
-            // the correct query for all entity types.
             User user = new User(1);
             ShowOutput(user);
 

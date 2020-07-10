@@ -131,23 +131,37 @@ namespace ORM
             {
                 var entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
 
-                for (int i = 0; i < reader.VisibleFieldCount; i++)
-                {
-                    var entityPropertyInfo = typeof(EntityType).GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-
-                    if (null == entityPropertyInfo)
-                    {
-                        throw new NotImplementedException($"Column [{reader.GetName(i)}] has not been implemented in [{typeof(EntityType).FullName}].");
-                    }
-                    else if (!entityPropertyInfo.CanWrite)
-                    {
-                        throw new ReadOnlyException($"Property [{reader.GetName(i)}] is read-only in [{typeof(EntityType).FullName}].");
-                    }
-
-                    entityPropertyInfo.SetValue(entity, reader.GetValue(i));
-                }
+                EntityReader(entity, reader);
 
                 collection.Add(entity);
+            }
+        }
+
+        internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader)
+            where EntityType : ORMEntity
+        {
+            while (reader.Read())
+            {
+                EntityReader(entity, reader);
+            }
+        }
+
+        internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader)
+        {
+            for (int i = 0; i < reader.VisibleFieldCount; i++)
+            {
+                var entityPropertyInfo = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                if (null == entityPropertyInfo)
+                {
+                    throw new NotImplementedException($"Column [{reader.GetName(i)}] has not been implemented in [{entity.GetType().Name}].");
+                }
+                else if (!entityPropertyInfo.CanWrite)
+                {
+                    throw new ReadOnlyException($"Property [{reader.GetName(i)}] is read-only in [{entity.GetType().Name}].");
+                }
+
+                entityPropertyInfo.SetValue(entity, reader.GetValue(i));
             }
         }
 

@@ -76,6 +76,20 @@ namespace ORM
             }
         }
 
+        internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn)
+        {
+            using (var connection = new SQLConnection())
+            {
+                var sqlBuilder = new SQLBuilder();
+
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+
+                connection.ExecuteEntityQuery(entity, sqlBuilder);
+
+                ExecutedQuery = sqlBuilder.GeneratedQuery;
+            }
+        }
+
         public void Select(Expression<Func<T, object>> expression)
         {
             SelectExpression = expression;
