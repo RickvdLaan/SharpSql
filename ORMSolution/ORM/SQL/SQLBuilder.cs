@@ -153,11 +153,11 @@ namespace ORM
                         }
                         switch (methodCallExpression.Method.Name)
                         {
-                            case nameof(string.Contains): // ORMEntityExtensions.Contains
+                            case nameof(string.Contains):   // ORMEntityExtensions.Contains
                                 return $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count} + '%')";
                             case nameof(string.StartsWith): // ORMEntityExtensions.StartsWith
                                 return $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE {Param + _sqlParameters.Count} + '%')";
-                            case nameof(string.EndsWith): // ORMEntityExtensions.EndsWith
+                            case nameof(string.EndsWith):   // ORMEntityExtensions.EndsWith
                                 return $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count})";
                             case nameof(string.ToString):
                                 return ParseExpression(methodCallExpression.Object);
