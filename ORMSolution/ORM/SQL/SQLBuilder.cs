@@ -20,7 +20,7 @@ namespace ORM
 
         private readonly Dictionary<char, int> _tableCharCounts = new Dictionary<char, int>(5);
 
-        private readonly List<Join> Joins = new List<Join>();
+        private readonly List<SQLJoin> Joins = new List<SQLJoin>();
 
         public readonly Dictionary<string, string> TableNameResolvePaths = new Dictionary<string, string>();
 
@@ -35,30 +35,21 @@ namespace ORM
             return GeneratedQuery;
         }
 
-        public void BuildQuery(ORMTableAttribute tableAttribute, Expression selectExpression, Expression whereExpression, Expression sortExpression, bool includeSubObjects, long maxNumberOfItemsToReturn)
+        public void BuildQuery(ORMTableAttribute tableAttribute, Expression selectExpression, Expression joinExpression, Expression whereExpression, Expression sortExpression, long maxNumberOfItemsToReturn)
         {
             TableAttribute = tableAttribute;
 
             AddQueryTableName(TableAttribute.TableName);
-
-            if (includeSubObjects)
-            {
-                CalculateJoins(tableAttribute);
-            }
 
             var stringBuilder = new StringBuilder();
 
             stringBuilder.Append(Select(selectExpression, maxNumberOfItemsToReturn));
             stringBuilder.Append(From());
 
-            if (Joins.Any())
+            if (joinExpression != null)
             {
-                foreach (var join in Joins)
-                {
-                    stringBuilder.Append(Join(join));
-                }
+                stringBuilder.Append(Join(joinExpression));
             }
-
             if (whereExpression != null)
             {
                 stringBuilder.Append(Where(whereExpression));
@@ -73,127 +64,29 @@ namespace ORM
             GeneratedQuery = stringBuilder.ToString().ToUpperInvariant();
         }
 
-        private void CalculateJoins(ORMTableAttribute tableAttribute)
+        private string Select(long top = -1)
         {
-            var properties = tableAttribute.EntityType.GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-            var subObjects = properties.Where(x => x.PropertyType.IsSubclassOf(typeof(ORMEntity))).ToList();
-
-            foreach (var lProperty in subObjects)
-            {
-                var rTableAttr = ORMUtilities.CollectionEntityRelations[lProperty.PropertyType].GetCustomAttributes(typeof(ORMTableAttribute), true).First() as ORMTableAttribute;
-                AddQueryTableName(rTableAttr.TableName);
-
-                var rightInstance = (ORMEntity)Activator.CreateInstance(lProperty.PropertyType);
-
-                Joins.Add(new Join()
-                {
-                    type = JoinType.Left,
-                    lTableAttr = tableAttribute,
-                    lProperty = lProperty,
-                    rTableAttr = rTableAttr,
-                    rProperty = rightInstance.GetPrimaryKeyPropertyInfo()
-                });
-                // Lookup parent path if available and add this current path to the list
-                var parentTableName = _queryTableNames[tableAttribute.TableName];
-                var basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : "";
-                TableNameResolvePaths.Add(_queryTableNames[rTableAttr.TableName], lProperty.Name);
-
-                // Check if more joins are required for subobjects
-                CalculateJoins(rTableAttr);
-            }
-        }
-
-        private char Semicolon()
-        {
-            return ';';
-        }
-
-        private string Select((string tableName, string propertyName)[] properties, long top = -1)
-        {
-            var stringBuilder = new StringBuilder();
-
-            stringBuilder.Append("SELECT");
-            if (top >= 0)
-            {
-                stringBuilder.Append($" TOP ({top})");
-            }
-            
-            bool isFirst = true;
-            foreach(var property in properties)
-            {
-                if (isFirst)
-                {
-                    isFirst = false;
-                }
-                else
-                {
-                    stringBuilder.Append(',');
-                }
-                stringBuilder.Append($" [{property.tableName}].[{property.propertyName}] AS [{property.tableName}.{property.propertyName}]");
-            }
-
-            return stringBuilder.ToString();
+            return top >= 0 ? $"SELECT TOP ({top}) * " : "SELECT * ";
         }
 
         private string Select(Expression selectExpression, long top = -1)
         {
-            var properties = GetAllSelectPropertyStringsOfType(TableAttribute);
-
-            if (Joins.Any())
+            if (selectExpression == null)
             {
-                var rightTables = Joins.Select(x => x.rTableAttr).Distinct().ToList();
-                var joinProperties = rightTables.Select(GetAllSelectPropertyStringsOfType).ToList();
-                joinProperties.Add(properties);
-
-                properties = ORMUtilities.ConcatArrays(joinProperties.ToArray());
+                return Select(top);
             }
 
-            if (selectExpression != null)
-            {
-                var expressionResult = ParseExpression(selectExpression).Split(',');
-                properties = properties.Where(x => expressionResult.Contains($"[{x.tableName}].[{x.propertyName}]")).ToArray();
-            }
-
-            return Select(properties, top);
-        }
-
-        private (string tableName, string propertyName)[] GetAllSelectPropertyStringsOfType(ORMTableAttribute table)
-        {
-            var properties = table.EntityType.GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => !x.PropertyType.IsSubclassOf(typeof(ORMEntity)) && x.Name != nameof(ORMEntity.ExecutedQuery)).ToArray();
-
-            var result = new (string tableName, string propertyName)[properties.Length];
-            for (int i = 0; i < properties.Length; i++)
-            {
-                result[i] = (_queryTableNames[table.TableName], properties[i].Name);
-            }
-
-            return result;
+            return top >= 0 ? $"SELECT TOP ({top}) {ParseExpression(selectExpression)} " : $"SELECT {ParseExpression(selectExpression)} ";
         }
 
         private string From()
         {
-            return $" FROM [dbo].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
+            return $"FROM [dbo].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
         }
 
-        private string Join(Join join)
+        private string Join(Expression expression)
         {
-            string type;
-            switch (join.type)
-            {
-                case JoinType.Inner:
-                    type = "INNER JOIN";
-                    break;
-                case JoinType.Left:
-                    type = "LEFT JOIN";
-                    break;
-                case JoinType.Right:
-                    type = "RIGHT JOIN";
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-            return $" {type} [dbo].[{join.rTableAttr.TableName}] AS [{_queryTableNames[join.rTableAttr.TableName]}] ON [{_queryTableNames[join.lTableAttr.TableName]}].[{join.lProperty.Name}] = [{_queryTableNames[join.rTableAttr.TableName]}].[{join.rProperty.Name}]";
+            return $"{ParseExpression(expression)}";
         }
 
         private string Where(Expression whereExpression)
@@ -204,6 +97,11 @@ namespace ORM
         private string OrderBy(Expression sortExpression)
         {
             return $" ORDER BY {ParseExpression(sortExpression)}";
+        }
+
+        private char Semicolon()
+        {
+            return ';';
         }
 
         private string ParseWhereExpression(Expression whereExpression)
@@ -282,6 +180,12 @@ namespace ORM
                                 return $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} ASC";
                             case nameof(ORMEntityExtensions.Descending):
                                 return $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} DESC";
+                            case nameof(ORMEntityExtensions.Left):
+                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "LEFT");
+                            case nameof(ORMEntityExtensions.Right):
+                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "RIGHT");
+                            case nameof(ORMEntityExtensions.Inner):
+                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "INNER");
                             default:
                                 throw new NotImplementedException(methodCallExpression.Method.Name);
                         }
@@ -328,6 +232,54 @@ namespace ORM
             }
 
             _queryTableNames[tableName] = new string(firstChar, _tableCharCounts[firstChar]);
+        }
+
+        private SQLJoin CalculateJoins(ORMTableAttribute tableAttribute, string tableName)
+        {
+            var propertyInfo = tableAttribute.EntityType.GetProperty(tableName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+            var rightTableAttribute = ORMUtilities.CollectionEntityRelations[propertyInfo.PropertyType].GetCustomAttributes(typeof(ORMTableAttribute), true).First() as ORMTableAttribute;
+            AddQueryTableName(rightTableAttribute.TableName);
+
+            var rightInstance = (ORMEntity)Activator.CreateInstance(propertyInfo.PropertyType);
+
+            SQLJoin join = new SQLJoin()
+            {
+                LeftTableAttribute = tableAttribute,
+                LeftPropertyInfo = propertyInfo,
+                RightTableAttribute = rightTableAttribute,
+                RightPropertyInfo = rightInstance.GetPrimaryKeyPropertyInfo()
+            };
+
+            // Lookup parent path if available and add this current path to the list
+            var parentTableName = _queryTableNames[tableAttribute.TableName];
+            var basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : "";
+            TableNameResolvePaths.Add(_queryTableNames[rightTableAttribute.TableName], basePath + propertyInfo.Name);
+
+            return join;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private string GenerateJoinQuery(MemberExpression expression, string joinType)
+        {
+            var join = CalculateJoins(TableAttribute, expression.Member.Name);
+            Joins.Add(join);
+
+            return $" {joinType} JOIN [dbo].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo.Name}]";
+        }
+
+        private (string tableName, string propertyName)[] GetAllSelectPropertyStringsOfType(ORMTableAttribute table)
+        {
+            var properties = table.EntityType.GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)
+                .Where(x => !x.PropertyType.IsSubclassOf(typeof(ORMEntity)) && x.Name != nameof(ORMEntity.ExecutedQuery)).ToArray();
+
+            var result = new (string tableName, string propertyName)[properties.Length];
+            for (int i = 0; i < properties.Length; i++)
+            {
+                result[i] = (_queryTableNames[table.TableName], properties[i].Name);
+            }
+
+            return result;
         }
     }
 }

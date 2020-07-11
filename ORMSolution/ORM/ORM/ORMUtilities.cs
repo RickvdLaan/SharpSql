@@ -150,63 +150,79 @@ namespace ORM
         {
             for (int i = 0; i < reader.VisibleFieldCount; i++)
             {
-                var fullPropertyName = reader.GetName(i);
-                // split table name and field name
-                var split = fullPropertyName.Split('.');
-                var resolvePath = "";
-                string propertyName;
+                if (tableNameResolvePaths.Count > 0)
+                {
+                    var fullPropertyName = reader.GetName(i);
+                    // split table name and field name
+                    var split = fullPropertyName.Split('.');
+                    var resolvePath = "";
+                    string propertyName;
 
-                if(split.Length == 1)
-                {
-                    propertyName = fullPropertyName;
-                }
-                else if(split.Length == 2)
-                {
-                    if (tableNameResolvePaths != null && tableNameResolvePaths.ContainsKey(split[0])) {
-                        resolvePath = tableNameResolvePaths[split[0]];
+                    if (split.Length == 1)
+                    {
+                        propertyName = fullPropertyName;
                     }
-                    propertyName = split[1];
+                    else if (split.Length == 2)
+                    {
+                        if (tableNameResolvePaths != null && tableNameResolvePaths.ContainsKey(split[0]))
+                        {
+                            resolvePath = tableNameResolvePaths[split[0]];
+                        }
+                        propertyName = split[1];
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Invalid data item was returned");
+                    }
+
+                    object obj = entity;
+
+                    if (!string.IsNullOrEmpty(resolvePath))
+                    {
+                        foreach (var step in resolvePath.Split('.'))
+                        {
+                            var property = obj.GetType().GetProperty(step, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                            var value = property.GetValue(obj);
+                            if (value == null)
+                            {
+                                value = Activator.CreateInstance(property.PropertyType);
+                                property.SetValue(obj, value);
+                            }
+
+                            obj = value;
+
+                        }
+                    }
+
+                    var entityPropertyInfo = obj.GetType().GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+                    {
+                        continue;
+                    }
+
+                    entityPropertyInfo.SetValue(obj, reader.GetValue(i));
                 }
                 else
                 {
-                    throw new ArgumentException("Invalid data item was returned");
-                }
+                    var propertyName = reader.GetName(i);
+                    var entityPropertyInfo = entity.GetType().GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-                object obj = entity;
-
-                if (!string.IsNullOrEmpty(resolvePath))
-                {
-                    foreach (var step in resolvePath.Split('.'))
+                    if (null == entityPropertyInfo)
                     {
-                        var property = obj.GetType().GetProperty(step, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-
-                        var value = property.GetValue(obj);
-                        if(value == null)
-                        {
-                            value = Activator.CreateInstance(property.PropertyType);
-                            property.SetValue(obj, value);
-                        }
-
-                        obj = value;
+                        throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{entity.GetType().Name}].");
                     }
-                }
+                    else if (!entityPropertyInfo.CanWrite)
+                    {
+                        throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
+                    }
+                    else if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+                    {
+                        continue;
+                    }
 
-                var entityPropertyInfo = obj.GetType().GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-
-                if (null == entityPropertyInfo)
-                {
-                    throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{obj.GetType().Name}].");
+                    entityPropertyInfo.SetValue(entity, reader.GetValue(i));
                 }
-                else if (!entityPropertyInfo.CanWrite)
-                {
-                    throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{obj.GetType().Name}].");
-                }
-                else if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-                {
-                    continue;
-                }
-
-                entityPropertyInfo.SetValue(obj, reader.GetValue(i));
             }
         }
 

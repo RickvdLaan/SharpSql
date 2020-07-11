@@ -19,23 +19,28 @@ namespace ORM
 
         internal PropertyInfo GetPrimaryKeyPropertyInfo()
         {
-            var property = GetType().GetProperties().Where(x => x.Name == InternalPkName).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(InternalPkName))
+            {
+                throw new ArgumentNullException($"PK-property \"{InternalPkName}\" can't be null or empty.");
+            }
 
-            if (property == null)
+            var propertyInfo = GetType().GetProperties().Where(x => x.Name == InternalPkName).FirstOrDefault();
+
+            if (propertyInfo == null)
             {
                 throw new ArgumentException($"No PK-property found for name: \"{InternalPkName}\" in {GetType().Name}.");
             }
 
-            return property;
+            return propertyInfo;
         }
 
         protected void FetchEntityById<CollectionType, EntityType>(object id)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity, new()
         {
-            var property = GetPrimaryKeyPropertyInfo();
+            var propertyInfo = GetPrimaryKeyPropertyInfo();
 
-            var left = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), property);
+            var left = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), propertyInfo);
             var right = Expression.Constant(id, id.GetType());
 
             var collection = new CollectionType();

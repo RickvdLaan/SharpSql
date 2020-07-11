@@ -19,6 +19,11 @@ namespace ORMConsole
             ShowOutput(user);
 
             Users users = new Users();
+            users.Join(x => new object[] { x.Organisation.Left() });
+            users.Fetch();
+            ShowOutput(users);
+
+            users = new Users();
             users.Select(x => x.Username);
             users.OrderBy(x => x.Id.Ascending());
             users.Fetch();
@@ -42,7 +47,6 @@ namespace ORMConsole
             ShowOutput(users);
 
             users = new Users();
-            users.RetrieveSubobjects = false;
             users.Where(x => (((x.Id == 2 || x.Id == 3) || (x.Id == 3 && x.Id == 4)) || x.Id == 5));
             users.Fetch();
             ShowOutput(users);

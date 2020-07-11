@@ -13,12 +13,13 @@ namespace ORM
 
         internal Expression<Func<T, object>> SelectExpression { get; set; }
 
+        internal Expression<Func<T, object>> JoinExpression { get; set; }
+
         internal Expression<Func<T, bool>> WhereExpression { get; set; }
 
         internal Expression InternalWhereExpression { get; set; }
 
         internal Expression<Func<T, object>> SortExpression { get; set; }
-        public bool RetrieveSubobjects { get; set; } = true;
 
         internal ORMTableAttribute TableAttribute
         { 
@@ -69,7 +70,7 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, RetrieveSubobjects, maxNumberOfItemsToReturn);
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
                 connection.ExecuteCollectionQuery(this, sqlBuilder);
 
@@ -83,7 +84,7 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, RetrieveSubobjects, maxNumberOfItemsToReturn);
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
                 connection.ExecuteEntityQuery(entity, sqlBuilder);
 
@@ -99,6 +100,11 @@ namespace ORM
         public void Where(Expression<Func<T, bool>> expression)
         {
             WhereExpression = expression;
+        }
+
+        public void Join(Expression<Func<T, object>> expression)
+        {
+            JoinExpression = expression;
         }
 
         internal void InternalWhere(BinaryExpression expression)

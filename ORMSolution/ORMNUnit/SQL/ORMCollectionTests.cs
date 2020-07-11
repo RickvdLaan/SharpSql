@@ -24,7 +24,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U];";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Fetch();
             
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
@@ -36,7 +35,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U];";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Fetch(1);
             
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
@@ -48,7 +46,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE (([U].[ID] = @PARAM1) AND ([U].[ID] = @PARAM2));";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Where(x => x.Id == 19 && x.Id == 12);
             users.Fetch();
 
@@ -61,7 +58,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] < @PARAM1);";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Where(x => x.Id < 1);
             users.Fetch();
 
@@ -86,7 +82,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT [U].[USERNAME] FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] <= @PARAM1);";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Select(x => x.Username);
             users.Where(x => x.Id <= 1);
             users.Fetch();
@@ -100,7 +95,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] >= @PARAM1);";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Where(x => x.Id >= 1);
             users.Fetch();
 
@@ -116,7 +110,6 @@ namespace ORMNUnit.SQL
                 "ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"));
             users.OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch();
@@ -130,7 +123,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];";
 
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.Select(x => new object[] { x.Username, x.Password });
             users.Fetch();
             
@@ -143,7 +135,6 @@ namespace ORMNUnit.SQL
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
             
             var users = new Users();
-            users.RetrieveSubobjects = false;
             users.OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch();
 
