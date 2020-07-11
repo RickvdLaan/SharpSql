@@ -92,29 +92,39 @@ namespace ORM
             }
         }
 
-        public void Select(Expression<Func<T, object>> expression)
+        public ORMCollection<T> Select(Expression<Func<T, object>> expression)
         {
             SelectExpression = expression;
+
+            return this;
         }
 
-        public void Where(Expression<Func<T, bool>> expression)
+        public ORMCollection<T> Where(Expression<Func<T, bool>> expression)
         {
             WhereExpression = expression;
+
+            return this;
         }
 
-        public void Join(Expression<Func<T, object>> expression)
+        public ORMCollection<T> Join(Expression<Func<T, object>> expression)
         {
             JoinExpression = expression;
+
+            return this;
         }
 
-        internal void InternalWhere(BinaryExpression expression)
+        internal ORMCollection<T> InternalWhere(BinaryExpression expression)
         {
             InternalWhereExpression = expression;
+
+            return this;
         }
 
-        public void OrderBy(Expression<Func<T, object>> expression)
+        public ORMCollection<T> OrderBy(Expression<Func<T, object>> expression)
         {
             SortExpression = expression;
+
+            return this;
         }
     }
 }

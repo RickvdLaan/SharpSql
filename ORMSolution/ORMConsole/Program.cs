@@ -19,13 +19,13 @@ namespace ORMConsole
             ShowOutput(user);
 
             Users users = new Users();
-            users.Join(x => new object[] { x.Organisation.Left() });
-            users.Fetch();
+            users.Join(x => new object[] { x.Organisation.Left() })
+                 .Fetch();
             ShowOutput(users);
 
             users = new Users();
-            users.Select(x => x.Username);
-            users.OrderBy(x => x.Id.Ascending());
+            users.Select(x => x.Username)
+                 .OrderBy(x => x.Id.Ascending());
             users.Fetch();
             ShowOutput(users);
 
@@ -35,9 +35,9 @@ namespace ORMConsole
             ShowOutput(users);
 
             users = new Users();
-            users.Select(x => new object[] { x.Username, x.Password });
-            users.Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"));
-            users.OrderBy(x => new object[] { x.Username.Descending(), x.Id.Ascending() });
+            users.Select(x => new object[] { x.Username, x.Password })
+                 .Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"))
+                 .OrderBy(x => new object[] { x.Username.Descending(), x.Id.Ascending() });
             users.Fetch();
             ShowOutput(users);
 
