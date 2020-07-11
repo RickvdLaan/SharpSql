@@ -8,7 +8,7 @@ namespace ORMFakeDAL
 
         public string Name { get; set; }
 
-        public Role()
+        public Role(): base(nameof(Id))
         {
 
         }

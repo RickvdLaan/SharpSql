@@ -10,7 +10,9 @@ namespace ORMFakeDAL
 
         public string Password { get; set; }
 
-        public User() { }
+        public Organisation Organisation { get; set; }
+
+        public User(): base(nameof(Id)) { }
 
         public User(int fetchByUserId) : base(nameof(Id))
         {

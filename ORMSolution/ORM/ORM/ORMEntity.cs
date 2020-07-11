@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace ORM
 {
@@ -11,23 +12,28 @@ namespace ORM
 
         private string InternalPkName { get; set; }
 
-        protected ORMEntity() { }
-
         protected ORMEntity(string pkName)
         {
             InternalPkName = pkName;
+        }
+
+        internal PropertyInfo GetPrimaryKeyPropertyInfo()
+        {
+            var property = GetType().GetProperties().Where(x => x.Name == InternalPkName).FirstOrDefault();
+
+            if (property == null)
+            {
+                throw new ArgumentException($"No PK-property found for name: \"{InternalPkName}\" in {GetType().Name}.");
+            }
+
+            return property;
         }
 
         protected void FetchEntityById<CollectionType, EntityType>(object id)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity, new()
         {
-            var property = typeof(EntityType).GetProperties().Where(x => x.Name == InternalPkName).FirstOrDefault();
-
-            if (property == null)
-            {
-                throw new ArgumentException($"No PK-property found for name: \"{InternalPkName}\" in {typeof(EntityType).Name}.");
-            }
+            var property = GetPrimaryKeyPropertyInfo();
 
             var left = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), property);
             var right = Expression.Constant(id, id.GetType());

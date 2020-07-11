@@ -117,13 +117,13 @@ namespace ORM
 
             using (var reader = dataTable.CreateDataReader())
             {
-                DataReader<CollectionType, EntityType>(collection, reader);
+                DataReader<CollectionType, EntityType>(collection, reader, null);
             }
 
             return collection;
         }
 
-        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader)
+        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
@@ -131,38 +131,95 @@ namespace ORM
             {
                 var entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
 
-                EntityReader(entity, reader);
+                EntityReader(entity, reader, tableNameResolvePaths);
 
                 collection.Add(entity);
             }
         }
 
-        internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader)
+        internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
             where EntityType : ORMEntity
         {
             while (reader.Read())
             {
-                EntityReader(entity, reader);
+                EntityReader(entity, reader, tableNameResolvePaths);
             }
         }
 
-        internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader)
+        internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
         {
             for (int i = 0; i < reader.VisibleFieldCount; i++)
             {
-                var entityPropertyInfo = entity.GetType().GetProperty(reader.GetName(i), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var fullPropertyName = reader.GetName(i);
+                // split table name and field name
+                var split = fullPropertyName.Split('.');
+                var resolvePath = "";
+                string propertyName;
+
+                if(split.Length == 1)
+                {
+                    propertyName = fullPropertyName;
+                }
+                else if(split.Length == 2)
+                {
+                    if (tableNameResolvePaths != null && tableNameResolvePaths.ContainsKey(split[0])) {
+                        resolvePath = tableNameResolvePaths[split[0]];
+                    }
+                    propertyName = split[1];
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid data item was returned");
+                }
+
+                object obj = entity;
+
+                if (!string.IsNullOrEmpty(resolvePath))
+                {
+                    foreach (var step in resolvePath.Split('.'))
+                    {
+                        var property = obj.GetType().GetProperty(step, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                        var value = property.GetValue(obj);
+                        if(value == null)
+                        {
+                            value = Activator.CreateInstance(property.PropertyType);
+                            property.SetValue(obj, value);
+                        }
+
+                        obj = value;
+                    }
+                }
+
+                var entityPropertyInfo = obj.GetType().GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                 if (null == entityPropertyInfo)
                 {
-                    throw new NotImplementedException($"Column [{reader.GetName(i)}] has not been implemented in [{entity.GetType().Name}].");
+                    throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{obj.GetType().Name}].");
                 }
                 else if (!entityPropertyInfo.CanWrite)
                 {
-                    throw new ReadOnlyException($"Property [{reader.GetName(i)}] is read-only in [{entity.GetType().Name}].");
+                    throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{obj.GetType().Name}].");
+                }
+                else if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+                {
+                    continue;
                 }
 
-                entityPropertyInfo.SetValue(entity, reader.GetValue(i));
+                entityPropertyInfo.SetValue(obj, reader.GetValue(i));
             }
+        }
+
+        internal static T[] ConcatArrays<T>(params T[][] arrays)
+        {
+            var position = 0;
+            var outputArray = new T[arrays.Sum(a => a.Length)];
+            foreach (var curr in arrays)
+            {
+                Array.Copy(curr, 0, outputArray, position, curr.Length);
+                position += curr.Length;
+            }
+            return outputArray;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

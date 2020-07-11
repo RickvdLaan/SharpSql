@@ -18,6 +18,7 @@ namespace ORM
         internal Expression InternalWhereExpression { get; set; }
 
         internal Expression<Func<T, object>> SortExpression { get; set; }
+        public bool RetrieveSubobjects { get; set; } = true;
 
         internal ORMTableAttribute TableAttribute
         { 
@@ -68,7 +69,7 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, RetrieveSubobjects, maxNumberOfItemsToReturn);
 
                 connection.ExecuteCollectionQuery(this, sqlBuilder);
 
@@ -82,7 +83,7 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, WhereExpression ?? InternalWhereExpression, SortExpression, RetrieveSubobjects, maxNumberOfItemsToReturn);
 
                 connection.ExecuteEntityQuery(entity, sqlBuilder);
 
