@@ -22,64 +22,19 @@ namespace ORM
 
         internal static Dictionary<Type, List<string>> CachedColumns { get; private set; }
 
-        public ORMUtilities(IConfiguration configuration = null)
+        public ORMUtilities(IConfiguration configuration = null) : this()
         {
             if (configuration != null)
             {
                 ConnectionString = configuration.GetConnectionString("DefaultConnection");
             }
+        }
 
+        public ORMUtilities()
+        {
             CollectionEntityRelations = new Dictionary<Type, Type>();
             ManyToManyRelations = new Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)>();
             CachedColumns = new Dictionary<Type, List<string>>();
-
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes())
-                {
-                    var attributes = type.GetCustomAttributes(typeof(ORMTableAttribute), true);
-                    if (attributes.Length > 0)
-                    {
-                        var tableAttribute = (attributes.First() as ORMTableAttribute);
-
-                        if (tableAttribute.CollectionTypeLeft == null
-                         && tableAttribute.CollectionTypeRight == null)
-                        {
-                            CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
-                            CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
-
-                            if (!CachedColumns.ContainsKey(tableAttribute.CollectionType)
-                             && !CachedColumns.ContainsKey(tableAttribute.EntityType))
-                            {
-                                using (var connection = new SQLConnection())
-                                {
-                                    var sqlBuilder = new SQLBuilder();
-
-                                    sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
-                                    var rows = ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
-                                          .CreateDataReader()
-                                          .GetSchemaTable()
-                                          .Rows;
-
-                                    var columns = new List<string>(rows.Count);
-
-                                    for (int i = 0; i < rows.Count; i++)
-                                    {
-                                        columns.Add(rows[i][0].ToString());
-                                    }
-
-                                    CachedColumns.Add(tableAttribute.CollectionType, columns);
-                                    CachedColumns.Add(tableAttribute.EntityType, columns);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            ManyToManyRelations.Add(tableAttribute.CollectionType, (tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight));
-                        }
-                    }
-                }
-            }
         }
 
         public static CollectionType ExecuteDirectQuery<CollectionType, EntityType>(string query, params object[] parameters)
