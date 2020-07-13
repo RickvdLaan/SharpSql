@@ -26,7 +26,7 @@ namespace ORMConsole
             Users users = new Users();
             users.Select(x => x.Username)
                  .Join(x => x.Organisation.Left())
-                 .OrderBy(x => x.Username.Descending());
+                 .OrderBy(x => new object[] { x.Username.Descending(), x.Organisation.Ascending() });
             users.Fetch();
             ShowOutput(users);
 

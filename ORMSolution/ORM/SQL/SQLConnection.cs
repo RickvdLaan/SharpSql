@@ -45,8 +45,8 @@ namespace ORM
             }
         }
 
-        internal void ExecuteCollectionQuery<T>(ORMCollection<T> ormCollection, SQLBuilder sqlBuilder)
-            where T : ORMEntity
+        internal void ExecuteCollectionQuery<EntityType>(ORMCollection<EntityType> ormCollection, SQLBuilder sqlBuilder)
+            where EntityType : ORMEntity
         {
             if (!ORMUtilities.IsUnitTesting())
             {
@@ -59,7 +59,7 @@ namespace ORM
 
                     using (var reader = command.ExecuteReader())
                     {
-                        ORMUtilities.DataReader<ORMCollection<T>, T>(ormCollection, reader, sqlBuilder.TableNameResolvePaths);
+                        ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder.TableNameResolvePaths);
                     }
                 }
             }

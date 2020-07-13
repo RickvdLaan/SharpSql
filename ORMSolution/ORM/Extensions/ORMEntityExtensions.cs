@@ -2,30 +2,17 @@
 {
     public static class ORMEntityExtensions
     {
-        public static T Ascending<T>(this T _)
-        {
-            return default;
-        }
+        public static T Ascending<T>(this T _) => default;
 
-        public static T Descending<T>(this T _)
-        {
-            return default;
-        }
+        public static T Descending<T>(this T _) => default;
 
-        public static ORMEntity Left(this ORMEntity _)
-        {
-            return default;
-        }
+        public static ORMEntity Inner(this ORMEntity _) => default;
 
-        public static ORMEntity Right(this ORMEntity _)
-        {
-            return default;
-        }
+        public static ORMEntity Left(this ORMEntity _) => default;
 
-        public static ORMEntity Inner(this ORMEntity _)
-        {
-            return default;
-        }
+        public static ORMEntity Right(this ORMEntity _) => default;
+
+        public static ORMEntity Full(this ORMEntity _) => default;
 
         public static bool Contains<T>(this T @this, string value)
         {

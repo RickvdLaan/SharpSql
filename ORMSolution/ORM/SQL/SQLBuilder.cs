@@ -186,6 +186,8 @@ namespace ORM
                                 return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "RIGHT");
                             case nameof(ORMEntityExtensions.Inner):
                                 return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "INNER");
+                            case nameof(ORMEntityExtensions.Full):
+                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "FULL");
                             default:
                                 throw new NotImplementedException(methodCallExpression.Method.Name);
                         }
