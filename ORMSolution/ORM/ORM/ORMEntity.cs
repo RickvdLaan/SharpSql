@@ -40,6 +40,8 @@ namespace ORM
 
         internal (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
 
+        internal List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
+
         private string InternalPrimaryKeyName { get; set; }
 
         private void UpdateIsDirtyList()
@@ -103,11 +105,6 @@ namespace ORM
             collection.Fetch(this, 1);
 
             ExecutedQuery = collection.ExecutedQuery;
-        }
-
-        internal List<string> GetTableScheme()
-        {
-            return ORMUtilities.CachedColumns[GetType()];
         }
 
         public virtual void Save()

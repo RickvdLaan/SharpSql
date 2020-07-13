@@ -33,6 +33,8 @@ namespace ORM
             internal set { _collection = value; }
         }
 
+        internal List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
+
         public ORMCollection()
         {
             Collection = new List<ORMEntity>();
@@ -90,11 +92,6 @@ namespace ORM
 
                 ExecutedQuery = sqlBuilder.GeneratedQuery;
             }
-        }
-
-        internal List<string> GetTableScheme()
-        {
-            return ORMUtilities.CachedColumns[GetType()];
         }
 
         public ORMCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
