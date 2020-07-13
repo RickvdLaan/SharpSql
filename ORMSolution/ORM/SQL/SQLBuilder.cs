@@ -267,19 +267,5 @@ namespace ORM
 
             return $" {joinType} JOIN [dbo].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo.Name}]";
         }
-
-        private (string tableName, string propertyName)[] GetAllSelectPropertyStringsOfType(ORMTableAttribute table)
-        {
-            var properties = table.EntityType.GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => !x.PropertyType.IsSubclassOf(typeof(ORMEntity)) && x.Name != nameof(ORMEntity.ExecutedQuery)).ToArray();
-
-            var result = new (string tableName, string propertyName)[properties.Length];
-            for (int i = 0; i < properties.Length; i++)
-            {
-                result[i] = (_queryTableNames[table.TableName], properties[i].Name);
-            }
-
-            return result;
-        }
     }
 }

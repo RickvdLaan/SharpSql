@@ -24,9 +24,15 @@ namespace ORMConsole
             Debug.Assert(true == user.IsDirty);
 
             Users users = new Users();
-            users.Join(x => new object[] { x.Organisation.Left() })
-                 .Fetch();
+            users.Select(x => x.Username)
+                 .Join(x => x.Organisation.Left())
+                 .OrderBy(x => x.Username.Descending());
+            users.Fetch();
             ShowOutput(users);
+
+            Debug.Assert(false == users[0].IsDirty);
+            (users[0] as User).Password = string.Empty;
+            Debug.Assert(true == users[0].IsDirty);
 
             users = new Users();
             users.Select(x => x.Username)

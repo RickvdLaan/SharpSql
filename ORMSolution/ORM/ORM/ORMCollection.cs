@@ -7,19 +7,19 @@ using System.Linq.Expressions;
 namespace ORM
 {
     [Serializable]
-    public class ORMCollection<T> : IEnumerable<ORMEntity> where T : ORMEntity
+    public class ORMCollection<EntityType> : IEnumerable<ORMEntity> where EntityType : ORMEntity
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
-        internal Expression<Func<T, object>> SelectExpression { get; set; }
+        internal Expression<Func<EntityType, object>> SelectExpression { get; set; }
 
-        internal Expression<Func<T, object>> JoinExpression { get; set; }
+        internal Expression<Func<EntityType, object>> JoinExpression { get; set; }
 
-        internal Expression<Func<T, bool>> WhereExpression { get; set; }
+        internal Expression<Func<EntityType, bool>> WhereExpression { get; set; }
 
         internal Expression InternalWhereExpression { get; set; }
 
-        internal Expression<Func<T, object>> SortExpression { get; set; }
+        internal Expression<Func<EntityType, object>> SortExpression { get; set; }
 
         internal ORMTableAttribute TableAttribute
         { 
@@ -92,35 +92,40 @@ namespace ORM
             }
         }
 
-        public ORMCollection<T> Select(Expression<Func<T, object>> expression)
+        internal List<string> GetTableScheme()
+        {
+            return ORMUtilities.CachedColumns[GetType()];
+        }
+
+        public ORMCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
         {
             SelectExpression = expression;
 
             return this;
         }
 
-        public ORMCollection<T> Where(Expression<Func<T, bool>> expression)
-        {
-            WhereExpression = expression;
-
-            return this;
-        }
-
-        public ORMCollection<T> Join(Expression<Func<T, object>> expression)
+        public ORMCollection<EntityType> Join(Expression<Func<EntityType, object>> expression)
         {
             JoinExpression = expression;
 
             return this;
         }
 
-        internal ORMCollection<T> InternalWhere(BinaryExpression expression)
+        public ORMCollection<EntityType> Where(Expression<Func<EntityType, bool>> expression)
+        {
+            WhereExpression = expression;
+
+            return this;
+        }
+
+        internal ORMCollection<EntityType> InternalWhere(BinaryExpression expression)
         {
             InternalWhereExpression = expression;
 
             return this;
         }
 
-        public ORMCollection<T> OrderBy(Expression<Func<T, object>> expression)
+        public ORMCollection<EntityType> OrderBy(Expression<Func<EntityType, object>> expression)
         {
             SortExpression = expression;
 

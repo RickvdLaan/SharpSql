@@ -1,5 +1,6 @@
 ﻿using ORM.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -102,6 +103,11 @@ namespace ORM
             collection.Fetch(this, 1);
 
             ExecutedQuery = collection.ExecutedQuery;
+        }
+
+        internal List<string> GetTableScheme()
+        {
+            return ORMUtilities.CachedColumns[GetType()];
         }
 
         public virtual void Save()

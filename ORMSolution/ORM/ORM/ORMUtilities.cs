@@ -20,15 +20,18 @@ namespace ORM
 
         internal static Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)> ManyToManyRelations { get; private set; }
 
-        public ORMUtilities(IConfiguration configuration) : this()
-        {
-            ConnectionString = configuration.GetConnectionString("DefaultConnection");
-        }
+        internal static Dictionary<Type, List<string>> CachedColumns { get; private set; }
 
-        public ORMUtilities()
+        public ORMUtilities(IConfiguration configuration = null)
         {
+            if (configuration != null)
+            {
+                ConnectionString = configuration.GetConnectionString("DefaultConnection");
+            }
+
             CollectionEntityRelations = new Dictionary<Type, Type>();
             ManyToManyRelations = new Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)>();
+            CachedColumns = new Dictionary<Type, List<string>>();
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -44,6 +47,31 @@ namespace ORM
                         {
                             CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
                             CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
+
+                            if (!CachedColumns.ContainsKey(tableAttribute.CollectionType)
+                             && !CachedColumns.ContainsKey(tableAttribute.EntityType))
+                            {
+                                using (var connection = new SQLConnection())
+                                {
+                                    var sqlBuilder = new SQLBuilder();
+
+                                    sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
+                                    var rows = ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
+                                          .CreateDataReader()
+                                          .GetSchemaTable()
+                                          .Rows;
+
+                                    var columns = new List<string>(rows.Count);
+
+                                    for (int i = 0; i < rows.Count; i++)
+                                    {
+                                        columns.Add(rows[i][0].ToString());
+                                    }
+
+                                    CachedColumns.Add(tableAttribute.CollectionType, columns);
+                                    CachedColumns.Add(tableAttribute.EntityType, columns);
+                                }
+                            }
                         }
                         else
                         {
@@ -148,12 +176,14 @@ namespace ORM
         internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
             where EntityType : ORMEntity
         {
-            entity.InternalFields = new string[reader.VisibleFieldCount];
+            var tableScheme = CachedColumns[entity.GetType()];
+            entity.InternalFields = new string[tableScheme.Count];
+            entity.InternalFields = tableScheme.ToArray();
             entity.IsDirtyList = new (string fieldName, bool isDirty)[entity.InternalFields.Length - 1];
 
             for (int i = 0; i < reader.VisibleFieldCount; i++)
             {
-                if (tableNameResolvePaths.Count > 0)
+                if (tableNameResolvePaths?.Count > 0)
                 {
                     var fullPropertyName = reader.GetName(i);
                     // split table name and field name
@@ -163,7 +193,7 @@ namespace ORM
 
                     if (split.Length == 1)
                     {
-                        propertyName = entity.InternalFields[i] = fullPropertyName;
+                        propertyName = fullPropertyName;
                     }
                     else if (split.Length == 2)
                     {
@@ -171,7 +201,7 @@ namespace ORM
                         {
                             resolvePath = tableNameResolvePaths[split[0]];
                         }
-                        propertyName = entity.InternalFields[i] = split[1];
+                        propertyName = split[1];
                     }
                     else
                     {
@@ -208,7 +238,7 @@ namespace ORM
                 }
                 else
                 {
-                    var propertyName = entity.InternalFields[i] = reader.GetName(i);
+                    var propertyName = reader.GetName(i);
                     var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
 
                     if (null == entityPropertyInfo)
