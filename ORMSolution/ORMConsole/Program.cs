@@ -2,6 +2,7 @@
 using ORM;
 using ORMFakeDAL;
 using System;
+using System.Diagnostics;
 
 namespace ORMConsole
 {
@@ -17,6 +18,10 @@ namespace ORMConsole
 
             User user = new User(1);
             ShowOutput(user);
+
+            Debug.Assert(false == user.IsDirty);
+            user.Password = string.Empty;
+            Debug.Assert(true == user.IsDirty);
 
             Users users = new Users();
             users.Join(x => new object[] { x.Organisation.Left() })

@@ -86,7 +86,7 @@ namespace ORM
 
         private string Join(Expression expression)
         {
-            return $"{ParseExpression(expression)}";
+            return ParseExpression(expression);
         }
 
         private string Where(Expression whereExpression)

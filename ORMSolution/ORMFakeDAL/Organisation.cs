@@ -1,5 +1,4 @@
 ﻿using ORM;
-using ORM.Attributes;
 
 namespace ORMFakeDAL
 {

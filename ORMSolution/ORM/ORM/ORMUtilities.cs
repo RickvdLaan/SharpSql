@@ -7,7 +7,6 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -147,7 +146,11 @@ namespace ORM
         }
 
         internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
+            where EntityType : ORMEntity
         {
+            entity.InternalFields = new string[reader.VisibleFieldCount];
+            entity.IsDirtyList = new (string fieldName, bool isDirty)[entity.InternalFields.Length - 1];
+
             for (int i = 0; i < reader.VisibleFieldCount; i++)
             {
                 if (tableNameResolvePaths.Count > 0)
@@ -160,7 +163,7 @@ namespace ORM
 
                     if (split.Length == 1)
                     {
-                        propertyName = fullPropertyName;
+                        propertyName = entity.InternalFields[i] = fullPropertyName;
                     }
                     else if (split.Length == 2)
                     {
@@ -168,7 +171,7 @@ namespace ORM
                         {
                             resolvePath = tableNameResolvePaths[split[0]];
                         }
-                        propertyName = split[1];
+                        propertyName = entity.InternalFields[i] = split[1];
                     }
                     else
                     {
@@ -181,7 +184,7 @@ namespace ORM
                     {
                         foreach (var step in resolvePath.Split('.'))
                         {
-                            var property = obj.GetType().GetProperty(step, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                            var property = obj.GetType().GetProperty(step, entity.PublicIgnoreCaseFlags);
 
                             var value = property.GetValue(obj);
                             if (value == null)
@@ -195,7 +198,7 @@ namespace ORM
                         }
                     }
 
-                    var entityPropertyInfo = obj.GetType().GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    var entityPropertyInfo = obj.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
                     if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                     {
                         continue;
@@ -205,8 +208,8 @@ namespace ORM
                 }
                 else
                 {
-                    var propertyName = reader.GetName(i);
-                    var entityPropertyInfo = entity.GetType().GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    var propertyName = entity.InternalFields[i] = reader.GetName(i);
+                    var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
 
                     if (null == entityPropertyInfo)
                     {
@@ -224,6 +227,10 @@ namespace ORM
                     entityPropertyInfo.SetValue(entity, reader.GetValue(i));
                 }
             }
+
+            entity.GetType()
+                  .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
+                  .SetValue(entity, entity.ShallowCopy());
         }
 
         internal static T[] ConcatArrays<T>(params T[][] arrays)
