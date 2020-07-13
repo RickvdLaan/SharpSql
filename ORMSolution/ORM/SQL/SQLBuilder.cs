@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ORM
 {
@@ -15,13 +16,15 @@ namespace ORM
         private const string Param = "@PARAM";
 
         private readonly List<object> _sqlParameters = new List<object>(10);
-
-        private readonly Dictionary<string, string> _queryTableNames = new Dictionary<string, string>(5);
+        
+        public readonly Dictionary<string, string> _queryTableNames = new Dictionary<string, string>(5);
 
         private readonly Dictionary<char, int> _tableCharCounts = new Dictionary<char, int>(5);
 
         private readonly List<SQLJoin> Joins = new List<SQLJoin>();
 
+        public readonly List<(string name, Type type)> TableOrder = new List<(string name, Type type)>(10);
+        public readonly Dictionary<string, int> TableNameColumnCount = new Dictionary<string, int>();
         public readonly Dictionary<string, string> TableNameResolvePaths = new Dictionary<string, string>();
 
         public string GeneratedQuery { get; private set; }
@@ -39,11 +42,11 @@ namespace ORM
         {
             TableAttribute = tableAttribute;
 
-            AddQueryTableName(TableAttribute.TableName);
+            AddQueryTableName(TableAttribute);
 
             var stringBuilder = new StringBuilder();
 
-            stringBuilder.Append(Select(selectExpression, maxNumberOfItemsToReturn));
+            // Select is prepended at the end to calculate table counts
             stringBuilder.Append(From());
 
             if (joinExpression != null)
@@ -61,6 +64,8 @@ namespace ORM
 
             stringBuilder.Append(Semicolon());
 
+            stringBuilder.Insert(0, Select(selectExpression, maxNumberOfItemsToReturn));
+
             GeneratedQuery = stringBuilder.ToString().ToUpperInvariant();
         }
 
@@ -73,10 +78,22 @@ namespace ORM
         {
             if (selectExpression == null)
             {
+                foreach (var (name, type) in TableOrder)
+                {
+                    TableNameColumnCount[name] = ORMUtilities.CachedColumns.ContainsKey(type) ?
+                        ORMUtilities.CachedColumns[type].Count : 0;
+                }
                 return Select(top);
             }
 
-            return top >= 0 ? $"SELECT TOP ({top}) {ParseExpression(selectExpression)} " : $"SELECT {ParseExpression(selectExpression)} ";
+            var parsedExpression = ParseExpression(selectExpression);
+            foreach (var table in TableOrder)
+            {
+                var matches = Regex.Matches(parsedExpression, $"\\[{table.name}\\]", RegexOptions.IgnoreCase);
+                TableNameColumnCount[table.name] = matches.Count;
+            }
+
+            return top >= 0 ? $"SELECT TOP ({top}) {parsedExpression} " : $"SELECT {parsedExpression} ";
         }
 
         private string From()
@@ -220,8 +237,9 @@ namespace ORM
             }
         }
 
-        private void AddQueryTableName(string tableName)
+        private void AddQueryTableName(ORMTableAttribute table)
         {
+            var tableName = table.TableName;
             char firstChar = tableName[0];
 
             if (_tableCharCounts.ContainsKey(firstChar))
@@ -233,7 +251,10 @@ namespace ORM
                 _tableCharCounts[firstChar] = 1;
             }
 
-            _queryTableNames[tableName] = new string(firstChar, _tableCharCounts[firstChar]);
+            var usedName = new string(firstChar, _tableCharCounts[firstChar]);
+
+            TableOrder.Add((usedName, table.EntityType));
+            _queryTableNames[tableName] = usedName;
         }
 
         private SQLJoin CalculateJoins(ORMTableAttribute tableAttribute, string tableName)
@@ -241,7 +262,7 @@ namespace ORM
             var propertyInfo = tableAttribute.EntityType.GetProperty(tableName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
             var rightTableAttribute = ORMUtilities.CollectionEntityRelations[propertyInfo.PropertyType].GetCustomAttributes(typeof(ORMTableAttribute), true).First() as ORMTableAttribute;
-            AddQueryTableName(rightTableAttribute.TableName);
+            AddQueryTableName(rightTableAttribute);
 
             var rightInstance = (ORMEntity)Activator.CreateInstance(propertyInfo.PropertyType);
 

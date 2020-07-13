@@ -7,6 +7,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -105,7 +106,7 @@ namespace ORM
             return collection;
         }
 
-        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
+        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, SQLBuilder sqlBuilder)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
@@ -113,22 +114,22 @@ namespace ORM
             {
                 var entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
 
-                EntityReader(entity, reader, tableNameResolvePaths);
+                EntityReader(entity, reader, sqlBuilder);
 
                 collection.Add(entity);
             }
         }
 
-        internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
+        internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             while (reader.Read())
             {
-                EntityReader(entity, reader, tableNameResolvePaths);
+                EntityReader(entity, reader, sqlBuilder);
             }
         }
 
-        internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader, Dictionary<string, string> tableNameResolvePaths)
+        internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             var tableScheme = CachedColumns[entity.GetType()];
@@ -136,63 +137,18 @@ namespace ORM
             entity.InternalFields = tableScheme.ToArray();
             entity.IsDirtyList = new (string fieldName, bool isDirty)[entity.InternalFields.Length - 1];
 
+            if (sqlBuilder?.TableNameResolvePaths.Count > 0)
+            {
+                BuildMultiLayeredEntity(entity, reader, sqlBuilder);
+                entity.GetType()
+                  .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
+                  .SetValue(entity, entity.ShallowCopy());
+                return;
+            }
+
             for (int i = 0; i < reader.VisibleFieldCount; i++)
             {
-                if (tableNameResolvePaths?.Count > 0)
-                {
-                    var fullPropertyName = reader.GetName(i);
-                    // split table name and field name
-                    var split = fullPropertyName.Split('.');
-                    var resolvePath = "";
-                    string propertyName;
-
-                    if (split.Length == 1)
-                    {
-                        propertyName = fullPropertyName;
-                    }
-                    else if (split.Length == 2)
-                    {
-                        if (tableNameResolvePaths != null && tableNameResolvePaths.ContainsKey(split[0]))
-                        {
-                            resolvePath = tableNameResolvePaths[split[0]];
-                        }
-                        propertyName = split[1];
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Invalid data item was returned");
-                    }
-
-                    object obj = entity;
-
-                    if (!string.IsNullOrEmpty(resolvePath))
-                    {
-                        foreach (var step in resolvePath.Split('.'))
-                        {
-                            var property = obj.GetType().GetProperty(step, entity.PublicIgnoreCaseFlags);
-
-                            var value = property.GetValue(obj);
-                            if (value == null)
-                            {
-                                value = Activator.CreateInstance(property.PropertyType);
-                                property.SetValue(obj, value);
-                            }
-
-                            obj = value;
-
-                        }
-                    }
-
-                    var entityPropertyInfo = obj.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
-                    if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-                    {
-                        continue;
-                    }
-
-                    entityPropertyInfo.SetValue(obj, reader.GetValue(i));
-                }
-                else
-                {
+                
                     var propertyName = reader.GetName(i);
                     var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
 
@@ -210,12 +166,87 @@ namespace ORM
                     }
 
                     entityPropertyInfo.SetValue(entity, reader.GetValue(i));
-                }
+                
             }
 
             entity.GetType()
                   .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
                   .SetValue(entity, entity.ShallowCopy());
+        }
+
+        private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
+            where EntityType : ORMEntity
+        {
+            var tableIndex = 0;
+            foreach (var table in sqlBuilder.TableOrder)
+            {
+                if (!sqlBuilder.TableNameColumnCount.ContainsKey(table.name))
+                {
+                    continue;
+                }
+
+                var tableColumnCount = sqlBuilder.TableNameColumnCount[table.name];
+                if(tableColumnCount == 0)
+                {
+                    continue;
+                }
+
+                object obj;
+                if (sqlBuilder.TableNameResolvePaths.ContainsKey(table.name))
+                {
+                    obj = GetObjectAtPath(entity, sqlBuilder.TableNameResolvePaths[table.name]);
+                }
+                else
+                {
+                    obj = entity;
+                }
+
+                for (int i = 0; i < tableColumnCount; i++)
+                {
+                    var propertyName = reader.GetName(tableIndex + i);
+                    var entityPropertyInfo = obj.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
+
+                    if (null == entityPropertyInfo)
+                    {
+                        throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{entity.GetType().Name}].");
+                    }
+                    else if (!entityPropertyInfo.CanWrite)
+                    {
+                        throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
+                    }
+                    else if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+                    {
+                        continue;
+                    }
+
+                    entityPropertyInfo.SetValue(obj, reader.GetValue(i));
+                }
+
+                tableIndex += tableColumnCount;
+            } 
+
+
+        }
+
+        private static object GetObjectAtPath(object obj, string path)
+        {
+            if (!string.IsNullOrEmpty(path))
+            {
+                foreach (var step in path.Split('.'))
+                {
+                    var property = obj.GetType().GetProperty(step, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+
+                    var value = property.GetValue(obj);
+                    if (value == null)
+                    {
+                        value = Activator.CreateInstance(property.PropertyType);
+                        property.SetValue(obj, value);
+                    }
+
+                    obj = value;
+                }
+            }
+            return obj;
         }
 
         internal static T[] ConcatArrays<T>(params T[][] arrays)

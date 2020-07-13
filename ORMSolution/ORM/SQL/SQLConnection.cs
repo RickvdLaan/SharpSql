@@ -39,7 +39,7 @@ namespace ORM
 
                     using (var reader = command.ExecuteReader())
                     {
-                        ORMUtilities.DataReader(entity, reader, sqlBuilder.TableNameResolvePaths);
+                        ORMUtilities.DataReader(entity, reader, sqlBuilder);
                     }
                 }
             }
@@ -59,7 +59,7 @@ namespace ORM
 
                     using (var reader = command.ExecuteReader())
                     {
-                        ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder.TableNameResolvePaths);
+                        ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
                     }
                 }
             }
