@@ -15,4 +15,5 @@ jobs:
       with:
         dotnet-version: 3.1.101
     - name: Test
+      working-directory: ORMSolution/ORMNUnit
       run: dotnet test --no-restore --verbosity normal
