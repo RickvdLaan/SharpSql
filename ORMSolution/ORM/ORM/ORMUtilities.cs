@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace ORM
 {
@@ -21,6 +22,8 @@ namespace ORM
         internal static Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)> ManyToManyRelations { get; private set; }
 
         internal static Dictionary<Type, List<string>> CachedColumns { get; private set; }
+
+        internal static AsyncLocal<SqlTransaction> Transaction { get; private set; } = new AsyncLocal<SqlTransaction>();
 
         public ORMUtilities(IConfiguration configuration = null) 
             : this()
@@ -39,6 +42,71 @@ namespace ORM
             CachedColumns = new Dictionary<Type, List<string>>();
         }
 
+        public static bool IsInTransaction()
+        {
+            return Transaction.Value != null;
+        }
+
+        public static void TransactionBegin()
+        {
+            if (SQLConnection.SqlConnection.Value == null)
+            {
+                new SQLConnection();
+            }
+
+            Transaction.Value = SQLConnection.SqlConnection.Value.BeginTransaction();
+        }
+
+        public static void TransactionCommit(bool rollbackTransactionOnFailure = false)
+        {
+            if (IsInTransaction())
+            {
+                try
+                {
+                    Transaction.Value.Commit();
+                }
+                catch
+                {
+                    if (rollbackTransactionOnFailure)
+                    {
+                        Transaction.Value.Rollback();
+                    }
+
+                    throw;
+                }
+                finally
+                {
+                    DisposeTransaction();
+                }
+            }
+        }
+
+        public static void TransactionRollback()
+        {
+            if (IsInTransaction())
+            {
+                Transaction.Value.Rollback();
+
+                DisposeTransaction();
+            }
+        }
+
+        private static void DisposeTransaction()
+        {
+            if (IsInTransaction())
+            {
+                Transaction.Value.Dispose();
+                Transaction.Value = null;
+
+                if (SQLConnection.SqlConnection.Value.State == ConnectionState.Open)
+                {
+                    SQLConnection.SqlConnection.Value.Close();
+                }
+                SQLConnection.SqlConnection.Value.Dispose();
+                SQLConnection.SqlConnection.Value = null;
+            }
+        }
+
         public static CollectionType ExecuteDirectQuery<CollectionType, EntityType>(string query, params object[] parameters)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
@@ -50,11 +118,47 @@ namespace ORM
             return collection;
         }
 
+        public static int ExecuteDirectNonQuery(string query, params object[] parameters)
+        {
+            return ExecuteQuery(ExecuteWriter, query, parameters);
+        }
+
         public static DataTable ExecuteDirectQuery(string query, params object[] parameters)
+        {
+            return ExecuteQuery(ExecuteReader, query, parameters);
+        }
+
+        private static DataTable ExecuteReader(SqlCommand command)
+        {
+            if (!IsUnitTesting())
+            {
+                using (var reader = command.ExecuteReader())
+                {
+                    var dataTable = new DataTable();
+                    dataTable.Load(reader);
+
+                    return dataTable;
+                }
+            }
+
+            return new DataTable();
+        }
+
+        private static int ExecuteWriter(SqlCommand command)
+        {
+            if (Transaction.Value != null)
+            {
+                command.Transaction = Transaction.Value;
+            }
+
+            return command.ExecuteNonQuery();
+        }
+
+        private static T ExecuteQuery<T>(Func<SqlCommand, T> method, string query, params object[] parameters)
         {
             using (var connection = new SQLConnection())
             {
-                using (var command = new SqlCommand(query, connection.SqlConnection))
+                using (var command = new SqlCommand(query, SQLConnection.SqlConnection.Value))
                 {
                     var regexMatches = Regex.Matches(query, @"\@[^ |\))]\w+")
                         .OfType<Match>()
@@ -62,7 +166,7 @@ namespace ORM
                         .Distinct()
                         .ToList();
 
-                    if (parameters.FirstOrDefault() == null && regexMatches.Count > 0 
+                    if (parameters.FirstOrDefault() == null && regexMatches.Count > 0
                      || parameters.Length != regexMatches.Count)
                     {
                         throw new ArgumentException(string.Format("{0} unique parameter{1} found, but {2} parameter{3} provided.",
@@ -77,18 +181,7 @@ namespace ORM
                         command.Parameters.Add(new SqlParameter(regexMatches[i], parameters[i]));
                     }
 
-                    if (!IsUnitTesting())
-                    {
-                        using (var reader = command.ExecuteReader())
-                        {
-                            var dataTable = new DataTable();
-                            dataTable.Load(reader);
-
-                            return dataTable;
-                        }
-                    }
-
-                    return new DataTable();
+                    return method.Invoke(command);
                 }
             }
         }

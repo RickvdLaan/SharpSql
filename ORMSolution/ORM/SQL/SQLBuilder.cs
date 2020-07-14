@@ -46,7 +46,8 @@ namespace ORM
 
             var stringBuilder = new StringBuilder();
 
-            // Select is prepended at the end to calculate table counts
+            // Select is prepended at the end to calculate table counts.
+
             stringBuilder.Append(From());
 
             if (joinExpression != null)
@@ -62,9 +63,9 @@ namespace ORM
                 stringBuilder.Append(OrderBy(sortExpression));
             }
 
-            stringBuilder.Append(Semicolon());
-
             stringBuilder.Insert(0, Select(selectExpression, maxNumberOfItemsToReturn));
+
+            stringBuilder.Append(Semicolon());
 
             GeneratedQuery = stringBuilder.ToString().ToUpperInvariant();
         }

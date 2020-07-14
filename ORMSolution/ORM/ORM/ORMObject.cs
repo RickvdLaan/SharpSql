@@ -1,27 +1,13 @@
-﻿using System;
+﻿using System.Reflection;
 
 namespace ORM
 {
     public class ORMObject : object
     {
-        public bool IsInTransaction()
-        {
-            throw new NotImplementedException();
-        }
+        internal BindingFlags PublicFlags => BindingFlags.Instance | BindingFlags.Public;
 
-        public void TransactionBegin()
-        {
-            throw new NotImplementedException();
-        }
+        internal BindingFlags PublicIgnoreCaseFlags => PublicFlags | BindingFlags.IgnoreCase;
 
-        public void TransactionCommit()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void TransactionRollback()
-        {
-            throw new NotImplementedException();
-        }
+        internal BindingFlags NonPublicFlags => BindingFlags.Instance | BindingFlags.NonPublic;
     }
 }

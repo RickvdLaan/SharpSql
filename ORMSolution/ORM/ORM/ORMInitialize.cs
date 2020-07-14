@@ -41,7 +41,7 @@ namespace ORM
 
                                 for (int i = 0; i < rows.Count; i++)
                                 {
-                                    columns.Add(rows[i][0].ToString());
+                                    columns.Add((string)rows[i][0]);
                                 }
 
                                 ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
+using System.Threading;
 
 namespace ORM
 {
@@ -8,7 +9,7 @@ namespace ORM
     {
         internal bool _isDisposed;
 
-        internal SqlConnection SqlConnection { get; set; }
+        internal static AsyncLocal<SqlConnection> SqlConnection { get; set; } = new AsyncLocal<SqlConnection>();
 
         public SQLConnection()
         {
@@ -17,11 +18,12 @@ namespace ORM
 
         private void OpenConnection()
         {
-            SqlConnection = new SqlConnection(ORMUtilities.ConnectionString);
+            if (SqlConnection.Value == null)
+                SqlConnection.Value = new SqlConnection(ORMUtilities.ConnectionString);
 
-            if (!ORMUtilities.IsUnitTesting() && SqlConnection.State == ConnectionState.Closed)
+            if (!ORMUtilities.IsUnitTesting() && SqlConnection.Value.State == ConnectionState.Closed)
             {
-                SqlConnection.Open();
+                SqlConnection.Value.Open();
             }
         }
 
@@ -30,7 +32,7 @@ namespace ORM
         {
             if (!ORMUtilities.IsUnitTesting())
             {
-                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection))
+                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
                 {
                     if (sqlBuilder.SqlParameters != null)
                     {
@@ -50,8 +52,13 @@ namespace ORM
         {
             if (!ORMUtilities.IsUnitTesting())
             {
-                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection))
+                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
                 {
+                    if (ORMUtilities.Transaction.Value != null)
+                    {
+                        command.Transaction = ORMUtilities.Transaction.Value;
+                    }
+
                     if (sqlBuilder.SqlParameters != null)
                     {
                         command.Parameters.AddRange(sqlBuilder.SqlParameters);
@@ -67,9 +74,9 @@ namespace ORM
 
         internal void CloseConnection()
         {
-            if (SqlConnection.State == ConnectionState.Open)
+            if (SqlConnection.Value.State == ConnectionState.Open)
             {
-                SqlConnection.Close();
+                SqlConnection.Value.Close();
             }
         }
 
@@ -85,9 +92,12 @@ namespace ORM
 
             if (disposing)
             {
-                // Free managed resources.
-                CloseConnection();
-                SqlConnection.Dispose();
+                if (!ORMUtilities.IsInTransaction())
+                {
+                    CloseConnection();
+                    SqlConnection.Value.Dispose();
+                    SqlConnection.Value = null;
+                }
             }
 
             _isDisposed = true;

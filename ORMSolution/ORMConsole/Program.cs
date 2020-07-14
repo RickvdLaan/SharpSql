@@ -2,7 +2,6 @@
 using ORM;
 using ORMFakeDAL;
 using System;
-using System.Diagnostics;
 
 namespace ORMConsole
 {
@@ -15,69 +14,6 @@ namespace ORMConsole
                 .Build();
 
             new ORMInitialize(configuration);
-
-            User user = new User(1);
-            ShowOutput(user);
-
-            Debug.Assert(false == user.IsDirty);
-            user.Password = string.Empty;
-            Debug.Assert(true == user.IsDirty);
-
-            Users users = new Users();
-            users.Select(x => x.Username)
-                 .Join(x => x.Organisation.Left())
-                 .OrderBy(x => new object[] { x.Username.Descending(), x.Organisation.Ascending() });
-            users.Fetch();
-            ShowOutput(users);
-
-            Debug.Assert(false == users[0].IsDirty);
-            (users[0] as User).Password = string.Empty;
-            Debug.Assert(true == users[0].IsDirty);
-
-            users = new Users();
-            users.Join(x => x.Organisation.Full());
-            users.Fetch();
-            ShowOutput(users);
-
-            users = new Users();
-            users.Select(x => x.Username)
-                 .OrderBy(x => x.Id.Ascending());
-            users.Fetch();
-            ShowOutput(users);
-
-            users = new Users();
-            users.Join(x => x.Organisation.Full())
-                 .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
-            users.Fetch(1);
-            ShowOutput(users);
-
-            users = new Users();
-            users.Select(x => new object[] { x.Username, x.Password })
-                 .Join(x => x.Organisation.Inner())
-                 .Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"))
-                 .OrderBy(x => new object[] { x.Username.Descending(), x.Id.Ascending() });
-            users.Fetch();
-            ShowOutput(users);
-
-            users = new Users();
-            users.Join(x => new object[] { x.Organisation.Full(), x.Organisation.Left(), x.Organisation.Right(), x.Organisation.Inner() })
-                 .Where(x => x.Id > 1)
-                 .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
-            users.Fetch(1);
-            ShowOutput(users);
-
-            users = new Users();
-            users.Where(x => (x.Id == 1 || (x.Id == 5) || x.Id <= 3 || x.Id >= 5) || (x.Id < 2 || x.Id > 7));
-            users.Fetch(1);
-            ShowOutput(users);
-
-            users = new Users();
-            users.Where(x => (((x.Id == 2 || x.Id == 3) || (x.Id == 3 && x.Id == 4)) || x.Id == 5));
-            users.Fetch();
-            ShowOutput(users);
-
-            users = ORMUtilities.ExecuteDirectQuery<Users, User>("SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;", 1, 2);
-            ShowOutput(users);
 
             Console.Read();
         }

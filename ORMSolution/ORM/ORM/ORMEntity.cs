@@ -13,12 +13,6 @@ namespace ORM
 
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
-        internal BindingFlags PublicFlags => BindingFlags.Instance | BindingFlags.Public;
-
-        internal BindingFlags PublicIgnoreCaseFlags => PublicFlags | BindingFlags.IgnoreCase;
-
-        internal BindingFlags NonPublicFlags => BindingFlags.Instance | BindingFlags.NonPublic;
-
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
         public bool IsDirty
