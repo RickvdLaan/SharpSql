@@ -7,7 +7,6 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -23,8 +22,10 @@ namespace ORM
 
         internal static Dictionary<Type, List<string>> CachedColumns { get; private set; }
 
-        public ORMUtilities(IConfiguration configuration = null) : this()
+        public ORMUtilities(IConfiguration configuration = null) 
+            : this()
         {
+            // This class is being initialized in the ORMInitialize.
             if (configuration != null)
             {
                 ConnectionString = configuration.GetConnectionString("DefaultConnection");
@@ -107,30 +108,30 @@ namespace ORM
         }
 
         internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, SQLBuilder sqlBuilder)
-            where CollectionType : ORMCollection<EntityType>, new()
+            where CollectionType : ORMCollection<EntityType>
             where EntityType : ORMEntity
         {
             while (reader.Read())
             {
                 var entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
 
-                EntityReader(entity, reader, sqlBuilder);
+                PopulateEntity(entity, reader, sqlBuilder);
 
                 collection.Add(entity);
             }
         }
 
         internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
-            where EntityType : ORMEntity
+               where EntityType : ORMEntity
         {
             while (reader.Read())
             {
-                EntityReader(entity, reader, sqlBuilder);
+                PopulateEntity(entity, reader, sqlBuilder);
             }
         }
 
-        internal static void EntityReader<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
-            where EntityType : ORMEntity
+        internal static void PopulateEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
+             where EntityType : ORMEntity
         {
             var tableScheme = CachedColumns[entity.GetType()];
             entity.InternalFields = new string[tableScheme.Count];
@@ -140,33 +141,13 @@ namespace ORM
             if (sqlBuilder?.TableNameResolvePaths.Count > 0)
             {
                 BuildMultiLayeredEntity(entity, reader, sqlBuilder);
-                entity.GetType()
-                  .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
-                  .SetValue(entity, entity.ShallowCopy());
-                return;
             }
-
-            for (int i = 0; i < reader.VisibleFieldCount; i++)
+            else
             {
-                
-                    var propertyName = reader.GetName(i);
-                    var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
-
-                    if (null == entityPropertyInfo)
-                    {
-                        throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{entity.GetType().Name}].");
-                    }
-                    else if (!entityPropertyInfo.CanWrite)
-                    {
-                        throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
-                    }
-                    else if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-                    {
-                        continue;
-                    }
-
-                    entityPropertyInfo.SetValue(entity, reader.GetValue(i));
-                
+                for (int i = 0; i < reader.VisibleFieldCount; i++)
+                {
+                    SetEntityProperty(entity, reader, i);
+                }
             }
 
             entity.GetType()
@@ -174,91 +155,79 @@ namespace ORM
                   .SetValue(entity, entity.ShallowCopy());
         }
 
-        private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
+          private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             var tableIndex = 0;
-            foreach (var table in sqlBuilder.TableOrder)
+
+            foreach (var (name, _) in sqlBuilder.TableOrder)
             {
-                if (!sqlBuilder.TableNameColumnCount.ContainsKey(table.name))
+                var tableColumnCount = sqlBuilder.TableNameColumnCount[name];
+
+                if (!sqlBuilder.TableNameColumnCount.ContainsKey(name)
+                  || tableColumnCount == 0)
                 {
                     continue;
                 }
-
-                var tableColumnCount = sqlBuilder.TableNameColumnCount[table.name];
-                if(tableColumnCount == 0)
-                {
-                    continue;
-                }
-
-                object obj;
-                if (sqlBuilder.TableNameResolvePaths.ContainsKey(table.name))
-                {
-                    obj = GetObjectAtPath(entity, sqlBuilder.TableNameResolvePaths[table.name]);
-                }
-                else
-                {
-                    obj = entity;
-                }
-
                 for (int i = 0; i < tableColumnCount; i++)
                 {
-                    var propertyName = reader.GetName(tableIndex + i);
-                    var entityPropertyInfo = obj.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
-
-                    if (null == entityPropertyInfo)
+                    if (sqlBuilder.TableNameResolvePaths.ContainsKey(name))
                     {
-                        throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{entity.GetType().Name}].");
+                        SetEntityProperty(GetObjectAtPath(entity, sqlBuilder.TableNameResolvePaths[name]), reader, i, tableIndex);
                     }
-                    else if (!entityPropertyInfo.CanWrite)
+                    else
                     {
-                        throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
+                        SetEntityProperty(entity, reader, i, tableIndex);
                     }
-                    else if (entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-                    {
-                        continue;
-                    }
-
-                    entityPropertyInfo.SetValue(obj, reader.GetValue(i));
                 }
 
                 tableIndex += tableColumnCount;
-            } 
-
+            }
 
         }
 
-        private static object GetObjectAtPath(object obj, string path)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void SetEntityProperty<EntityType>(EntityType entity, DbDataReader reader, int iteration, int tableIndex = 0)
+             where EntityType : ORMEntity
+        {
+            var propertyName = reader.GetName(iteration + tableIndex);
+            var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
+
+            if (null == entityPropertyInfo)
+            {
+                throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{entity.GetType().Name}].");
+            }
+            else if (!entityPropertyInfo.CanWrite)
+            {
+                throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
+            }
+            else if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+            {
+                entityPropertyInfo.SetValue(entity, reader.GetValue(iteration));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static EntityType GetObjectAtPath<EntityType>(EntityType entity, string path)
+             where EntityType : ORMEntity
         {
             if (!string.IsNullOrEmpty(path))
             {
                 foreach (var step in path.Split('.'))
                 {
-                    var property = obj.GetType().GetProperty(step, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+                    var property = entity.GetType().GetProperty(step, entity.PublicIgnoreCaseFlags);
 
-                    var value = property.GetValue(obj);
+                    var value = property.GetValue(entity);
                     if (value == null)
                     {
                         value = Activator.CreateInstance(property.PropertyType);
-                        property.SetValue(obj, value);
+                        property.SetValue(entity, value);
                     }
 
-                    obj = value;
+                    entity = (EntityType)value;
                 }
             }
-            return obj;
-        }
-
-        internal static T[] ConcatArrays<T>(params T[][] arrays)
-        {
-            var position = 0;
-            var outputArray = new T[arrays.Sum(a => a.Length)];
-            foreach (var curr in arrays)
-            {
-                Array.Copy(curr, 0, outputArray, position, curr.Length);
-                position += curr.Length;
-            }
-            return outputArray;
+            return entity;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

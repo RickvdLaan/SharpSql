@@ -87,10 +87,10 @@ namespace ORM
             }
 
             var parsedExpression = ParseExpression(selectExpression);
-            foreach (var table in TableOrder)
+            foreach (var (name, _) in TableOrder)
             {
-                var matches = Regex.Matches(parsedExpression, $"\\[{table.name}\\]", RegexOptions.IgnoreCase);
-                TableNameColumnCount[table.name] = matches.Count;
+                var matches = Regex.Matches(parsedExpression, $"\\[{name}\\]", RegexOptions.IgnoreCase);
+                TableNameColumnCount[name] = matches.Count;
             }
 
             return top >= 0 ? $"SELECT TOP ({top}) {parsedExpression} " : $"SELECT {parsedExpression} ";
@@ -223,9 +223,16 @@ namespace ORM
 
                         for (int i = 0; i < newArrayExpression.Expressions.Count; i++)
                         {
-                            var field = $"{ParseExpression(newArrayExpression.Expressions[i])}";
-                            var addon = ((newArrayExpression.Expressions.Count - 1 == i) ? string.Empty : ", ");
-                            query += $"{field}{addon}";
+                            if (IsArrayExpressionOfTypeJoin(newArrayExpression))
+                            {
+                                query += $"{ParseExpression(newArrayExpression.Expressions[i])}";
+                            }
+                            else
+                            {
+                                var field = $"{ParseExpression(newArrayExpression.Expressions[i])}";
+                                var addon = ((newArrayExpression.Expressions.Count - 1 == i) ? string.Empty : ", ");
+                                query += $"{field}{addon}";
+                            }
                         }
 
                         return query;
@@ -289,6 +296,17 @@ namespace ORM
             Joins.Add(join);
 
             return $" {joinType} JOIN [dbo].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo.Name}]";
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsArrayExpressionOfTypeJoin(NewArrayExpression newArrayExpression)
+        {
+            return newArrayExpression.Expressions
+                                     .OfType<MethodCallExpression>()
+                                     .Any(x => x.Method.Name == nameof(ORMEntityExtensions.Left)
+                                            || x.Method.Name == nameof(ORMEntityExtensions.Right)
+                                            || x.Method.Name == nameof(ORMEntityExtensions.Inner)
+                                            || x.Method.Name == nameof(ORMEntityExtensions.Full));
         }
     }
 }

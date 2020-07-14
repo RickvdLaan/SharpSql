@@ -30,6 +30,18 @@ namespace ORMNUnit.SQL
         }
 
         [Test]
+        public void Basic_Select()
+        {
+            var expectedQuery = "SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];";
+
+            var users = new Users();
+            users.Select(x => new object[] { x.Username, x.Password });
+            users.Fetch();
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test]
         public void BasicFetch_Top()
         {
             var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U];";
@@ -37,6 +49,54 @@ namespace ORMNUnit.SQL
             var users = new Users();
             users.Fetch(1);
             
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test]
+        public void Basic_Join_Left()
+        {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];";
+
+            var users = new Users();
+            users.Join(x => x.Organisation.Left());
+            users.Fetch();
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test]
+        public void Basic_Join_Right()
+        {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] RIGHT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];";
+
+            var users = new Users();
+            users.Join(x => x.Organisation.Right());
+            users.Fetch();
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test]
+        public void Basic_Join_Inner()
+        {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] INNER JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];";
+
+            var users = new Users();
+            users.Join(x => x.Organisation.Inner());
+            users.Fetch();
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test]
+        public void Basic_Join_Full()
+        {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] FULL JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];";
+
+            var users = new Users();
+            users.Join(x => x.Organisation.Full());
+            users.Fetch();
+
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -102,6 +162,28 @@ namespace ORMNUnit.SQL
         }
 
         [Test]
+        public void Complex_Join()
+        {
+            var expectedQuery = "SELECT TOP (1) [U].[USERNAME], [U].[PASSWORD], [U].[ORGANISATION] " +
+                "FROM [DBO].[USERS] AS [U] " +
+                "FULL JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] " +
+                "LEFT JOIN [DBO].[ORGANISATIONS] AS [OO] ON [U].[ORGANISATION] = [OO].[ID] " +
+                "RIGHT JOIN [DBO].[ORGANISATIONS] AS [OOO] ON [U].[ORGANISATION] = [OOO].[ID] " +
+                "INNER JOIN [DBO].[ORGANISATIONS] AS [OOOO] ON [U].[ORGANISATION] = [OOOO].[ID] " +
+                "WHERE ([U].[ID] > @PARAM1) " +
+                "ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
+
+            var users = new Users();
+            users.Select(x => new object[] { x.Username, x.Password, x.Organisation })
+                 .Join(x => new object[] { x.Organisation.Full(), x.Organisation.Left(), x.Organisation.Right(), x.Organisation.Inner() })
+                 .Where(x => x.Id > 1)
+                 .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
+            users.Fetch(1);
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test]
         public void Complex_Where_Like()
         {
             var expectedQuery = 
@@ -112,18 +194,6 @@ namespace ORMNUnit.SQL
             var users = new Users();
             users.Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"))
                  .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
-            users.Fetch();
-            
-            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
-        }
-
-        [Test]
-        public void Basic_Select()
-        {
-            var expectedQuery = "SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];";
-
-            var users = new Users();
-            users.Select(x => new object[] { x.Username, x.Password });
             users.Fetch();
             
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);

@@ -12,7 +12,7 @@ namespace ORMFakeDAL
 
         public Organisation Organisation { get; set; }
 
-        public User(): base(nameof(Id)) { }
+        public User() : base(nameof(Id)) { }
 
         public User(int fetchByUserId) : base(nameof(Id))
         {

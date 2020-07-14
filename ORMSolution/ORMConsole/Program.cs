@@ -35,21 +35,35 @@ namespace ORMConsole
             Debug.Assert(true == users[0].IsDirty);
 
             users = new Users();
+            users.Join(x => x.Organisation.Full());
+            users.Fetch();
+            ShowOutput(users);
+
+            users = new Users();
             users.Select(x => x.Username)
                  .OrderBy(x => x.Id.Ascending());
             users.Fetch();
             ShowOutput(users);
 
             users = new Users();
-            users.OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
+            users.Join(x => x.Organisation.Full())
+                 .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch(1);
             ShowOutput(users);
 
             users = new Users();
             users.Select(x => new object[] { x.Username, x.Password })
+                 .Join(x => x.Organisation.Inner())
                  .Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"))
                  .OrderBy(x => new object[] { x.Username.Descending(), x.Id.Ascending() });
             users.Fetch();
+            ShowOutput(users);
+
+            users = new Users();
+            users.Join(x => new object[] { x.Organisation.Full(), x.Organisation.Left(), x.Organisation.Right(), x.Organisation.Inner() })
+                 .Where(x => x.Id > 1)
+                 .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
+            users.Fetch(1);
             ShowOutput(users);
 
             users = new Users();

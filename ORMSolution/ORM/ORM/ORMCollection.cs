@@ -68,27 +68,21 @@ namespace ORM
 
         public void Fetch(long maxNumberOfItemsToReturn)
         {
-            using (var connection = new SQLConnection())
-            {
-                var sqlBuilder = new SQLBuilder();
-
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
-
-                connection.ExecuteCollectionQuery(this, sqlBuilder);
-
-                ExecutedQuery = sqlBuilder.GeneratedQuery;
-            }
+            Fetch(null, maxNumberOfItemsToReturn);
         }
 
         internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn)
         {
-            using (var connection = new SQLConnection())
+           using (var connection = new SQLConnection())
             {
                 var sqlBuilder = new SQLBuilder();
 
                 sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
-                connection.ExecuteEntityQuery(entity, sqlBuilder);
+                if (entity == null)
+                    connection.ExecuteCollectionQuery(this, sqlBuilder);
+                else
+                    connection.ExecuteEntityQuery(entity, sqlBuilder);
 
                 ExecutedQuery = sqlBuilder.GeneratedQuery;
             }

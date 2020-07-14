@@ -8,7 +8,7 @@ namespace ORMFakeDAL
 
         public string Name { get; set; }
 
-        public Organisation():base(nameof(Id)) { }
+        public Organisation() : base(nameof(Id)) { }
 
         public Organisation(int fetchByUserId) : base(nameof(Id))
         {
