@@ -1,0 +1,19 @@
+name: .NET Core - ORM Unit Tests
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: [windows-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Test
+      working-directory: ORMSolution/ORMNUnit
+      run: dotnet test --no-restore --verbosity normal
