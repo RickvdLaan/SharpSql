@@ -206,7 +206,8 @@ namespace ORM
         {
             while (reader.Read())
             {
-                var entity = (ORMEntity)Activator.CreateInstance(typeof(EntityType));
+                var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
+                entity.DisableChangeTracking = collection.DisableChangeTracking;
 
                 PopulateEntity(entity, reader, sqlBuilder);
 
@@ -226,11 +227,6 @@ namespace ORM
         internal static void PopulateEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
              where EntityType : ORMEntity
         {
-            var tableScheme = CachedColumns[entity.GetType()];
-            entity.InternalFields = new string[tableScheme.Count];
-            entity.InternalFields = tableScheme.ToArray();
-            entity.IsDirtyList = new (string fieldName, bool isDirty)[entity.InternalFields.Length - 1];
-
             if (sqlBuilder?.TableNameResolvePaths.Count > 0)
             {
                 BuildMultiLayeredEntity(entity, reader, sqlBuilder);
@@ -243,9 +239,12 @@ namespace ORM
                 }
             }
 
-            entity.GetType()
-                  .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
-                  .SetValue(entity, entity.ShallowCopy());
+            if (!entity.DisableChangeTracking)
+            {
+                entity.GetType()
+                      .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
+                      .SetValue(entity, entity.ShallowCopy());
+            }
         }
 
           private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
@@ -276,7 +275,6 @@ namespace ORM
 
                 tableIndex += tableColumnCount;
             }
-
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

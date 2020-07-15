@@ -15,23 +15,27 @@ namespace ORM
     {
         private const string Param = "@PARAM";
 
-        private readonly List<object> _sqlParameters = new List<object>(10);
-        
+        public string GeneratedQuery { get; private set; }
+
         public readonly Dictionary<string, string> _queryTableNames = new Dictionary<string, string>(5);
 
         private readonly Dictionary<char, int> _tableCharCounts = new Dictionary<char, int>(5);
 
-        private readonly List<SQLJoin> Joins = new List<SQLJoin>();
+        private readonly List<object> _sqlParameters = new List<object>(10);
 
-        public readonly List<(string name, Type type)> TableOrder = new List<(string name, Type type)>(10);
-        public readonly Dictionary<string, int> TableNameColumnCount = new Dictionary<string, int>();
-        public readonly Dictionary<string, string> TableNameResolvePaths = new Dictionary<string, string>();
+        public List<(string name, Type type)> TableOrder { get; private set; } = new List<(string name, Type type)>(10);
 
-        public string GeneratedQuery { get; private set; }
+        public Dictionary<string, int> TableNameColumnCount { get; private set; } = new Dictionary<string, int>();
+
+        public Dictionary<string, string> TableNameResolvePaths { get; private set; } = new Dictionary<string, string>();
+
+        internal ORMTableAttribute TableAttribute { get; set; }
 
         internal SqlParameter[] SqlParameters { get; private set; }
 
-        internal ORMTableAttribute TableAttribute { get; set; }
+        private static Dictionary<Expression, string> ExpressionCache { get; set; } = new Dictionary<Expression, string>(128);
+
+        private List<SQLJoin> Joins { get; set; } = new List<SQLJoin>();
 
         public override string ToString()
         {
@@ -136,8 +140,18 @@ namespace ORM
             return where;
         }
 
-        private string ParseExpression(Expression body)
+        private string ParseExpression(Expression body, bool useCache = true)
         {
+            if (useCache)
+            {
+                if (!ExpressionCache.ContainsKey(body))
+                {
+                    ExpressionCache.Add(body, ParseExpression(body, false));
+                }
+
+                return ExpressionCache[body];
+            }
+
             switch (body)
             {
                 case BinaryExpression binaryExpression:

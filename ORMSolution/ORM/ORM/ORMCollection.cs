@@ -11,6 +11,8 @@ namespace ORM
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
+        public bool DisableChangeTracking { get; set; }
+
         internal Expression<Func<EntityType, object>> SelectExpression { get; set; }
 
         internal Expression<Func<EntityType, object>> JoinExpression { get; set; }
@@ -78,6 +80,9 @@ namespace ORM
                 var sqlBuilder = new SQLBuilder();
 
                 sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+
+                if (ExecutedQuery == sqlBuilder.GeneratedQuery)
+                    return;
 
                 if (entity == null)
                     connection.ExecuteCollectionQuery(this, sqlBuilder);

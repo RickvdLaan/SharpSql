@@ -9,16 +9,16 @@ namespace ORM
 {
     public class ORMEntity : ORMObject, IORMEntity
     {
-        internal string[] InternalFields { get; set; }
-
-        internal ORMEntity OriginalFetchedValue { get; set; } = null;
-
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
+
 
         public bool IsDirty
         {
             get
             {
+                if (DisableChangeTracking)
+                    return true;
+
                 // IsDirty can't be unit tested because it requires a database connection to
                 // determine its underlying fields. Using the IsDirty property in a ORMUnitTest will
                 // return a NullReferenceException.
@@ -32,40 +32,50 @@ namespace ORM
             }
         }
 
-        internal (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
+        public bool DisableChangeTracking { get; internal set; }
+
+        internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
         internal List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
 
         private string InternalPrimaryKeyName { get; set; }
 
+        private (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
+
         private void UpdateIsDirtyList()
         {
-            for (int i = 0; i < InternalFields.Length; i++)
+            for (int i = 0; i < TableScheme.Count; i++)
             {
-                if (InternalFields[i] == InternalPrimaryKeyName)
+                if (TableScheme[i] == InternalPrimaryKeyName)
                 {
                     continue;
                 }
 
-                var thisValue = GetType().GetProperty(InternalFields[i], PublicFlags)
+                var thisValue = GetType().GetProperty(TableScheme[i], PublicFlags)
                                          .GetValue(this);
 
                 if (thisValue != null
-                && !thisValue.Equals(OriginalFetchedValue.GetType().GetProperty(InternalFields[i], PublicFlags)
+                && !thisValue.Equals(OriginalFetchedValue.GetType().GetProperty(TableScheme[i], PublicFlags)
                                                          .GetValue(OriginalFetchedValue)))
                 {
-                    IsDirtyList[i - 1] = (InternalFields[i], true);
+                    IsDirtyList[i - 1] = (TableScheme[i], true);
                 }
                 else
                 {
-                    IsDirtyList[i - 1] = (InternalFields[i], false);
+                    IsDirtyList[i - 1] = (TableScheme[i], false);
                 }
             }
         }
 
-        protected ORMEntity(string primaryKeyName)
+        protected ORMEntity(string primaryKeyName, bool disableChangeTracking = false)
         {
             InternalPrimaryKeyName = primaryKeyName;
+            DisableChangeTracking = disableChangeTracking;
+
+            if (!ORMUtilities.IsUnitTesting() && !DisableChangeTracking)
+            {
+                IsDirtyList = new (string fieldName, bool isDirty)[TableScheme.Count - 1];
+            }
         }
 
         internal PropertyInfo GetPrimaryKeyPropertyInfo()
