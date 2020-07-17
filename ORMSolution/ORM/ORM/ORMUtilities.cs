@@ -278,8 +278,7 @@ namespace ORM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetEntityProperty<EntityType>(EntityType entity, DbDataReader reader, int iteration, int tableIndex = 0)
-             where EntityType : ORMEntity
+        private static void SetEntityProperty(ORMEntity entity, DbDataReader reader, int iteration, int tableIndex = 0)
         {
             var propertyName = reader.GetName(iteration + tableIndex);
             var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
@@ -299,8 +298,7 @@ namespace ORM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static EntityType GetObjectAtPath<EntityType>(EntityType entity, string path)
-             where EntityType : ORMEntity
+        private static ORMEntity GetObjectAtPath(ORMEntity entity, string path)
         {
             if (!string.IsNullOrEmpty(path))
             {
@@ -315,7 +313,7 @@ namespace ORM
                         property.SetValue(entity, value);
                     }
 
-                    entity = (EntityType)value;
+                    entity = (ORMEntity)value;
                 }
             }
             return entity;

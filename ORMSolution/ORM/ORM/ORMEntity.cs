@@ -11,7 +11,6 @@ namespace ORM
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
-
         public bool IsDirty
         {
             get
@@ -34,9 +33,9 @@ namespace ORM
 
         public bool DisableChangeTracking { get; internal set; }
 
-        internal ORMEntity OriginalFetchedValue { get; set; } = null;
+        public List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
 
-        internal List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
+        internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
         private string InternalPrimaryKeyName { get; set; }
 

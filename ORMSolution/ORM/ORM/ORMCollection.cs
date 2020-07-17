@@ -13,6 +13,8 @@ namespace ORM
 
         public bool DisableChangeTracking { get; set; }
 
+        public List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
+
         internal Expression<Func<EntityType, object>> SelectExpression { get; set; }
 
         internal Expression<Func<EntityType, object>> JoinExpression { get; set; }
@@ -34,8 +36,6 @@ namespace ORM
             get { return _collection; }
             internal set { _collection = value; }
         }
-
-        internal List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
 
         public ORMCollection()
         {
