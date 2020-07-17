@@ -15,7 +15,7 @@ namespace ORM
         {
             get
             {
-                if (DisableChangeTracking)
+                if (DisableChangeTracking || (!DisableChangeTracking &&  OriginalFetchedValue == null))
                     return true;
 
                 // IsDirty can't be unit tested because it requires a database connection to
@@ -37,7 +37,7 @@ namespace ORM
 
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
-        private string InternalPrimaryKeyName { get; set; }
+        internal string InternalPrimaryKeyName { get; set; }
 
         private (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
 
@@ -114,7 +114,16 @@ namespace ORM
         {
             if (IsDirty)
             {
-                throw new NotImplementedException();
+                using (var connection = new SQLConnection())
+                {
+                    var sqlBuilder = new SQLBuilder();
+
+                    sqlBuilder.BuildNonQuery(this);
+
+                    connection.ExecuteNonQuery(sqlBuilder);
+
+                    ExecutedQuery = sqlBuilder.GeneratedQuery;
+                }
             }
         }
 

@@ -75,7 +75,7 @@ namespace ORM
 
         internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn)
         {
-           using (var connection = new SQLConnection())
+            using (var connection = new SQLConnection())
             {
                 var sqlBuilder = new SQLBuilder();
 

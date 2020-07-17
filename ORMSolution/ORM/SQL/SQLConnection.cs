@@ -27,6 +27,24 @@ namespace ORM
             }
         }
 
+        internal int ExecuteNonQuery(SQLBuilder sqlBuilder)
+        {
+            if (!ORMUtilities.IsUnitTesting())
+            {
+                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
+                {
+                    if (ORMUtilities.Transaction.Value != null)
+                    {
+                        command.Transaction = ORMUtilities.Transaction.Value;
+                    }
+
+                    return command.ExecuteNonQuery();
+                }
+            }
+
+            return -1;
+        }
+
         internal void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {

@@ -74,6 +74,11 @@ namespace ORM
             GeneratedQuery = stringBuilder.ToString().ToUpperInvariant();
         }
 
+        public void BuildNonQuery(ORMEntity entity)
+        {
+            GeneratedQuery = (InsertInto(entity) + Semicolon());
+        }
+
         private string Select(long top = -1)
         {
             return top >= 0 ? $"SELECT TOP ({top}) * " : "SELECT * ";
@@ -104,6 +109,48 @@ namespace ORM
         private string From()
         {
             return $"FROM [dbo].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
+        }
+
+        private string InsertInto(ORMEntity entity)
+        {
+            var stringBuilder = new StringBuilder();
+
+            var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
+
+            stringBuilder.Append($"INSERT INTO [dbo].[{tableName}](".ToUpperInvariant());
+
+            for (int i = 0; i < entity.TableScheme.Count; i++)
+            {
+                if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                    continue;
+
+                var addon = ((entity.TableScheme.Count - 1 == i) ? string.Empty : ", ");
+                stringBuilder.Append($"[dbo].[{tableName}].[{entity.TableScheme[i]}]{addon}".ToUpperInvariant());
+            }
+
+            stringBuilder.Append(") VALUES(");
+
+            for (int i = 0; i < entity.TableScheme.Count; i++)
+            {
+                if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                    continue;
+
+                var value = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags).GetValue(entity) ?? null;
+                var addon = ((entity.TableScheme.Count - 1 == i) ? string.Empty : ", ");
+
+                if (value == null)
+                {
+                    stringBuilder.Append($"NULL{addon}");
+                }
+                else
+                {
+                    stringBuilder.Append($"'{value}'{addon}");
+                }
+            }
+
+            stringBuilder.Append(")");
+
+            return stringBuilder.ToString();
         }
 
         private string Join(Expression expression)
