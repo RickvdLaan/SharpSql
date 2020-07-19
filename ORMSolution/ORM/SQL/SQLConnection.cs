@@ -38,6 +38,11 @@ namespace ORM
                         command.Transaction = ORMUtilities.Transaction.Value;
                     }
 
+                    if (sqlBuilder.SqlParameters != null)
+                    {
+                        command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                    }
+
                     return command.ExecuteNonQuery();
                 }
             }

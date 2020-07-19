@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("ORMNUnit")]
 
 namespace ORM
 {
@@ -11,35 +14,42 @@ namespace ORM
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
+        public bool IsNew => OriginalFetchedValue == null;
+
         public bool IsDirty
         {
             get
             {
-                if (DisableChangeTracking || (!DisableChangeTracking &&  OriginalFetchedValue == null))
+                if (DisableChangeTracking || IsNew)
                     return true;
 
-                // IsDirty can't be unit tested because it requires a database connection to
-                // determine its underlying fields. Using the IsDirty property in a ORMUnitTest will
-                // return a NullReferenceException.
-                // 
-                // We could use ORMUtilities.IsUnitTesting() to provide a clearer exception message
-                // but that doesn't change the underlying problem, therefore the costs of using
-                // ORMUtilities.IsUnitTesting() don't outweigh the benefits.
-                UpdateIsDirtyList();
+                if (!ORMUtilities.IsUnitTesting())
+                    UpdateIsDirtyList();
 
                 return IsDirtyList.Any(x => x.isDirty == true);
             }
         }
 
-        public bool DisableChangeTracking { get; internal set; }
+        private List<string> _tableScheme = null;
+        public List<string> TableScheme
+        {
+            get
+            {
+                if (_tableScheme == null)
+                    _tableScheme = ORMUtilities.CachedColumns[GetType()];
+                
+                return _tableScheme; 
+            }
+            set { _tableScheme = value; }
+        }
 
-        public List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
+        public bool DisableChangeTracking { get; internal set; }
 
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
         internal string InternalPrimaryKeyName { get; set; }
 
-        private (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
+        internal (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
 
         private void UpdateIsDirtyList()
         {
@@ -107,6 +117,9 @@ namespace ORM
             collection.InternalWhere(Expression.Equal(left, right));
             collection.Fetch(this, 1);
 
+            if (!ORMUtilities.IsUnitTesting() && IsNew)
+                throw new Exception($"No [{GetType().Name}] found for [{InternalPrimaryKeyName}]: '{id}'.");
+
             ExecutedQuery = collection.ExecutedQuery;
         }
 
@@ -118,7 +131,10 @@ namespace ORM
                 {
                     var sqlBuilder = new SQLBuilder();
 
-                    sqlBuilder.BuildNonQuery(this);
+                    if (IsNew)
+                        sqlBuilder.BuildNonQuery(this, NonQueryType.Insert);
+                    else
+                        sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
 
                     connection.ExecuteNonQuery(sqlBuilder);
 
