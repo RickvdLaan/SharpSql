@@ -23,6 +23,25 @@ namespace ORMNUnit.SQL
         [Test]
         public void BasicFetch()
         {
+            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+
+            var user = new User();
+
+            var tableScheme = new List<string>
+            {
+                nameof(user.Id),
+                nameof(user.Username),
+                nameof(user.Password)
+            };
+
+            user.FetchEntityById<Users, User>(1, tableScheme);
+
+            Assert.AreEqual(expectedQuery, user.ExecutedQuery);
+        }
+
+        [Test]
+        public void BasicFetch_Join()
+        {
             var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
 
             var user = new User();
