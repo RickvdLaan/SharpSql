@@ -19,6 +19,8 @@ namespace ORM
 
         internal Expression<Func<EntityType, object>> JoinExpression { get; set; }
 
+        internal Expression InternalJoinExpression { get; set; }
+
         internal Expression<Func<EntityType, bool>> WhereExpression { get; set; }
 
         internal Expression InternalWhereExpression { get; set; }
@@ -79,7 +81,7 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
                 if (ExecutedQuery == sqlBuilder.GeneratedQuery)
                     return;
@@ -103,6 +105,13 @@ namespace ORM
         public ORMCollection<EntityType> Join(Expression<Func<EntityType, object>> expression)
         {
             JoinExpression = expression;
+
+            return this;
+        }
+
+        internal ORMCollection<EntityType> InternalJoin(Expression expression)
+        {
+            InternalJoinExpression = expression;
 
             return this;
         }

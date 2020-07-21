@@ -21,7 +21,7 @@ namespace ORM
             if (SqlConnection.Value == null)
                 SqlConnection.Value = new SqlConnection(ORMUtilities.ConnectionString);
 
-            if (!ORMUtilities.IsUnitTesting() && SqlConnection.Value.State == ConnectionState.Closed)
+            if (!ORMUtilities.IsUnitTesting && SqlConnection.Value.State == ConnectionState.Closed)
             {
                 SqlConnection.Value.Open();
             }
@@ -29,7 +29,7 @@ namespace ORM
 
         internal int ExecuteNonQuery(SQLBuilder sqlBuilder)
         {
-            if (!ORMUtilities.IsUnitTesting())
+            if (!ORMUtilities.IsUnitTesting)
             {
                 using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
                 {
@@ -53,7 +53,7 @@ namespace ORM
         internal void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
-            if (!ORMUtilities.IsUnitTesting())
+            if (!ORMUtilities.IsUnitTesting)
             {
                 using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
                 {
@@ -73,7 +73,7 @@ namespace ORM
         internal void ExecuteCollectionQuery<EntityType>(ORMCollection<EntityType> ormCollection, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
-            if (!ORMUtilities.IsUnitTesting())
+            if (!ORMUtilities.IsUnitTesting)
             {
                 using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
                 {

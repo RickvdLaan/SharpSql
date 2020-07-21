@@ -23,9 +23,19 @@ namespace ORMNUnit.SQL
         [Test]
         public void BasicFetch()
         {
-            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
 
-            var user = new User(1);
+            var user = new User();
+
+            var tableScheme = new List<string>
+            {
+                nameof(user.Id),
+                nameof(user.Username),
+                nameof(user.Password),
+                nameof(user.Organisation)
+            };
+
+            user.FetchEntityById<Users, User>(1, tableScheme);
 
             Assert.AreEqual(expectedQuery, user.ExecutedQuery);
         }
@@ -39,7 +49,7 @@ namespace ORMNUnit.SQL
             {
                 Username = "Unit",
                 Password = "Test",
-                Organisation = null
+                Organisation = null // new Organisation(1) // Todo: add a unit test for this case.
             };
 
             var tableScheme = new List<string>
@@ -63,10 +73,7 @@ namespace ORMNUnit.SQL
         {
             var expectedQuery = "UPDATE [U] SET [U].[PASSWORD] = 'Test' FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM1);";
 
-            var user = new User(1)
-            {
-                Password = "Test"
-            };
+            var user = new User();
 
             var tableScheme = new List<string>
             {
@@ -89,6 +96,9 @@ namespace ORMNUnit.SQL
             user.TableScheme = tableScheme;
             user.IsDirtyList = dirtyFields;
             user.OriginalFetchedValue = (User)Activator.CreateInstance(user.GetType());
+
+            user.FetchEntityById<Users, User>(1, tableScheme);
+            user.Password = "Test";
 
             user.Save();
 

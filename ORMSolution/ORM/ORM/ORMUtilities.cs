@@ -17,6 +17,8 @@ namespace ORM
     {
         internal static string ConnectionString { get; private set; }
 
+        internal static bool IsUnitTesting { get; private set; }
+
         internal static Dictionary<Type, Type> CollectionEntityRelations { get; private set; }
 
         internal static Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)> ManyToManyRelations { get; private set; }
@@ -37,6 +39,7 @@ namespace ORM
 
         public ORMUtilities()
         {
+            IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(ORMUnitTestAttribute), false).Any());
             CollectionEntityRelations = new Dictionary<Type, Type>();
             ManyToManyRelations = new Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)>();
             CachedColumns = new Dictionary<Type, List<string>>();
@@ -130,7 +133,7 @@ namespace ORM
 
         private static DataTable ExecuteReader(SqlCommand command)
         {
-            if (!IsUnitTesting())
+            if (!IsUnitTesting)
             {
                 using (var reader = command.ExecuteReader())
                 {
@@ -318,9 +321,5 @@ namespace ORM
             }
             return entity;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsUnitTesting() =>
-            new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(ORMUnitTestAttribute), false).Any());
     }
 }

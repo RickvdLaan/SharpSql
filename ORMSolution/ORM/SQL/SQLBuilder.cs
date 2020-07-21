@@ -33,8 +33,6 @@ namespace ORM
 
         internal SqlParameter[] SqlParameters { get; private set; }
 
-        private static Dictionary<Expression, string> ExpressionCache { get; set; } = new Dictionary<Expression, string>(128);
-
         private List<SQLJoin> Joins { get; set; } = new List<SQLJoin>();
 
         public override string ToString()
@@ -92,8 +90,6 @@ namespace ORM
             }
         
         }
-
-        #region Crud
 
         private string InsertInto(ORMEntity entity)
         {
@@ -222,10 +218,10 @@ namespace ORM
 
             var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
 
-            var left = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo);
-            var right = Expression.Constant(propertyInfo.GetValue(entity), propertyInfo.GetValue(entity).GetType());
+            var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo);
+            var constantExpression = Expression.Constant(propertyInfo.GetValue(entity), propertyInfo.GetValue(entity).GetType());
 
-            stringBuilder.Append($" WHERE {ParseWhereExpression(Expression.Equal(left, right))}");
+            stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
 
             stringBuilder.Append(Semicolon());
 
@@ -241,8 +237,6 @@ namespace ORM
         {
             return ';';
         }
-
-        #endregion
 
         private string ParseWhereExpression(Expression whereExpression)
         {
@@ -260,16 +254,6 @@ namespace ORM
 
         private string ParseExpression(Expression body, bool useCache = true)
         {
-            if (useCache)
-            {
-                if (!ExpressionCache.ContainsKey(body))
-                {
-                    ExpressionCache.Add(body, ParseExpression(body, false));
-                }
-
-                return ExpressionCache[body];
-            }
-
             switch (body)
             {
                 case BinaryExpression binaryExpression:
@@ -330,14 +314,14 @@ namespace ORM
                                 return $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} ASC";
                             case nameof(ORMEntityExtensions.Descending):
                                 return $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} DESC";
-                            case nameof(ORMEntityExtensions.Left):
-                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "LEFT");
-                            case nameof(ORMEntityExtensions.Right):
-                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "RIGHT");
-                            case nameof(ORMEntityExtensions.Inner):
-                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "INNER");
-                            case nameof(ORMEntityExtensions.Full):
-                                return GenerateJoinQuery(methodCallExpression.Arguments.First() as MemberExpression, "FULL");
+                            case nameof(ORMEntity.Left):
+                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "LEFT");
+                            case nameof(ORMEntity.Right):
+                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "RIGHT");
+                            case nameof(ORMEntity.Inner):
+                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "INNER");
+                            case nameof(ORMEntity.Full):
+                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "FULL");
                             default:
                                 throw new NotImplementedException(methodCallExpression.Method.Name);
                         }
@@ -436,10 +420,10 @@ namespace ORM
         {
             return newArrayExpression.Expressions
                                      .OfType<MethodCallExpression>()
-                                     .Any(x => x.Method.Name == nameof(ORMEntityExtensions.Left)
-                                            || x.Method.Name == nameof(ORMEntityExtensions.Right)
-                                            || x.Method.Name == nameof(ORMEntityExtensions.Inner)
-                                            || x.Method.Name == nameof(ORMEntityExtensions.Full));
+                                     .Any(x => x.Method.Name == nameof(ORMEntity.Left)
+                                            || x.Method.Name == nameof(ORMEntity.Right)
+                                            || x.Method.Name == nameof(ORMEntity.Inner)
+                                            || x.Method.Name == nameof(ORMEntity.Full));
         }
     }
 }

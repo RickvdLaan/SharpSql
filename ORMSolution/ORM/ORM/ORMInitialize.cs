@@ -21,13 +21,14 @@ namespace ORM
                     {
                         var tableAttribute = (attributes.First() as ORMTableAttribute);
 
-                        if (tableAttribute.CollectionTypeLeft == null
+                        if (tableAttribute.CollectionTypeLeft  == null
                          && tableAttribute.CollectionTypeRight == null)
                         {
                             ORMUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
                             ORMUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
 
-                            if (!ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
+                            if (!ORMUtilities.IsUnitTesting
+                             && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
                              && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
                             {
                                 var sqlBuilder = new SQLBuilder();
