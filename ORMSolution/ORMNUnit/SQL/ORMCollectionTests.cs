@@ -11,11 +11,7 @@ namespace ORMNUnit.SQL
         [SetUp]
         public void Setup()
         {
-            // Hack to force load the ORMFakeDAL assembly since the ORM has no clue of its existance.
-            new Users();
-            // ¯\_(ツ)_/¯
-
-            new ORMInitialize();
+            NUnitUtilities.InitializeORM();
         }
 
         [Test]

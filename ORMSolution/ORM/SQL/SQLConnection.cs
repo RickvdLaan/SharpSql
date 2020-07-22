@@ -16,7 +16,7 @@ namespace ORM
             OpenConnection();
         }
 
-        private void OpenConnection()
+        internal void OpenConnection()
         {
             if (SqlConnection.Value == null)
                 SqlConnection.Value = new SqlConnection(ORMUtilities.ConnectionString);
@@ -27,7 +27,7 @@ namespace ORM
             }
         }
 
-        internal int ExecuteNonQuery(SQLBuilder sqlBuilder)
+        internal int ExecuteNonQuery(SQLBuilder sqlBuilder, NonQueryType nonQueryType)
         {
             if (!ORMUtilities.IsUnitTesting)
             {
@@ -43,11 +43,22 @@ namespace ORM
                         command.Parameters.AddRange(sqlBuilder.SqlParameters);
                     }
 
-                    return command.ExecuteNonQuery();
+                    switch (nonQueryType)
+                    {
+                        case NonQueryType.Insert:
+                            return (int)command.ExecuteScalar();
+                        case NonQueryType.Update:
+                            return command.ExecuteNonQuery();
+                        case NonQueryType.Delete:
+                        default:
+                            throw new NotImplementedException(nonQueryType.ToString());
+                    }
+
+                  
                 }
             }
 
-            return -1;
+            return 1;
         }
 
         internal void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)

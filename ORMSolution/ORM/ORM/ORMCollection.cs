@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 
 namespace ORM
@@ -13,7 +14,7 @@ namespace ORM
 
         public bool DisableChangeTracking { get; set; }
 
-        public List<string> TableScheme => ORMUtilities.CachedColumns[GetType()];
+        public ReadOnlyCollection<string> TableScheme => ORMUtilities.CachedColumns[GetType()].AsReadOnly();
 
         internal Expression<Func<EntityType, object>> SelectExpression { get; set; }
 
@@ -68,6 +69,11 @@ namespace ORM
         public void Fetch()
         {
             Fetch(-1);
+        }
+
+        public int Count()
+        {
+            return (int)ORMUtilities.ExecuteDirectQuery(new SQLBuilder().Count(TableAttribute)).Rows[0].ItemArray[0];
         }
 
         public void Fetch(long maxNumberOfItemsToReturn)

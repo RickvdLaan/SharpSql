@@ -244,9 +244,7 @@ namespace ORM
 
             if (!entity.DisableChangeTracking)
             {
-                entity.GetType()
-                      .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
-                      .SetValue(entity, entity.ShallowCopy());
+                entity[nameof(ORMEntity.OriginalFetchedValue)] = entity.ShallowCopy();
             }
         }
 

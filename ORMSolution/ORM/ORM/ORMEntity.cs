@@ -1,6 +1,7 @@
 ﻿using ORM.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -14,7 +15,7 @@ namespace ORM
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
-        public bool IsNew => OriginalFetchedValue == null;
+        public bool IsNew { get; internal set; }
 
         public bool IsDirty
         {
@@ -30,24 +31,26 @@ namespace ORM
             }
         }
 
-        private List<string> _tableScheme = null;
-        public List<string> TableScheme
+        public ReadOnlyCollection<string> TableScheme
         {
             get
             {
-                if (_tableScheme == null)
-                    _tableScheme = ORMUtilities.CachedColumns[GetType()];
+                if (MutableTableScheme == null)
+                    MutableTableScheme = ORMUtilities.CachedColumns[GetType()];
 
-                return _tableScheme;
+                return MutableTableScheme.AsReadOnly();
             }
-            set { _tableScheme = value; }
         }
 
         public bool DisableChangeTracking { get; internal set; }
 
+        internal string InternalPrimaryKeyName { get; set; }
+
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
-        internal string InternalPrimaryKeyName { get; set; }
+        internal List<ORMEntity> EntityRelations = new List<ORMEntity>();
+
+        internal List<string> MutableTableScheme { get; set; }
 
         internal (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
 
@@ -60,11 +63,8 @@ namespace ORM
                     continue;
                 }
 
-                var thisValue = GetType().GetProperty(TableScheme[i], PublicFlags)
-                                         .GetValue(this);
-
-                var originalValue = OriginalFetchedValue.GetType().GetProperty(TableScheme[i], PublicFlags)
-                    .GetValue(OriginalFetchedValue);
+                var thisValue = this[TableScheme[i]];
+                var originalValue = OriginalFetchedValue[TableScheme[i]];
 
 
                 if ((thisValue != null && !thisValue.Equals(originalValue))
@@ -83,6 +83,7 @@ namespace ORM
         {
             InternalPrimaryKeyName = primaryKeyName;
             DisableChangeTracking = disableChangeTracking;
+            IsNew = OriginalFetchedValue == null;
 
             if (!ORMUtilities.IsUnitTesting && !DisableChangeTracking)
             {
@@ -90,7 +91,11 @@ namespace ORM
             }
         }
 
-        public object this[string columnName] { get { throw new NotImplementedException(); } }
+        public object this[string columnName]
+        {
+            get { return GetType().GetProperty(columnName, PublicIgnoreCaseFlags | NonPublicFlags).GetValue(this); }
+            set { GetType().GetProperty(InternalPrimaryKeyName).SetValue(this, value); }
+        }
 
         internal PropertyInfo GetPrimaryKeyPropertyInfo()
         {
@@ -99,7 +104,7 @@ namespace ORM
                 throw new ArgumentNullException($"PK-property \"{InternalPrimaryKeyName}\" can't be null or empty.");
             }
 
-            var propertyInfo = GetType().GetProperties().Where(x => x.Name == InternalPrimaryKeyName).FirstOrDefault();
+            var propertyInfo = GetType().GetProperty(InternalPrimaryKeyName);
 
             if (propertyInfo == null)
             {
@@ -113,7 +118,8 @@ namespace ORM
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
-            Expression joinExpression = null;
+            NewArrayExpression joinExpression = null;
+            List<MethodCallExpression> joinExpressions = new List<MethodCallExpression>(TableScheme.Count);
             BinaryExpression whereExpression = null;
 
             foreach (var field in TableScheme)
@@ -121,24 +127,19 @@ namespace ORM
                 var fieldPropertyInfo = GetType().GetProperty(field, PublicFlags);
                 if (fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
-                    // Contains the join represented in a MemberExpression: {x.TableName}.
+                    // Contains the join represented as a MemberExpression: {x.TableName}.
                     var joinMemberExpression = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), fieldPropertyInfo);
 
                     // Adds the Left() method to the current MemberExpression to tell the SQLBuilder
-                    // what type of join it is used - resulting in: {x.TableName.Left()} of type MethodCallExpression.
-                    var joinMethodCallExpression = Expression.Call(joinMemberExpression, GetType().GetMethod(nameof(ORMEntity.Left)));
-
-                    if (joinExpression == null)
-                    {
-                        joinExpression = joinMethodCallExpression;
-                    }
-                    else
-                    {
-                        // Combining the previously made join with the next join into a NewArrayExpression.
-                        joinExpression = Expression.NewArrayInit(typeof(ORMEntity), new List<Expression>() { joinExpression, joinMethodCallExpression });
-                    }
+                    // what type of join is being used - resulting in: {x.TableName.Left()} of type MethodCallExpression.
+                    // and adding the expression to the list of joins.
+                    joinExpressions.Add(Expression.Call(joinMemberExpression, GetType().GetMethod(nameof(ORMEntity.Left))));
                 }
             }
+
+            // Combining the previously made join(s) into one NewArrayExpression.
+            joinExpression = Expression.NewArrayInit(typeof(ORMEntity), joinExpressions);
+
             // Contains the id represented as a MemberExpression: {x.InternalPrimaryKeyName}.
             var memberExpression = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), GetPrimaryKeyPropertyInfo());
 
@@ -153,17 +154,33 @@ namespace ORM
             collection.InternalWhere(whereExpression);
             collection.Fetch(this, 1);
 
+            foreach (MethodCallExpression expression in joinExpression.Expressions)
+            {
+                var fieldPropertyInfo = GetType().GetProperty((expression.Object as MemberExpression).Member.Name, PublicFlags);
+                if (fieldPropertyInfo.GetValue(this) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+                {
+                    EntityRelations.Add(entityColumnJoin);
+                }
+            }
+
+            IsNew = (int)this[InternalPrimaryKeyName] <= 0;
+
             if (!ORMUtilities.IsUnitTesting && IsNew)
                 throw new Exception($"No [{GetType().Name}] found for [{InternalPrimaryKeyName}]: '{id}'.");
 
             ExecutedQuery = collection.ExecutedQuery;
+
+            if (OriginalFetchedValue != null)
+                OriginalFetchedValue.ExecutedQuery = ExecutedQuery;
         }
 
         internal void FetchEntityById<CollectionType, EntityType>(object id, List<string> tableScheme)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
-            TableScheme = tableScheme;
+            MutableTableScheme = tableScheme;
+
+            this[InternalPrimaryKeyName] = id;
 
             FetchEntityById<CollectionType, EntityType>(id);
         }
@@ -176,12 +193,35 @@ namespace ORM
                 {
                     var sqlBuilder = new SQLBuilder();
 
-                    if (IsNew)
-                        sqlBuilder.BuildNonQuery(this, NonQueryType.Insert);
-                    else
-                        sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
+                    foreach (var relation in EntityRelations)
+                    {
+                        if (relation.IsDirty)
+                        {
+                            relation.Save();
 
-                    connection.ExecuteNonQuery(sqlBuilder);
+                            connection.OpenConnection();
+                            
+                            var entityRelationId = (int)relation[relation.InternalPrimaryKeyName];
+                            var entityJoin       = this[relation.GetType().Name];
+
+                            entityJoin.GetType().GetProperty(relation.InternalPrimaryKeyName).SetValue(entityJoin, entityRelationId);
+                            entityJoin.GetType().GetProperty(nameof(ExecutedQuery)).SetValue(entityJoin, relation.ExecutedQuery);
+                        }
+                    }
+
+                    if (IsNew && EntityRelations.Count == 0 || IsNew && EntityRelations.Any(r => r.IsNew))
+                    {
+                        sqlBuilder.BuildNonQuery(this, NonQueryType.Insert);
+
+                        int id = connection.ExecuteNonQuery(sqlBuilder, NonQueryType.Insert);
+
+                        this[InternalPrimaryKeyName] = id;
+                    }
+                    else
+                    {
+                        sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
+                        connection.ExecuteNonQuery(sqlBuilder, NonQueryType.Update);
+                    }
 
                     ExecutedQuery = sqlBuilder.GeneratedQuery;
                 }

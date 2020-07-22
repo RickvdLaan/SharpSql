@@ -88,7 +88,6 @@ namespace ORM
                 default:
                     throw new NotImplementedException(nonQueryType.ToString());
             }
-        
         }
 
         private string InsertInto(ORMEntity entity)
@@ -115,21 +114,37 @@ namespace ORM
                 if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
                     continue;
 
-                var value = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags).GetValue(entity) ?? null;
-                var addon = ((entity.TableScheme.Count - 1 == i) ? string.Empty : ", ");
-
-                if (value == null)
+                var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
+                if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
-                    stringBuilder.Append($"NULL{addon}");
+                    for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
+                    {
+                        if (entityColumnJoin.TableScheme[j] == entityColumnJoin.InternalPrimaryKeyName)
+                        {
+                            stringBuilder.Append($"'{entityColumnJoin.GetType().GetProperty(entityColumnJoin.TableScheme[j]).GetValue(entityColumnJoin)}'");
+                            break;
+                        }
+                    }
                 }
                 else
                 {
-                    stringBuilder.Append($"'{value}'{addon}");
+                    var value = entity[entity.TableScheme[i]];
+                    var addon = ((entity.TableScheme.Count - 1 == i) ? string.Empty : ", ");
+
+                    if (value == null)
+                    {
+                        stringBuilder.Append($"NULL{addon}");
+                    }
+                    else
+                    {
+                        stringBuilder.Append($"'{value}'{addon}");
+                    }
                 }
             }
 
             stringBuilder.Append(")");
             stringBuilder.Append(Semicolon());
+            stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
 
             return stringBuilder.ToString();
         }
@@ -166,6 +181,11 @@ namespace ORM
             return $"FROM [dbo].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
         }
 
+        private string From(ORMTableAttribute tableAttribute)
+        {
+            return $"FROM [dbo].[{tableAttribute.TableName}] AS [{_queryTableNames[tableAttribute.TableName]}]";
+        }
+
         private string Join(Expression expression)
         {
             return ParseExpression(expression);
@@ -181,49 +201,125 @@ namespace ORM
             return $" ORDER BY {ParseExpression(sortExpression)}";
         }
 
-        private string Update(ORMEntity entity)
+        private string Update(ORMEntity entity, bool ignoreStuff = false)
         {
             var stringBuilder = new StringBuilder();
 
-            TableAttribute = new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType());
-
-            AddQueryTableName(TableAttribute);
+            AddQueryTableName(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType()));
 
             var tableAlias = TableOrder.First(x => x.type == entity.GetType()).name;
 
-            stringBuilder.Append($"UPDATE [{tableAlias}] SET ".ToUpperInvariant());
+            if (entity.IsDirtyList.Any(x => x.isDirty == true)
+            || !entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.fieldName)))
+            {
+                stringBuilder.Append($"UPDATE [{tableAlias}] SET ".ToUpperInvariant());
+            }
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
-                if (entity.TableScheme[i] == entity.InternalPrimaryKeyName
-                || !entity.IsDirtyList[i - 1].isDirty)
+                if (!ignoreStuff
+                 && (entity.TableScheme[i] == entity.InternalPrimaryKeyName
+                 || !entity.IsDirtyList[i - 1].isDirty))
                     continue;
 
-                var value = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags).GetValue(entity) ?? null;
-                var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i) ? string.Empty : ", ");
-
-                if (value == null)
+                var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
+                if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
-                    value = $"NULL{addon}";
+                    if (entityColumnJoin.IsDirty && entityColumnJoin.IsNew && !entityColumnJoin.IsDirtyList.Any(x => x.isDirty))
+                    {
+                        stringBuilder.Insert(0, $"{Update(entityColumnJoin, true)} ");
+
+                        if (entity.IsDirtyList.Any(x => x.isDirty == true))
+                        {
+                            if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                                continue;
+
+                            string value = null;
+
+                            foreach (var sqlParameter in SqlParameters)
+                            {
+                                value = sqlParameter.ToString();
+                                var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i) ? string.Empty : ", ");
+
+                                if (value == null)
+                                {
+                                    value = $"NULL{addon}";
+                                }
+                                else
+                                {
+                                    value = $"{value}{addon}";
+                                }
+                            }
+
+                            stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + value + " ");
+                        }
+                    }
+                    else
+                    {
+                        AddQueryTableName(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entityColumnJoin.GetType()], entityColumnJoin.GetType()));
+
+                        var tableJoinAlias = TableOrder.First(x => x.type == entityColumnJoin.GetType()).name;
+
+                        for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
+                        {
+                            if (entityColumnJoin.TableScheme[j] == entityColumnJoin.InternalPrimaryKeyName
+                            || !entityColumnJoin.IsDirtyList[j - 1].isDirty)
+                                continue;
+
+                            if (entityColumnJoin.IsDirty)
+                            {
+                                var value = entityColumnJoin[entityColumnJoin.TableScheme[j]];
+                                var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.isDirty == true).Count() <= j) ? string.Empty : ", ");
+
+                                if (value == null)
+                                {
+                                    value = $"NULL{addon}";
+                                }
+                                else
+                                {
+                                    value = $"'{value}'{addon}";
+                                }
+
+                                stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + value + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                            }
+                        }
+                    }
                 }
                 else
                 {
-                    value = $"'{value}'{addon}";
-                }
+                    if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                        continue;
 
-                stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + value + " ");
+                    var value = entity[entity.TableScheme[i]];
+                    var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i - 1) ? string.Empty : ", ");
+
+                    if (value == null)
+                    {
+                        value = $"NULL{addon}";
+                    }
+                    else
+                    {
+                        value = $"'{value}'{addon}";
+                    }
+
+                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + value + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                }
             }
 
-            stringBuilder.Append(From());
+            if (!entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.fieldName))
+              || entity.IsDirtyList.Any(x => x.isDirty == true))
+            {
+                stringBuilder.Append(From(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType())));
 
-            var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
+                var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
 
-            var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo);
-            var constantExpression = Expression.Constant(propertyInfo.GetValue(entity), propertyInfo.GetValue(entity).GetType());
+                var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo);
+                var constantExpression = Expression.Constant(propertyInfo.GetValue(entity), propertyInfo.GetValue(entity).GetType());
 
-            stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
+                stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
 
-            stringBuilder.Append(Semicolon());
+                stringBuilder.Append(Semicolon());
+            }
 
             return stringBuilder.ToString();
         }
@@ -231,6 +327,11 @@ namespace ORM
         private string Delete(ORMEntity entity)
         {
             throw new NotImplementedException();
+        }
+
+        public string Count(ORMTableAttribute tableAttribute)
+        {
+            return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;".ToUpperInvariant();
         }
 
         private char Semicolon()
