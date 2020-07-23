@@ -66,7 +66,6 @@ namespace ORM
                 var thisValue = this[TableScheme[i]];
                 var originalValue = OriginalFetchedValue[TableScheme[i]];
 
-
                 if ((thisValue != null && !thisValue.Equals(originalValue))
                  || (thisValue == null && originalValue != null))
                 {

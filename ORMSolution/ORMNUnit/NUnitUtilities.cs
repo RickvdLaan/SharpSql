@@ -1,11 +1,15 @@
-﻿using ORM;
+﻿using NUnit.Framework;
+using ORM;
+using ORM.Attributes;
 using ORMFakeDAL;
 
 namespace ORMNUnit
 {
-    public abstract class NUnitUtilities
+    [SetUpFixture, ORMUnitTest]
+    internal class NUnitSetupFixture
     {
-        public static void InitializeORM()
+        [OneTimeSetUp]
+        public void Initialize()
         {
             // Hack to force load the ORMFakeDAL assembly since the ORM has no clue of its existance
             // during initialization.

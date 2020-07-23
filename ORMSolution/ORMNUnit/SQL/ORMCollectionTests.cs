@@ -1,19 +1,12 @@
 ﻿using NUnit.Framework;
 using ORM;
-using ORM.Attributes;
 using ORMFakeDAL;
 
-namespace ORMNUnit.SQL
+namespace ORMNUnit
 {
-    [ORMUnitTest]
+    [TestFixture]
     public class ORMCollectionTests
     {
-        [SetUp]
-        public void Setup()
-        {
-            NUnitUtilities.InitializeORM();
-        }
-
         [Test]
         public void BasicFetch()
         {

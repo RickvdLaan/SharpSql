@@ -53,8 +53,6 @@ namespace ORM
                         default:
                             throw new NotImplementedException(nonQueryType.ToString());
                     }
-
-                  
                 }
             }
 
@@ -128,7 +126,7 @@ namespace ORM
             {
                 if (!ORMUtilities.IsInTransaction())
                 {
-                    CloseConnection();
+                    //CloseConnection();
                     SqlConnection.Value.Dispose();
                     SqlConnection.Value = null;
                 }
