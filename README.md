@@ -114,23 +114,23 @@ First create an appsettings.json file in your project folder, and set your Conne
 
 ```json
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost; Database=ORM; Trusted_Connection=True; MultipleActiveResultSets=true"
-  }
+	"ConnectionStrings": {
+		"DefaultConnection": "Server=localhost; Database=ORM; Trusted_Connection=True; MultipleActiveResultSets=true"
+	}
 }
 ```
 
-For a more detailed on creating connection strings, see Microsoft's documentation: *[Creating a Connection String](https://docs.microsoft.com/en-us/sql/ado/guide/data/creating-a-connection-string?view=sql-server-ver15)*.
+For a more detailed guide on creating connection strings, see Microsoft's documentation: *[Creating a Connection String](https://docs.microsoft.com/en-us/sql/ado/guide/data/creating-a-connection-string?view=sql-server-ver15)*.
 
 Next initialize the ORM Framework somewhere once as follows:
 
 ```cs
 
 IConfiguration configuration = new ConfigurationBuilder()
-  .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-  .Build();
+	.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+	.Build();
 
-  new ORMInitialize(configuration);
+new ORMInitialize(configuration);
 ```
 
 After that point, your code base will be able to communicate with your database.
