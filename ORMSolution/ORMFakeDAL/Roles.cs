@@ -3,8 +3,8 @@ using ORM.Attributes;
 
 namespace ORMFakeDAL
 {
-    [ORMTable(typeof(Roles), typeof(Role))]
-    public class Roles : ORMCollection<Role>
+    [ORMTable(typeof(Roles), typeof(RoleEntity))]
+    public class Roles : ORMCollection<RoleEntity>
     {
         public Roles() { }
     }

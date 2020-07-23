@@ -26,32 +26,33 @@ namespace ORM
                         {
                             ORMUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
                             ORMUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
-
-                            if (!ORMUtilities.IsUnitTesting
-                             && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
-                             && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
-                            {
-                                var sqlBuilder = new SQLBuilder();
-                                sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
-                                var rows = ORMUtilities.ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
-                                      .CreateDataReader()
-                                      .GetSchemaTable()
-                                      .Rows;
-
-                                var columns = new List<string>(rows.Count);
-
-                                for (int i = 0; i < rows.Count; i++)
-                                {
-                                    columns.Add((string)rows[i][0]);
-                                }
-
-                                ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
-                                ORMUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
-                            }
                         }
                         else
                         {
+                            ORMUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
+                            ORMUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
                             ORMUtilities.ManyToManyRelations.Add(tableAttribute.CollectionType, (tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight));
+                        }
+                        if (!ORMUtilities.IsUnitTesting
+                         && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
+                         && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
+                        {
+                            var sqlBuilder = new SQLBuilder();
+                            sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
+                            var rows = ORMUtilities.ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
+                                  .CreateDataReader()
+                                  .GetSchemaTable()
+                                  .Rows;
+
+                            var columns = new List<string>(rows.Count);
+
+                            for (int i = 0; i < rows.Count; i++)
+                            {
+                                columns.Add((string)rows[i][0]);
+                            }
+
+                            ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
+                            ORMUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
                         }
                     }
                 }

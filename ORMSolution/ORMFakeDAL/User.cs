@@ -1,9 +1,12 @@
 ﻿using ORM;
+using ORM.Attributes;
+using System;
 
 namespace ORMFakeDAL
 {
     public class User : ORMEntity
     {
+        [ORMPrimaryKey]
         public int Id { get; private set; } = -1;
 
         public string Username { get; set; }
@@ -12,11 +15,30 @@ namespace ORMFakeDAL
 
         public Organisation Organisation { get; set; }
 
-        public User() : base(nameof(Id)) { }
+        public DateTime? DateCreated { get; private set; }
 
-        public User(int fetchByUserId) : base(nameof(Id))
+        public DateTime? DateLastModified { get; private set; }
+
+        public User() { }
+
+        public User(int fetchByUserId, bool disableChangeTracking = default) : base(disableChangeTracking)
         {
             base.FetchEntityById<Users, User>(fetchByUserId);
+        }
+
+        public override void Save()
+        {
+            if (IsDirty)
+            {
+                DateLastModified = DateTime.Now;
+
+                if (IsNew)
+                {
+                    DateCreated = DateLastModified;
+                }
+            }
+
+            base.Save();
         }
     }
 }

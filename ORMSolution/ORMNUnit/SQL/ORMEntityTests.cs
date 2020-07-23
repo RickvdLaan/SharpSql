@@ -132,7 +132,7 @@ namespace ORMNUnit
                 nameof(user.Organisation)
             };
 
-            (string fieldName, bool isDirty)[] dirtyFields = new (string fieldName, bool isDirty)[tableScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyFields = new (string fieldName, bool isDirty)[tableScheme.Count - user.PrimaryKey.Keys.Count];
             dirtyFields[0].fieldName = nameof(user.Username);
             dirtyFields[0].isDirty = false;
 
@@ -169,7 +169,7 @@ namespace ORMNUnit
                 nameof(user.Organisation)
             };
 
-            (string fieldName, bool isDirty)[] dirtyFields = new (string fieldName, bool isDirty)[tableScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyFields = new (string fieldName, bool isDirty)[tableScheme.Count - user.PrimaryKey.Keys.Count];
             dirtyFields[0].fieldName = nameof(user.Username);
             dirtyFields[0].isDirty = false;
 
@@ -197,7 +197,7 @@ namespace ORMNUnit
                 nameof(organisation.Name)
             };
 
-            (string fieldName, bool isDirty)[] dirtyOrganisationFields = new (string fieldName, bool isDirty)[organisationTableScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyOrganisationFields = new (string fieldName, bool isDirty)[organisationTableScheme.Count - organisation.PrimaryKey.Keys.Count];
             dirtyOrganisationFields[0].fieldName = nameof(organisation.Name);
             dirtyOrganisationFields[0].isDirty = false;
 
@@ -226,7 +226,7 @@ namespace ORMNUnit
                 nameof(user.Organisation)
             };
 
-            (string fieldName, bool isDirty)[] dirtyUserFields = new (string fieldName, bool isDirty)[tableUserScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyUserFields = new (string fieldName, bool isDirty)[tableUserScheme.Count - user.PrimaryKey.Keys.Count];
             dirtyUserFields[0].fieldName = nameof(user.Username);
             dirtyUserFields[0].isDirty = false;
 
@@ -239,7 +239,7 @@ namespace ORMNUnit
             user.FetchEntityById<Users, User>(1, tableUserScheme);
             user.IsDirtyList = dirtyUserFields;
 
-            (string fieldName, bool isDirty)[] dirtyOriginalUserFields = new (string fieldName, bool isDirty)[tableUserScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyOriginalUserFields = new (string fieldName, bool isDirty)[tableUserScheme.Count - user.PrimaryKey.Keys.Count];
             dirtyOriginalUserFields[0].fieldName = nameof(user.Username);
             dirtyOriginalUserFields[0].isDirty = false;
 
@@ -268,7 +268,7 @@ namespace ORMNUnit
                 nameof(organisation.Name)
             };
 
-            (string fieldName, bool isDirty)[] dirtyOrganisationFields = new (string fieldName, bool isDirty)[organisationTableScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyOrganisationFields = new (string fieldName, bool isDirty)[organisationTableScheme.Count - organisation.PrimaryKey.Keys.Count];
             dirtyOrganisationFields[0].fieldName = nameof(organisation.Name);
             dirtyOrganisationFields[0].isDirty = false;
 
@@ -299,7 +299,7 @@ namespace ORMNUnit
                 nameof(user.Organisation)
             };
 
-            (string fieldName, bool isDirty)[] dirtyFields = new (string fieldName, bool isDirty)[tableScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyFields = new (string fieldName, bool isDirty)[tableScheme.Count - user.PrimaryKey.Keys.Count];
             dirtyFields[0].fieldName = nameof(user.Username);
             dirtyFields[0].isDirty = false;
 
@@ -324,7 +324,7 @@ namespace ORMNUnit
                 nameof(organisation.Name)
             };
 
-            (string fieldName, bool isDirty)[] dirtyOrganisationFields = new (string fieldName, bool isDirty)[organisationTableScheme.Count - 1];
+            (string fieldName, bool isDirty)[] dirtyOrganisationFields = new (string fieldName, bool isDirty)[organisationTableScheme.Count - organisation.PrimaryKey.Keys.Count];
             dirtyOrganisationFields[0].fieldName = nameof(organisation.Name);
             dirtyOrganisationFields[0].isDirty = true;
 

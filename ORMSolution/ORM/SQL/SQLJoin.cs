@@ -9,6 +9,6 @@ namespace ORM
         internal PropertyInfo LeftPropertyInfo { get; set; }
 
         internal ORMTableAttribute RightTableAttribute { get; set; }
-        internal PropertyInfo RightPropertyInfo { get; set; }
+        internal PropertyInfo[] RightPropertyInfo { get; set; }
     }
 }

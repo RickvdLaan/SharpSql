@@ -100,10 +100,10 @@ namespace ORM
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
-                if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                     continue;
 
-                var addon = ((entity.TableScheme.Count - 1 == i) ? string.Empty : ", ");
+                var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Keys.Count == i) ? string.Empty : ", ");
                 stringBuilder.Append($"[dbo].[{tableName}].[{entity.TableScheme[i]}]{addon}".ToUpperInvariant());
             }
 
@@ -111,7 +111,7 @@ namespace ORM
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
-                if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                     continue;
 
                 var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
@@ -119,7 +119,7 @@ namespace ORM
                 {
                     for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                     {
-                        if (entityColumnJoin.TableScheme[j] == entityColumnJoin.InternalPrimaryKeyName)
+                        if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j]))
                         {
                             stringBuilder.Append($"'{entityColumnJoin.GetType().GetProperty(entityColumnJoin.TableScheme[j]).GetValue(entityColumnJoin)}'");
                             break;
@@ -128,17 +128,9 @@ namespace ORM
                 }
                 else
                 {
-                    var value = entity[entity.TableScheme[i]];
-                    var addon = ((entity.TableScheme.Count - 1 == i) ? string.Empty : ", ");
+                    var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Keys.Count == i) ? string.Empty : ", ");
 
-                    if (value == null)
-                    {
-                        stringBuilder.Append($"NULL{addon}");
-                    }
-                    else
-                    {
-                        stringBuilder.Append($"'{value}'{addon}");
-                    }
+                    stringBuilder.Append(entity.SqlValue(entity.TableScheme[i], addon));
                 }
             }
 
@@ -218,7 +210,7 @@ namespace ORM
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
                 if (!ignoreStuff
-                 && (entity.TableScheme[i] == entity.InternalPrimaryKeyName
+                 && (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i])
                  || !entity.IsDirtyList[i - 1].isDirty))
                     continue;
 
@@ -231,27 +223,12 @@ namespace ORM
 
                         if (entity.IsDirtyList.Any(x => x.isDirty == true))
                         {
-                            if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                            if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                                 continue;
 
-                            string value = null;
+                            var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i) ? string.Empty : ", ");
 
-                            foreach (var sqlParameter in SqlParameters)
-                            {
-                                value = sqlParameter.ToString();
-                                var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i) ? string.Empty : ", ");
-
-                                if (value == null)
-                                {
-                                    value = $"NULL{addon}";
-                                }
-                                else
-                                {
-                                    value = $"{value}{addon}";
-                                }
-                            }
-
-                            stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + value + " ");
+                            stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + ParseSqlParameters(addon) + " ");
                         }
                     }
                     else
@@ -262,47 +239,27 @@ namespace ORM
 
                         for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                         {
-                            if (entityColumnJoin.TableScheme[j] == entityColumnJoin.InternalPrimaryKeyName
+                            if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j])
                             || !entityColumnJoin.IsDirtyList[j - 1].isDirty)
                                 continue;
 
                             if (entityColumnJoin.IsDirty)
                             {
-                                var value = entityColumnJoin[entityColumnJoin.TableScheme[j]];
                                 var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.isDirty == true).Count() <= j) ? string.Empty : ", ");
 
-                                if (value == null)
-                                {
-                                    value = $"NULL{addon}";
-                                }
-                                else
-                                {
-                                    value = $"'{value}'{addon}";
-                                }
-
-                                stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + value + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                                stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j], addon) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                             }
                         }
                     }
                 }
                 else
                 {
-                    if (entity.TableScheme[i] == entity.InternalPrimaryKeyName)
+                    if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                         continue;
 
-                    var value = entity[entity.TableScheme[i]];
                     var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i - 1) ? string.Empty : ", ");
 
-                    if (value == null)
-                    {
-                        value = $"NULL{addon}";
-                    }
-                    else
-                    {
-                        value = $"'{value}'{addon}";
-                    }
-
-                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + value + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + entity.SqlValue(entity.TableScheme[i], addon) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                 }
             }
 
@@ -313,10 +270,13 @@ namespace ORM
 
                 var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
 
-                var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo);
-                var constantExpression = Expression.Constant(propertyInfo.GetValue(entity), propertyInfo.GetValue(entity).GetType());
+                for (int i = 0; i < propertyInfo.Length; i++)
+                {
+                    var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo[i]);
+                    var constantExpression = Expression.Constant(propertyInfo[i].GetValue(entity), propertyInfo[i].GetValue(entity).GetType());
 
-                stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
+                    stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
+                }
 
                 stringBuilder.Append(Semicolon());
             }
@@ -513,7 +473,13 @@ namespace ORM
             var join = CalculateJoins(TableAttribute, expression.Member.Name);
             Joins.Add(join);
 
-            return $" {joinType} JOIN [dbo].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo.Name}]";
+            var stringBuilder = new StringBuilder();
+
+            for (int i = 0; i < join.RightPropertyInfo.Length; i++)
+            {
+                stringBuilder.Append($" {joinType} JOIN [dbo].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo[i].Name}]");
+            }
+            return stringBuilder.ToString();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -525,6 +491,23 @@ namespace ORM
                                             || x.Method.Name == nameof(ORMEntity.Right)
                                             || x.Method.Name == nameof(ORMEntity.Inner)
                                             || x.Method.Name == nameof(ORMEntity.Full));
+        }
+
+        private string ParseSqlParameters(string addon)
+        {
+            foreach (var sqlParameter in SqlParameters)
+            {
+                if (sqlParameter == null)
+                {
+                    return $"NULL{addon}";
+                }
+                else
+                {
+                    return $"{sqlParameter}{addon}";
+                }
+            }
+
+            return string.Empty;
         }
     }
 }

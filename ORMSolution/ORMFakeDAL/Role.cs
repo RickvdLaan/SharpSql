@@ -1,18 +1,20 @@
 ﻿using ORM;
+using ORM.Attributes;
 
 namespace ORMFakeDAL
 {
-    public class Role : ORMEntity
+    public class RoleEntity : ORMEntity
     {
+        [ORMPrimaryKey]
         public int Id { get; private set; } = -1;
 
-        public string Name { get; set; }
+        public string Role { get; set; }
 
-        public Role() : base(nameof(Id)) { }
+        public RoleEntity() { }
 
-        public Role(int id) : base(nameof(Id))
+        public RoleEntity(int id)
         {
-            base.FetchEntityById<Roles, Role>(id);
+            base.FetchEntityById<Roles, RoleEntity>(id);
         }
     }
 }

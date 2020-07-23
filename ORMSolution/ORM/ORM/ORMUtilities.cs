@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using ORM.Attributes;
+using ORM.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -30,7 +31,6 @@ namespace ORM
         public ORMUtilities(IConfiguration configuration = null) 
             : this()
         {
-            // This class is being initialized in the ORMInitialize.
             if (configuration != null)
             {
                 ConnectionString = configuration.GetConnectionString("DefaultConnection");
@@ -244,7 +244,9 @@ namespace ORM
 
             if (!entity.DisableChangeTracking)
             {
-                entity[nameof(ORMEntity.OriginalFetchedValue)] = entity.ShallowCopy();
+                entity.GetType()
+                      .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
+                      .SetValue(entity, entity.ShallowCopy());
             }
         }
 
@@ -286,7 +288,12 @@ namespace ORM
 
             if (null == entityPropertyInfo)
             {
-                throw new NotImplementedException($"Column [{propertyName}] has not been implemented in [{entity.GetType().Name}].");
+                if (propertyName == entity.GetType().Name)
+                {
+                    throw new ORMIllegalColumnNameException($"The column [{propertyName}] has not been implemented in entity [{entity.GetType().Name}], but can't have the same name as its enclosing type.");
+                }
+
+                throw new NotImplementedException($"The column [{propertyName}] has not been implemented in entity [{entity.GetType().Name}].");
             }
             else if (!entityPropertyInfo.CanWrite)
             {
@@ -294,7 +301,37 @@ namespace ORM
             }
             else if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
             {
-                entityPropertyInfo.SetValue(entity, reader.GetValue(iteration));
+                object value;
+
+                switch (entityPropertyInfo.PropertyType)
+                {
+                    case Type dateTime when dateTime == typeof(DateTime?):
+                        value = reader.GetValue(iteration);
+                        break;
+                    case Type dateTime when dateTime == typeof(DateTime):
+                        if (reader.GetValue(iteration) == DBNull.Value)
+                        {
+                            throw new ORMPropertyNotNullableException($"Property {propertyName} is not nullable, but the database column equivelant is.");
+                        }
+
+                        value = reader.GetValue(iteration);
+                        break;
+                    default:
+                        value = reader.GetValue(iteration);
+                        break;
+                }
+
+                if (entityPropertyInfo.PropertyType.IsGenericType && entityPropertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    if (reader.GetValue(iteration) == DBNull.Value)
+                    {
+                        entityPropertyInfo.SetValue(entity, null);
+                    }
+                }
+                else
+                {
+                    entityPropertyInfo.SetValue(entity, value);
+                }
             }
         }
 

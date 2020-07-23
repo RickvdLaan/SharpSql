@@ -31,16 +31,16 @@ namespace ORM.Attributes
             EntityType = entityType;
         }
 
-        public ORMTableAttribute(Type collectionType, Type collectionTypeLeft, Type collectionTypeRight)
+        public ORMTableAttribute(Type collectionType, Type entityType, Type collectionTypeLeft, Type collectionTypeRight)
+            : this(collectionType, entityType)
         {
             // Example usage:
             // Users->User (CollectionTypeLeft)
-            // UserRole (CollectionType)
+            // UserRoles (CollectionType)-> UserRole (EntityType)
             // Roles->Role (CollectionTypeRight)
             // 
-            // ORMTable(nameof(UserRole), typeof(Users), typeof(Roles)
+            // ORMTable(nameof(UserRoles), typeof(UserRole), typeof(Users), typeof(Roles)
 
-            CollectionType = collectionType;
             CollectionTypeLeft = collectionTypeLeft;
             CollectionTypeRight = collectionTypeRight;
         }
