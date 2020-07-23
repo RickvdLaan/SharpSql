@@ -1,4 +1,4 @@
-* ![.NET Core - ORM Unit Tests](https://github.com/Albileon/ORM/workflows/.NET%20Core%20-%20ORM%20Unit%20Tests/badge.svg?branch=master)
+![.NET Core - ORM Unit Tests](https://github.com/Albileon/ORM/workflows/.NET%20Core%20-%20ORM%20Unit%20Tests/badge.svg?branch=master)
 
 **Summary**
 
@@ -31,7 +31,7 @@ new ORMInitialize(configuration);
 
 ```
 
-For a more detailed step on setting up the configuration see *[ Chapter 1. Configuration](chapter-1.-configuration)*.
+For a more detailed step on setting up the configuration see *[ Chapter 1. Configuration](#chapter-1-configuration)*.
 
 **Step 3.** The framework works with both a code first and database first approach, and coding your database is fairly straightforward - for each table in your database you'll create a collection class and give this class the same name as your table. Then place the ORMTableAttribute above the class with the following parameters: the type of the current collection class, and the type of the entity class (*see Step 4.*). And as a last step, inherit from the ```ORMCollection<EntityType>``` class and your collection class is all set!
 
@@ -68,7 +68,7 @@ protected ORMEntity(string primaryKeyName = default, bool disableChangeTracking 
 ```
 The first one is the name of the primary key and the second one is whether or not you want to disable change tracking. If you provide the base with the name of the primary key, you don't have to implement your own fetch enttiy by id. And with the second parameter, you can provide whether or not you want to be able to enable or disable change tracking (enabled by default). Note that disabling change tracking causes the IsDirty property to always return true, since the framework has to assume changes were made to the object.
 
-That's it for the regular tables, with this setup you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD](chapter-2.-CRUD)* for examples on all the CRUD actions.
+That's it for the regular tables, with this setup you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD](#chapter-2-crud)* for examples on all the CRUD actions.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
@@ -108,7 +108,7 @@ public class UserRole
 
 ## Examples
 
-**Chapter 1. Configuration**
+### Chapter 1. Configuration
 
 First create an appsettings.json file in your project folder, and set your ConnectionStrings:
 
@@ -135,7 +135,7 @@ IConfiguration configuration = new ConfigurationBuilder()
 
 After that point, your code base will be able to communicate with your database.
 
-**Chapter 2. CRUD**
+### Chapter 2. CRUD
 
 Fetching data examples:
 
