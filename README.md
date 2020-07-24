@@ -2,24 +2,34 @@
 
 **Summary**
 
-A simple open source ORM Framework written in .NET Standard 2.0.
+[FrameworkName] - a simple open source ORM Framework written in .NET Standard 2.0.
 
 ## Table of contents
 
-* [Getting started](#getting-started)
-* [Examples](#examples)
-	* [Chapter 1. Configuration](#chapter-1-configuration)
-	* [Chapter 2. CRUD](#chapter-2-crud)
-	* [Chapter 3. Virtual methods](#chapter-3-virtual-methods)
-		* [Chapter 3.1 ORMObject](#chapter-31-ormobject)
-		* [Chapter 3.2 ORMEntity](#chapter-32-ormentity)
-		* [Chapter 3.3 ORMCollection](#chapter-33-ormcollection)
-* [Specifications](#specifications)
-	* [Version information](#version-information)
-	* [Supported databases](#supported-databases)
-	* [Supported .NET versions](#supported-net-versions)
+* [Chapter 1. Getting started](#chapter-1-getting-started)
+* [Chapter 2. Configuration](#chapter-2-configuration)
+* [Chapter 3. CRUD operations](#chapter-3-crud-operations)
+	* [3.1 Create](#31-create)
+	* [3.2 Read](#32-read)
+		* [3.2.1 Basic fetch](#321-basic-fetch)
+		* [3.2.2 Select](#322-select)
+		* [3.2.3 Join](#323-join)
+		* [3.2.4 Where](#324-where)
+		* [3.2.5 OrderBy](#325-orderby)
+		* [3.2.6 Many-to-many relations](#326-many-to-many-relations)
+	* [3.3 Update](#33-update)
+	* [3.4 Delete](#34-delete)
+* [Chapter 4. Direct queries](#chapter-4-direct-queries)
+* [Chapter 5. Virtual methods](#chapter-5-virtual-methods)
+	* [5.1 ORMObject](#51-ormobject)
+	* [5.2 ORMEntity](#52-ormentity)
+	* [5.3 ORMCollection](#53-ormcollection)
+* [Chapter 6. Specifications](#chapter-6-specifications)
+	* [6.1 Version information](#61-version-information)
+	* [6.2 Supported databases](#62-supported-databases)
+	* [6.3 Supported .NET versions](#63-supported-net-versions)
 
-## Getting started
+## Chapter 1. Getting started
 
 ```cs
 Todo
@@ -45,7 +55,7 @@ new ORMInitialize(configuration);
 
 ```
 
-For a more detailed step on setting up the configuration see *[ Chapter 1. Configuration](#chapter-1-configuration)*.
+For a more detailed step on setting up the configuration see *[ Chapter 2. Configuration](#chapter-2-configuration)*.
 
 **Step 3.** The framework works with both a code first and database first approach, and coding your database is fairly straightforward - for each table in your database you'll create a collection class and give this class the same name as your table. Then place the ```ORMTable``` attribute above the class with the following parameters: the type of the current collection class, and the type of the entity class (*see Step 4.*). And as a last step, inherit from the ```ORMCollection<EntityType>``` class and your collection class is all set!
 
@@ -106,7 +116,7 @@ public class User : ORMEntity
 }
 ```
 
-And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD](#chapter-2-crud)* for more examples regarding all the CRUD actions or check out *[ Chapter 3. Virtual methods](#chapter-3-virtual-methods)* to see what else can be expanded on.
+And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 3. CRUD operations](#chapter-3-crud-operations)* for more examples regarding all the CRUD actions or check out *[ Chapter 5. Virtual methods](#chapter-5-virtual-methods)* to see what else can be expanded on.
 
 **Step 6.**  Many-to-many relations - this requires the use of the same ```ORMTable``` attribute, but with a different constructor. In this example we'll use the previously delcared Users and User types and a collection of type Roles with entity type Role with the parameters Id as primary key and Name which will be the name of the role itself and so creating the many-to-many table UserRoles. The constructor requires the following parameters: the collection type of the current many-to-many class (in this case UserRoles), the entity type of the current many-to-many class (in this case UserRole) the first collection class (in this case Users) and the second collection class (in this case Roles).
 
@@ -118,7 +128,7 @@ public class UserRoles : ORMCollection<UserRole>
 }
 ```
 
-Next we'll set-up the basic UserRole entity class.
+Next we'll set-up the basic UserRole entity class and we'll add the primary keys as parameters to the constructor and call the ```base.FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>()``` to be able to fetch specific records.
 
 ```cs
 public class UserRole : ORMEntity
@@ -129,25 +139,6 @@ public class UserRole : ORMEntity
     [ORMPrimaryKey]
     public int RoleId { get; private set; }
 
-    public UserRole(int userId, int roleId) { }
-}
-```
-
-Now that's done, let's add a few more things to make the class more usefull, for starters - let's add the primary keys as parameters to the constructor and call the ```base.FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>()``` to be able to get specific records. After that, let's add a User and Role property with a getter and setter and initialize them by calling the previously made constructors. The framework can't automatically join these properties, due to them not being columns in the table.
-
-```cs
-public class UserRole : ORMEntity
-{
-    [ORMPrimaryKey]
-    public int UserId { get; private set; }
-
-    [ORMPrimaryKey]
-    public int RoleId { get; private set; }
-
-    public User User { get; private set; }
-
-    public Role Role { get; private set; }
-    
     public UserRole(int userId, int roleId)
     {
         base.FetchEntityByCombinedPrimaryKey<UserRoles, UserRole>(userId, roleId);
@@ -157,17 +148,11 @@ public class UserRole : ORMEntity
     }
 }
 ```
-Now we have a many-to-many relation set-up with basic functionalities and accessability.
+Now we have a many-to-many relation set-up with basic functionalities and accessability. For information on how many-to-many relations work within the framework and what else can be done with them see *[ 3.2.6 Many-to-many relations](#326-many-to-many-relations)*.
 
 *[ Back to top](#table-of-contents)*
 
-## Examples
-
-```cs
-Todo
-```
-
-### Chapter 1. Configuration
+## Chapter 2. Configuration
 
 First create an appsettings.json file in your project folder, and set your ConnectionStrings:
 
@@ -186,8 +171,8 @@ Next initialize the ORM Framework somewhere once as follows:
 ```cs
 
 IConfiguration configuration = new ConfigurationBuilder()
-	.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-	.Build();
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .Build();
 
 new ORMInitialize(configuration);
 ```
@@ -196,7 +181,13 @@ After that point, your code base will be able to communicate with your database.
 
 *[ Back to top](#table-of-contents)*
 
-### Chapter 2. CRUD
+## Chapter 3. CRUD operations
+
+```cs
+Todo
+```
+
+### 3.1. Create
 
 ```cs
 Todo
@@ -204,13 +195,7 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-### Chapter 3. Virtual methods
-
-```cs
-Todo
-```
-
-#### Chapter 3.1. ORMObject
+### 3.2. Read
 
 ```cs
 Todo
@@ -218,9 +203,180 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-#### Chapter 3.2 ORMEntity
+#### 3.2.1 Basic fetch
 
-In [Getting started](#getting-started) *Step 5.* we left off with a fairly basic entity class, let's expand on this entity class by adding two more properties to our entity: DateCreated and DateLastModified.
+When you want to fetch all the data from a specific collection class, you can easily do so with the following lines of code:
+
+```cs
+var users = new Users();
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT * FROM [DBO].[USERS] AS [U];
+```
+
+It's also possible to specify how many records you want to fetch with the parameter ```maxNumberOfItemsToReturn``` in the ```Fetch()``` method.
+
+```cs
+var users = new Users();
+users.Fetch(10);
+```
+
+This will result in the following query:
+
+```sql
+SELECT TOP (10) * FROM [DBO].[USERS] AS [U];
+```
+
+And as you may have noticed: ```SELECT *``` is being generated, this is because no columns have been specified. If you do want to get only a certain amount of columns you can do this through the ```Select()``` method, see *[ 3.2.2 Select](#322-select)*.
+
+If you want to count the amount of rows you have fetched from the specified table you can use ```users.Collection.Count```. But if you want to know the amount of records in the database table it's quite inefficient to first fetch all the data and then count it. This could be achieved through the ```RecordsCount()``` method.
+
+```cs
+var users = new Users();
+var records = users.RecordsCount();
+```
+
+This will result in the following query:
+
+```sql
+SELECT COUNT(*) FROM USERS AS INT;
+```
+
+*[ Back to top](#table-of-contents)*
+
+#### 3.2.2 Select
+
+The collection class has a method ```Select()``` which can be used to specify which column names you want to return, let's say we want to fetch all users with only the column ```Username```.
+
+```cs
+var users = new Users();
+users.Select(x => x.Username);
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT [U].[USERNAME] FROM [DBO].[USERS] AS [U];
+```
+
+If you want to provide more than one column, you have to provide an ```object[]``` with the columns you wish to return.
+
+```cs
+var users = new Users();
+users.Select(x => new object[] { x.Username, x.Password });
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];
+```
+
+*[ Back to top](#table-of-contents)*
+
+#### 3.2.3 Join
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+#### 3.2.4 Where
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+#### 3.2.5 OrderBy
+
+We can also order our data before retrieving it through the ```OrderBy()``` method. In this method we can order on each column with the ```Ascending()``` and ```Descending()``` methods. 
+
+```cs
+var users = new Users();
+users.OrderBy(x => x.Username.Descending());
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC;
+```
+
+If you want to order by more than one column, you have to provide an ```object[]``` with the columns you wish to order.
+
+```cs
+var users = new Users();
+users.OrderBy(x => new object[] { x.Username.Descending(), x.Organisation.Ascending() });
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC, [U].[ORGANISATION] ASC;
+```
+
+*[ Back to top](#table-of-contents)*
+
+#### 3.2.6 Many-to-many relations
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+### 3.3. Update
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+### 3.4. Delete
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+## Chapter 4. Direct queries
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+## Chapter 5. Virtual methods
+
+```cs
+Todo
+```
+
+### 5.1. ORMObject
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+### 5.2 ORMEntity
+
+In [Chapter 1. Getting started](#chapter-1-getting-started) (*Step 5.*) we left off with a fairly basic entity class, let's expand on this entity class by adding two more properties to our entity: DateCreated and DateLastModified.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
@@ -295,7 +451,7 @@ public class User : ORMEntity
 
 *[ Back to top](#table-of-contents)*
 
-#### Chapter 3.3. ORMCollection<ORMEntity>
+### 5.3. ORMCollection<ORMEntity>
 
 ```cs
 Todo
@@ -303,19 +459,19 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-## Specifications
+## Chapter 6. Specifications
 
 All of the specifications of the ORM framework.
 
-### Version information
+### 6.1 Version information
 
-The latest version of this framework is version 1.0, released on [date].
+The latest version of this framework is version 1.0, released on (the date of going open source).
 
-### Supported databases
+### 6.2 Supported databases
 
 SQL Server 2005 or higher
 
-### Supported .NET versions
+### 6.3 Supported .NET versions
 
 NET Standard 2.0, .NET Standard 2.1., .NET Core 3.0, .NET Core 3.1.
 
