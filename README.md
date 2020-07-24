@@ -106,7 +106,7 @@ public class User : ORMEntity
 }
 ```
 
-And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD](#chapter-2-crud)* for more examples regarding all the CRUD actions or check out *[ Chapter 3. Virtual methods](#virtual-method)* to see what else can be expanded on.
+And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD](#chapter-2-crud)* for more examples regarding all the CRUD actions or check out *[ Chapter 3. Virtual methods](#chapter-3-virtual-methods)* to see what else can be expanded on.
 
 **Step 6.**  Many-to-many relations - this requires the use of the same ```ORMTable``` attribute, but with a different constructor. In this example we'll use the previously delcared Users and User types and a collection of type Roles with entity type Role with the parameters Id as primary key and Name which will be the name of the role itself and so creating the many-to-many table UserRoles. The constructor requires the following parameters: the collection type of the current many-to-many class (in this case UserRoles), the entity type of the current many-to-many class (in this case UserRole) the first collection class (in this case Users) and the second collection class (in this case Roles).
 
