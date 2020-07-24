@@ -2,7 +2,7 @@
 
 **Summary**
 
-[FrameworkName] - a simple open source ORM Framework written in .NET Standard 2.0.
+A simple open source ORM Framework written in .NET Standard 2.0.
 
 ## Table of contents
 
@@ -405,7 +405,7 @@ public class User : ORMEntity
 }
 ```
 
-The ```ORMEntity``` class provides multiple virtual methods, so let's say we want to override the Save method to change it's behaviour when posting data to the database by always setting the DateCreated to the current date and time, including the DateLastModified.
+The ```ORMEntity``` class provides multiple virtual methods, so let's say we want to override the ```Save()``` method to change it's behaviour when posting data to the database by always setting the DateCreated to the current date and time, including the DateLastModified.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
