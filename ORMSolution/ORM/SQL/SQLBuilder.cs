@@ -103,7 +103,7 @@ namespace ORM
                 if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                     continue;
 
-                var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Keys.Count == i) ? string.Empty : ", ");
+                var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
                 stringBuilder.Append($"[dbo].[{tableName}].[{entity.TableScheme[i]}]{addon}".ToUpperInvariant());
             }
 
@@ -128,7 +128,7 @@ namespace ORM
                 }
                 else
                 {
-                    var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Keys.Count == i) ? string.Empty : ", ");
+                    var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
 
                     stringBuilder.Append(entity.SqlValue(entity.TableScheme[i], addon));
                 }

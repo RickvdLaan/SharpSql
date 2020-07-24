@@ -102,7 +102,7 @@ namespace ORM
 
             if (!ORMUtilities.IsUnitTesting && !DisableChangeTracking)
             {
-                IsDirtyList = new (string fieldName, bool isDirty)[TableScheme.Count - PrimaryKey.Keys.Count];
+                IsDirtyList = new (string fieldName, bool isDirty)[TableScheme.Count - PrimaryKey.Count];
             }
         }
 
@@ -114,9 +114,9 @@ namespace ORM
 
         internal PropertyInfo[] GetPrimaryKeyPropertyInfo()
         {
-            PropertyInfo[] propertyInfo = new PropertyInfo[PrimaryKey.Keys.Count];
+            PropertyInfo[] propertyInfo = new PropertyInfo[PrimaryKey.Count];
 
-            for (int i = 0; i < PrimaryKey.Keys.Count; i++)
+            for (int i = 0; i < PrimaryKey.Count; i++)
             {
                 propertyInfo[i] = GetType().GetProperty(PrimaryKey.Keys[i].ColumnName);
 
@@ -179,7 +179,7 @@ namespace ORM
             // Combining the previously made join(s) into one NewArrayExpression.
             joinExpression = Expression.NewArrayInit(typeof(ORMEntity), joinExpressions);
 
-            for (int i = 0; i < PrimaryKey.Keys.Count; i++)
+            for (int i = 0; i < PrimaryKey.Count; i++)
             {
                 // Contains the id represented as a MemberExpression: {x.InternalPrimaryKeyName}.
                 var memberExpression = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), GetPrimaryKeyPropertyInfo()[i]);
@@ -238,7 +238,7 @@ namespace ORM
         {
             MutableTableScheme = tableScheme;
 
-            for (int i = 0; i < combinedPrimaryKey.Keys.Count; i++)
+            for (int i = 0; i < combinedPrimaryKey.Count; i++)
             {
                 this[combinedPrimaryKey.Keys[i].ColumnName] = combinedPrimaryKey.Keys[i].Value;
             }
@@ -264,7 +264,7 @@ namespace ORM
 
                             connection.OpenConnection();
 
-                            for (int i = 0; i < relation.PrimaryKey.Keys.Count; i++)
+                            for (int i = 0; i < relation.PrimaryKey.Count; i++)
                             {
                                 var entityRelationId = (int)relation[relation.PrimaryKey.Keys[i].ColumnName];
                                 var entityJoin = this[relation.GetType().Name];

@@ -71,7 +71,7 @@ namespace ORM
             Fetch(-1);
         }
 
-        public int Count()
+        public int RecordsCount()
         {
             return (int)ORMUtilities.ExecuteDirectQuery(new SQLBuilder().Count(TableAttribute)).Rows[0].ItemArray[0];
         }

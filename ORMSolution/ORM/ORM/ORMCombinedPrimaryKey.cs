@@ -5,6 +5,8 @@ namespace ORM
 {
     public class ORMCombinedPrimaryKey
     {
+        public int Count => Keys.Count;
+
         public List<IORMPrimaryKey> Keys { get; private set; }
 
         public ORMCombinedPrimaryKey(int totalAmountOfKeys)
