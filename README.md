@@ -210,8 +210,6 @@ Todo
 Todo
 ```
 
-*[ Back to top](#table-of-contents)*
-
 #### Chapter 3.1. ORMObject
 
 ```cs
