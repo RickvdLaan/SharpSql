@@ -284,7 +284,8 @@ namespace ORM
         private static void SetEntityProperty(ORMEntity entity, DbDataReader reader, int iteration, int tableIndex = 0)
         {
             var propertyName = reader.GetName(iteration + tableIndex);
-            var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags);
+            var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
+                                  ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(ORMColumnAttribute), true).FirstOrDefault() as ORMColumnAttribute)?.ColumnName == propertyName);
 
             if (null == entityPropertyInfo)
             {

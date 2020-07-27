@@ -201,8 +201,8 @@ namespace ORM
 
             var tableAlias = TableOrder.First(x => x.type == entity.GetType()).name;
 
-            if (entity.IsDirtyList.Any(x => x.isDirty == true)
-            || !entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.fieldName)))
+            if (entity.IsDirtyList.Any(x => x.IsDirty == true)
+            || !entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName)))
             {
                 stringBuilder.Append($"UPDATE [{tableAlias}] SET ".ToUpperInvariant());
             }
@@ -211,22 +211,22 @@ namespace ORM
             {
                 if (!ignoreStuff
                  && (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i])
-                 || !entity.IsDirtyList[i - 1].isDirty))
+                 || !entity.IsDirtyList[i - 1].IsDirty))
                     continue;
 
                 var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
-                    if (entityColumnJoin.IsDirty && entityColumnJoin.IsNew && !entityColumnJoin.IsDirtyList.Any(x => x.isDirty))
+                    if (entityColumnJoin.IsDirty && entityColumnJoin.IsNew && !entityColumnJoin.IsDirtyList.Any(x => x.IsDirty))
                     {
                         stringBuilder.Insert(0, $"{Update(entityColumnJoin, true)} ");
 
-                        if (entity.IsDirtyList.Any(x => x.isDirty == true))
+                        if (entity.IsDirtyList.Any(x => x.IsDirty == true))
                         {
                             if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                                 continue;
 
-                            var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i) ? string.Empty : ", ");
+                            var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= i) ? string.Empty : ", ");
 
                             stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + ParseSqlParameters(addon) + " ");
                         }
@@ -240,12 +240,12 @@ namespace ORM
                         for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                         {
                             if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j])
-                            || !entityColumnJoin.IsDirtyList[j - 1].isDirty)
+                            || !entityColumnJoin.IsDirtyList[j - 1].IsDirty)
                                 continue;
 
                             if (entityColumnJoin.IsDirty)
                             {
-                                var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.isDirty == true).Count() <= j) ? string.Empty : ", ");
+                                var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.IsDirty == true).Count() <= j) ? string.Empty : ", ");
 
                                 stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j], addon) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                             }
@@ -257,14 +257,14 @@ namespace ORM
                     if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                         continue;
 
-                    var addon = ((entity.IsDirtyList.Where(x => x.isDirty == true).Count() <= i - 1) ? string.Empty : ", ");
+                    var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= i - 1) ? string.Empty : ", ");
 
                     stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + entity.SqlValue(entity.TableScheme[i], addon) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                 }
             }
 
-            if (!entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.fieldName))
-              || entity.IsDirtyList.Any(x => x.isDirty == true))
+            if (!entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName))
+              || entity.IsDirtyList.Any(x => x.IsDirty == true))
             {
                 stringBuilder.Append(From(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType())));
 

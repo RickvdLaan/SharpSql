@@ -71,9 +71,9 @@ namespace ORM
             Fetch(-1);
         }
 
-        public int RecordsCount()
+        public static int Records()
         {
-            return (int)ORMUtilities.ExecuteDirectQuery(new SQLBuilder().Count(TableAttribute)).Rows[0].ItemArray[0];
+            return (int)ORMUtilities.ExecuteDirectQuery(new SQLBuilder().Count(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
         }
 
         public void Fetch(long maxNumberOfItemsToReturn)

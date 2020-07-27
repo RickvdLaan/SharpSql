@@ -25,9 +25,9 @@ namespace ORM
 
             public object Value { get; set; }
 
-            public ORMPrimaryKey(string field, object id)
+            public ORMPrimaryKey(string columnName, object id)
             {
-                ColumnName = field;
+                ColumnName = columnName;
                 Value = id;
             }
 
@@ -51,20 +51,20 @@ namespace ORM
                 return hashCode;
             }
 
-            public void Deconstruct(out string field, out object id)
+            public void Deconstruct(out string columnName, out object id)
             {
-                field = ColumnName;
+                columnName = ColumnName;
                 id = Value;
             }
 
-            public static implicit operator (string Field, object Id)(ORMPrimaryKey value)
+            public static implicit operator (string ColumnName, object Id)(ORMPrimaryKey value)
             {
                 return (value.ColumnName, value.Value);
             }
 
-            public static implicit operator ORMPrimaryKey((string Field, object Id) value)
+            public static implicit operator ORMPrimaryKey((string ColumnName, object Id) value)
             {
-                return new ORMPrimaryKey(value.Field, value.Id);
+                return new ORMPrimaryKey(value.ColumnName, value.Id);
             }
         }
     }

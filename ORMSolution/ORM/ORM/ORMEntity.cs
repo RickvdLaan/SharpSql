@@ -28,7 +28,7 @@ namespace ORM
                 if (!ORMUtilities.IsUnitTesting)
                     UpdateIsDirtyList();
 
-                return IsDirtyList.Any(x => x.isDirty == true);
+                return IsDirtyList.Any(x => x.IsDirty == true);
             }
         }
 
@@ -53,7 +53,7 @@ namespace ORM
 
         internal List<string> MutableTableScheme { get; set; }
 
-        internal (string fieldName, bool isDirty)[] IsDirtyList { get; set; }
+        internal (string ColumnName, bool IsDirty)[] IsDirtyList { get; set; }
 
         private void UpdateIsDirtyList()
         {
@@ -102,7 +102,7 @@ namespace ORM
 
             if (!ORMUtilities.IsUnitTesting && !DisableChangeTracking)
             {
-                IsDirtyList = new (string fieldName, bool isDirty)[TableScheme.Count - PrimaryKey.Count];
+                IsDirtyList = new (string, bool)[TableScheme.Count - PrimaryKey.Count];
             }
         }
 
@@ -158,19 +158,24 @@ namespace ORM
             List<MethodCallExpression> joinExpressions = new List<MethodCallExpression>(TableScheme.Count);
             BinaryExpression whereExpression = null;
 
-            foreach (var field in TableScheme)
+            foreach (var columnName in TableScheme)
             {
-                var fieldPropertyInfo = GetType().GetProperty(field, PublicFlags);
+                var propertyInfo = GetType().GetProperty(columnName, PublicFlags);
 
-                if (fieldPropertyInfo != null && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+                if (propertyInfo != null && propertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
                     // Contains the join represented as a MemberExpression: {x.TableName}.
-                    var joinMemberExpression = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), fieldPropertyInfo);
+                    var joinMemberExpression = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), propertyInfo);
 
                     // Adds the Left() method to the current MemberExpression to tell the SQLBuilder
                     // what type of join is being used - resulting in: {x.TableName.Left()} of type MethodCallExpression.
                     // and adding the expression to the list of joins.
                     joinExpressions.Add(Expression.Call(joinMemberExpression, GetType().GetMethod(nameof(ORMEntity.Left))));
+
+                    if (propertyInfo.GetValue(this) is ORMEntity joinedEntity)
+                    {
+                        EntityRelations.Add(joinedEntity);
+                    }
 
                     continue;
                 }
@@ -198,15 +203,6 @@ namespace ORM
             collection.InternalJoin(joinExpression);
             collection.InternalWhere(whereExpression);
             collection.Fetch(this, 1);
-
-            foreach (MethodCallExpression expression in joinExpression.Expressions)
-            {
-                var fieldPropertyInfo = GetType().GetProperty((expression.Object as MemberExpression).Member.Name, PublicFlags);
-                if (fieldPropertyInfo.GetValue(this) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-                {
-                    EntityRelations.Add(entityColumnJoin);
-                }
-            }
 
             IsNew = PrimaryKey.Keys.Any(x => (int)this[x.ColumnName] <= 0);
 

@@ -28,23 +28,23 @@ namespace ORM
             return @this.ToString("yyyy-MM-dd HH:mm:ss.fff");
         }
 
-        public static string SqlValue(this ORMEntity entity, string field, string addon)
+        public static string SqlValue(this ORMEntity entity, string columnName, string addon)
         {
             object value;
 
-            switch (entity.GetType().GetProperty(field, entity.PublicFlags).PropertyType)
+            switch (entity.GetType().GetProperty(columnName, entity.PublicFlags).PropertyType)
             {
                 case Type dateTime when dateTime == typeof(DateTime?):
-                    if (((DateTime?)entity[field]).HasValue)
-                        value = ((DateTime?)entity[field]).Value.ToSqlString();
+                    if (((DateTime?)entity[columnName]).HasValue)
+                        value = ((DateTime?)entity[columnName]).Value.ToSqlString();
                     else
                         return $"NULL{addon}";
                     break;
                 case Type dateTime when dateTime == typeof(DateTime):
-                    value = ((DateTime)entity[field]).ToSqlString();
+                    value = ((DateTime)entity[columnName]).ToSqlString();
                     break;
                 default:
-                    value = entity[field];
+                    value = entity[columnName];
                     break;
             }
 
