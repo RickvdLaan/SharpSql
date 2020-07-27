@@ -24,10 +24,15 @@ A simple open source ORM Framework written in .NET Standard 2.0.
 	* [5.1 ORMObject](#51-ormobject)
 	* [5.2 ORMEntity](#52-ormentity)
 	* [5.3 ORMCollection](#53-ormcollection)
-* [Chapter 6. Specifications](#chapter-6-specifications)
-	* [6.1 Version information](#61-version-information)
-	* [6.2 Supported databases](#62-supported-databases)
-	* [6.3 Supported .NET versions](#63-supported-net-versions)
+* [Chapter 6. Attributes](#chapter-6-attributes)
+	* [6.1 ORMColumnAttribute](#61-ormcolumnattribute)
+	* [6.2 ORMPrimaryKeyAttribute](#62-ormprimarykeyattribute)
+	* [6.3 ORMTableAttribute](#63-ormtableattribute)
+	* [6.4 ORMUnitTestAttribute](#64-ormunittestattribute)
+* [Chapter 7. Specifications](#chapter-7-specifications)
+	* [7.1 Version information](#71-version-information)
+	* [7.2 Supported databases](#72-supported-databases)
+	* [7.3 Supported .NET versions](#73-supported-net-versions)
 
 ## Chapter 1. Getting started
 
@@ -233,11 +238,10 @@ SELECT TOP (10) * FROM [DBO].[USERS] AS [U];
 
 And as you may have noticed: ```SELECT *``` is being generated, this is because no columns have been specified. If you do want to get only a certain amount of columns you can do this through the ```Select()``` method, see *[ 3.2.2 Select](#322-select)*.
 
-If you want to count the amount of rows you have fetched from the specified table you can use ```users.Collection.Count```. But if you want to know the amount of records in the database table it's quite inefficient to first fetch all the data and then count it. This could be achieved through the ```RecordsCount()``` method.
+If you want to count the amount of rows you have fetched from the specified table you can use ```users.Collection.Count```. But if you want to know the amount of records in the database table it's quite inefficient to first fetch all the data and then count it. This could be achieved through the static ```Records()``` method on the collection class.
 
 ```cs
-var users = new Users();
-var records = users.RecordsCount();
+var records = Users.Records();
 ```
 
 This will result in the following query:
@@ -459,19 +463,84 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-## Chapter 6. Specifications
+## Chapter 6. Attributes
+
+Within this framework we have created multiple attributes. In this chapter we'll explain how each attribute can be used and how the attributes are used within the framework itself.
+
+### 6.1 ORMColumnAttribute
+
+Sometimes you want to name your entity property different than the actual column name, to achieve this you can use the ```ORMColumn``` attribute. The framework will automatically assume the name of the property is the same name as the column name, when it doesn't find any matches it'll try and resolve it through the ```ORMColumn``` attribute and throws an ```NotImplementedException``` when neither was found.
+
+```cs
+[ORMColumn(ColumnName)]
+public string Description { get; private set; }
+```
+
+*[ Back to top](#table-of-contents)*
+
+### 6.2 ORMPrimaryKeyAttribute
+
+To tell the framework what the primary or shared primary key is of your table, you can use the ```ORMPrimaryKey``` attribute. If there is a shared primary key, it'll map them in the same top-to-down order from the entity class, this means that any overloads of parameters regarding the primary keys which are passed on to the framework has to be done in the exact same order.
+
+```cs
+// a single primary key:
+
+[ORMPrimaryKey]
+public int Id { get; private set; } = -1;
+
+// a shared primary key:
+
+[ORMPrimaryKey]
+public int UserId { get; private set; }
+
+[ORMPrimaryKey]
+public int RoleId { get; private set; }
+```
+
+*[ Back to top](#table-of-contents)*
+
+### 6.3 ORMTableAttribute
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+### 6.4 ORMUnitTestAttribute
+
+The ```ORMUnitTest``` attribute is an internally used attribute. This project make use of the NUnit testing framework for all of our unit tests and the project is named "ORMNUnit", which has access to all of the internal classes, methods, properties and variables through the ```ORMUnitTest``` attribute which is used in the initialization class.
+
+```cs
+[SetUpFixture, ORMUnitTest]
+internal class NUnitSetupFixture
+{
+    [OneTimeSetUp]
+    public void Initialize()
+    {
+        // Loading the ORMFakeDAL assembly by calling it so it's accessable during initialization.
+        new Users();
+
+        new ORMInitialize();
+    }
+}
+```
+
+*[ Back to top](#table-of-contents)*
+
+## Chapter 7. Specifications
 
 All of the specifications of the ORM framework.
 
-### 6.1 Version information
+### 7.1 Version information
 
 The latest version of this framework is version 1.0, released on (the date of going open source).
 
-### 6.2 Supported databases
+### 7.2 Supported databases
 
 SQL Server 2005 or higher
 
-### 6.3 Supported .NET versions
+### 7.3 Supported .NET versions
 
 NET Standard 2.0, .NET Standard 2.1., .NET Core 3.0, .NET Core 3.1.
 
