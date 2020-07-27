@@ -480,7 +480,7 @@ public string Description { get; private set; }
 
 ### 6.2 ORMPrimaryKeyAttribute
 
-To tell the framework what the primary or shared primary key is of your table, you can use the ```ORMPrimaryKey``` attribute. If there is a shared primary key, it'll map them in the same top-to-down order from the entity class, this means that any overloads of parameters regarding the primary keys which are passed on to the framework has to be done in the exact same order.
+To tell the framework what the primary or shared key of the table is, you can use the ```ORMPrimaryKey``` attribute. If there is a shared primary key, it'll map them in the same top-to-down order from the entity class, this means that any parameters regarding the primary keys which are passed on to the framework has to be passed in the exact same order.
 
 ```cs
 // a single primary key:
@@ -509,7 +509,7 @@ Todo
 
 ### 6.4 ORMUnitTestAttribute
 
-The ```ORMUnitTest``` attribute is an internally used attribute. This project make use of the NUnit testing framework for all of our unit tests and the project is named "ORMNUnit", which has access to all of the internal classes, methods, properties and variables through the ```ORMUnitTest``` attribute which is used in the initialization class.
+The ```ORMUnitTest``` attribute is an internally used attribute. This project make use of the NUnit testing framework for all of our unit tests and the project is named "ORMNUnit", which has access to all of the internal classes, methods, properties and variables through the ```ORMUnitTest``` attribute which is used on the initialization class.
 
 ```cs
 [SetUpFixture, ORMUnitTest]
