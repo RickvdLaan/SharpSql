@@ -45,7 +45,7 @@ namespace ORM
 
         public bool DisableChangeTracking { get; internal set; }
 
-        public ORMCombinedPrimaryKey PrimaryKey { get; internal set; }
+        public ORMPrimaryKey PrimaryKey { get; internal set; }
 
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
@@ -63,7 +63,7 @@ namespace ORM
                     continue;
 
                 var thisValue = this[TableScheme[i]];
-                var originalValue = OriginalFetchedValue[TableScheme[i]];
+                var originalValue = OriginalFetchedValue?[TableScheme[i]];
 
                 if ((thisValue != null && !thisValue.Equals(originalValue))
                  || (thisValue == null && originalValue != null))
@@ -77,7 +77,7 @@ namespace ORM
             }
         }
 
-        protected ORMEntity(bool disableChangeTracking = false)
+        public ORMEntity() 
         {
             var attributes = new List<ORMPrimaryKeyAttribute>();
 
@@ -87,23 +87,27 @@ namespace ORM
                 {
                     attribute.Name = property.Name;
                     attributes.Add(attribute);
-                } 
+                }
             }
 
-            PrimaryKey = new ORMCombinedPrimaryKey(attributes.Count);
+            PrimaryKey = new ORMPrimaryKey(attributes.Count);
 
             for (int i = 0; i < attributes.Count; i++)
             {
                 PrimaryKey.Add(attributes[i].Name, null);
             }
 
-            DisableChangeTracking = disableChangeTracking;
             IsNew = OriginalFetchedValue == null;
 
             if (!ORMUtilities.IsUnitTesting && !DisableChangeTracking)
             {
                 IsDirtyList = new (string, bool)[TableScheme.Count - PrimaryKey.Count];
             }
+        }
+
+        public ORMEntity(bool disableChangeTracking = false) : this()
+        {
+            DisableChangeTracking = disableChangeTracking;
         }
 
         public object this[string columnName]
@@ -129,65 +133,31 @@ namespace ORM
             return propertyInfo;
         }
 
-        protected void FetchEntityById<CollectionType, EntityType>(object id)
-            where CollectionType : ORMCollection<EntityType>, new()
-            where EntityType : ORMEntity
+        protected ORMEntity FetchEntityByPrimaryKey(object primaryKey)
         {
-            PrimaryKey.Keys[0].Value = id;
+            PrimaryKey.Keys[0].Value = primaryKey;
 
-            FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>(PrimaryKey);
+            return FetchDynamicEntity(PrimaryKey);
         }
 
-        protected void FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>(params object[] primaryKey)
-        where CollectionType : ORMCollection<EntityType>, new()
-        where EntityType : ORMEntity
+        protected ORMEntity FetchEntityByPrimaryKey(params object[] primaryKeys)
         {
-            for (int i = 0; i < primaryKey.Length; i++)
+            for (int i = 0; i < primaryKeys.Length; i++)
             {
-                PrimaryKey.Keys[i].Value = primaryKey[i];
+                PrimaryKey.Keys[i].Value = primaryKeys[i];
             }
 
-            FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>(PrimaryKey);
+            return FetchDynamicEntity(PrimaryKey);
         }
 
-        private void FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>(ORMCombinedPrimaryKey combinedPrimaryKey)
-            where CollectionType : ORMCollection<EntityType>, new()
-            where EntityType : ORMEntity
+        private ORMEntity FetchDynamicEntity(ORMPrimaryKey combinedPrimaryKey)
         {
-            NewArrayExpression joinExpression = null;
-            List<MethodCallExpression> joinExpressions = new List<MethodCallExpression>(TableScheme.Count);
             BinaryExpression whereExpression = null;
-
-            foreach (var columnName in TableScheme)
-            {
-                var propertyInfo = GetType().GetProperty(columnName, PublicFlags);
-
-                if (propertyInfo != null && propertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-                {
-                    // Contains the join represented as a MemberExpression: {x.TableName}.
-                    var joinMemberExpression = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), propertyInfo);
-
-                    // Adds the Left() method to the current MemberExpression to tell the SQLBuilder
-                    // what type of join is being used - resulting in: {x.TableName.Left()} of type MethodCallExpression.
-                    // and adding the expression to the list of joins.
-                    joinExpressions.Add(Expression.Call(joinMemberExpression, GetType().GetMethod(nameof(ORMEntity.Left))));
-
-                    if (propertyInfo.GetValue(this) is ORMEntity joinedEntity)
-                    {
-                        EntityRelations.Add(joinedEntity);
-                    }
-
-                    continue;
-                }
-            }
-
-            // Combining the previously made join(s) into one NewArrayExpression.
-            joinExpression = Expression.NewArrayInit(typeof(ORMEntity), joinExpressions);
 
             for (int i = 0; i < PrimaryKey.Count; i++)
             {
                 // Contains the id represented as a MemberExpression: {x.InternalPrimaryKeyName}.
-                var memberExpression = Expression.Property(Expression.Parameter(typeof(EntityType), $"x"), GetPrimaryKeyPropertyInfo()[i]);
+                var memberExpression = Expression.Property(Expression.Parameter(GetType(), $"x"), GetPrimaryKeyPropertyInfo()[i]);
 
                 // Contains the actual id represented as a ConstantExpression: {id_value}.
                 var constantExpression = Expression.Constant(combinedPrimaryKey.Keys[i].Value, combinedPrimaryKey.Keys[i].Value.GetType());
@@ -199,12 +169,9 @@ namespace ORM
                     whereExpression = Expression.AndAlso(whereExpression, Expression.Equal(memberExpression, constantExpression));
             }
 
-            var collection = new CollectionType();
-            collection.InternalJoin(joinExpression);
+            dynamic collection = Activator.CreateInstance(ORMUtilities.CollectionEntityRelations[GetType()]);
             collection.InternalWhere(whereExpression);
             collection.Fetch(this, 1);
-
-            IsNew = PrimaryKey.Keys.Any(x => (int)this[x.ColumnName] <= 0);
 
             if (!ORMUtilities.IsUnitTesting && IsNew)
                 throw new Exception($"No [{GetType().Name}] found for {string.Join(", ", PrimaryKey.Keys.Select(x => x.ToString()).ToArray())}.");
@@ -212,34 +179,35 @@ namespace ORM
             ExecutedQuery = collection.ExecutedQuery;
 
             if (OriginalFetchedValue != null)
+            {
                 OriginalFetchedValue.ExecutedQuery = ExecutedQuery;
+            }
+
+            return this;
         }
 
         #region NUnit
 
-        internal void FetchEntityById<CollectionType, EntityType>(object id, List<string> tableScheme)
-            where CollectionType : ORMCollection<EntityType>, new()
-            where EntityType : ORMEntity
+        internal void FetchEntityByPrimaryKey(List<string> tableScheme, object primaryKey)
         {
-            MutableTableScheme = tableScheme;
-
-            this[PrimaryKey.Keys[0].ColumnName] = id;
-
-            FetchEntityById<CollectionType, EntityType>(id);
+            FetchEntityByPrimaryKey(tableScheme, new object[] { primaryKey });
         }
 
-        internal void FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>(ORMCombinedPrimaryKey combinedPrimaryKey, List<string> tableScheme)
-            where CollectionType : ORMCollection<EntityType>, new()
-            where EntityType : ORMEntity
+        internal void FetchEntityByPrimaryKey(List<string> tableScheme, params object[] primaryKeys)
         {
             MutableTableScheme = tableScheme;
 
-            for (int i = 0; i < combinedPrimaryKey.Count; i++)
+            foreach (var columnName in TableScheme)
             {
-                this[combinedPrimaryKey.Keys[i].ColumnName] = combinedPrimaryKey.Keys[i].Value;
+                var propertyInfo = GetType().GetProperty(columnName, PublicFlags);
+
+                if (propertyInfo != null && propertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+                {
+                    EntityRelations.Add(this[propertyInfo.Name] as ORMEntity);
+                }
             }
 
-            FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>(combinedPrimaryKey);
+            FetchEntityByPrimaryKey(primaryKeys);
         }
 
         #endregion
@@ -248,46 +216,41 @@ namespace ORM
         {
             if (IsDirty)
             {
-                using (var connection = new SQLConnection())
+                var sqlBuilder = new SQLBuilder();
+
+                foreach (var relation in EntityRelations)
                 {
-                    var sqlBuilder = new SQLBuilder();
-
-                    foreach (var relation in EntityRelations)
+                    if ((this[relation.GetType().Name] as ORMEntity).IsDirty)
                     {
-                        if (relation.IsDirty)
+                        (this[relation.GetType().Name] as ORMEntity).Save();
+
+                        for (int i = 0; i < relation.PrimaryKey.Count; i++)
                         {
-                            relation.Save();
+                            var entityRelationId = (int)(this[relation.GetType().Name] as ORMEntity)[relation.PrimaryKey.Keys[i].ColumnName];
+                            var entityJoin = this[relation.GetType().Name];
 
-                            connection.OpenConnection();
-
-                            for (int i = 0; i < relation.PrimaryKey.Count; i++)
-                            {
-                                var entityRelationId = (int)relation[relation.PrimaryKey.Keys[i].ColumnName];
-                                var entityJoin = this[relation.GetType().Name];
-
-                                entityJoin.GetType().GetProperty(relation.PrimaryKey.Keys[i].ColumnName).SetValue(entityJoin, entityRelationId);
-                                entityJoin.GetType().GetProperty(nameof(ExecutedQuery)).SetValue(entityJoin, relation.ExecutedQuery);
-                            }
+                            //entityJoin.GetType().GetProperty(relation.PrimaryKey.Keys[i].ColumnName).SetValue(entityJoin, entityRelationId);
+                            //entityJoin.GetType().GetProperty(nameof(ExecutedQuery)).SetValue(entityJoin, (this[relation.GetType().Name] as ORMEntity).ExecutedQuery);
                         }
                     }
-
-                    if (IsNew && EntityRelations.Count == 0 || IsNew && EntityRelations.Any(r => r.IsNew))
-                    {
-                        sqlBuilder.BuildNonQuery(this, NonQueryType.Insert);
-
-                        int id = connection.ExecuteNonQuery(sqlBuilder, NonQueryType.Insert);
-
-                        // @Todo: @bug: needs to be fixed for combined primary keys.
-                        this[PrimaryKey.Keys[0].ColumnName] = id;
-                    }
-                    else
-                    {
-                        sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
-                        connection.ExecuteNonQuery(sqlBuilder, NonQueryType.Update);
-                    }
-
-                    ExecutedQuery = sqlBuilder.GeneratedQuery;
                 }
+
+                if (IsNew && EntityRelations.Count == 0 || IsNew && EntityRelations.Any(r => r.IsNew))
+                {
+                    sqlBuilder.BuildNonQuery(this, NonQueryType.Insert);
+
+                    int id = SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Insert);
+
+                    // @Todo: @bug: needs to be fixed for combined primary keys.
+                    this[PrimaryKey.Keys[0].ColumnName] = id;
+                }
+                else
+                {
+                    sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
+                    SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Update);
+                }
+
+                ExecutedQuery = sqlBuilder.GeneratedQuery;
             }
         }
 

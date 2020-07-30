@@ -19,11 +19,13 @@ namespace ORMFakeDAL
 
         public DateTime? DateLastModified { get; private set; }
 
+        public Roles Roles { get; set; }
+
         public User() { }
 
         public User(int fetchByUserId, bool disableChangeTracking = default) : base(disableChangeTracking)
         {
-            base.FetchEntityById<Users, User>(fetchByUserId);
+            base.FetchEntityByPrimaryKey(fetchByUserId);
         }
 
         public override void Save()

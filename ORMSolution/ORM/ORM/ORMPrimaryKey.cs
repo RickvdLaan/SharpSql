@@ -3,29 +3,29 @@ using System.Collections.Generic;
 
 namespace ORM
 {
-    public class ORMCombinedPrimaryKey
+    public class ORMPrimaryKey
     {
         public int Count => Keys.Count;
 
         public List<IORMPrimaryKey> Keys { get; private set; }
 
-        public ORMCombinedPrimaryKey(int totalAmountOfKeys)
+        public ORMPrimaryKey(int totalAmountOfKeys)
         {
             Keys = new List<IORMPrimaryKey>(totalAmountOfKeys);
         }
 
         public void Add(string columnName, object value)
         {
-            Keys.Add(new ORMPrimaryKey(columnName, value));
+            Keys.Add(new PrimaryKey(columnName, value));
         }
 
-        internal struct ORMPrimaryKey : IORMPrimaryKey
+        internal struct PrimaryKey : IORMPrimaryKey
         {
             public string ColumnName { get; set; }
 
             public object Value { get; set; }
 
-            public ORMPrimaryKey(string columnName, object id)
+            public PrimaryKey(string columnName, object id)
             {
                 ColumnName = columnName;
                 Value = id;
@@ -38,7 +38,7 @@ namespace ORM
 
             public override bool Equals(object obj)
             {
-                return obj is ORMPrimaryKey other &&
+                return obj is PrimaryKey other &&
                        ColumnName == other.ColumnName &&
                        EqualityComparer<object>.Default.Equals(Value, other.Value);
             }
@@ -57,14 +57,14 @@ namespace ORM
                 id = Value;
             }
 
-            public static implicit operator (string ColumnName, object Id)(ORMPrimaryKey value)
+            public static implicit operator (string ColumnName, object Id)(PrimaryKey value)
             {
                 return (value.ColumnName, value.Value);
             }
 
-            public static implicit operator ORMPrimaryKey((string ColumnName, object Id) value)
+            public static implicit operator PrimaryKey((string ColumnName, object Id) value)
             {
-                return new ORMPrimaryKey(value.ColumnName, value.Id);
+                return new PrimaryKey(value.ColumnName, value.Id);
             }
         }
     }

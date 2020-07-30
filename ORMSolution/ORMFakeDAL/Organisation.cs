@@ -14,7 +14,7 @@ namespace ORMFakeDAL
 
         public Organisation(int fetchByUserId)
         {
-            base.FetchEntityById<Organisations, Organisation>(fetchByUserId);
+            base.FetchEntityByPrimaryKey(fetchByUserId);
         }
     }
 }

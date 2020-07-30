@@ -226,7 +226,7 @@ namespace ORM
                             if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
                                 continue;
 
-                            var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= i) ? string.Empty : ", ");
+                            var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() < i) ? string.Empty : ", ");
 
                             stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + ParseSqlParameters(addon) + " ");
                         }

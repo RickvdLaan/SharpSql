@@ -33,8 +33,8 @@ namespace ORM
             get { return (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute)); }
         }
 
-        internal List<ORMEntity> _collection;
-        public List<ORMEntity> Collection
+        internal List<EntityType> _collection;
+        public List<EntityType> Collection
         {
             get { return _collection; }
             internal set { _collection = value; }
@@ -42,10 +42,10 @@ namespace ORM
 
         public ORMCollection()
         {
-            Collection = new List<ORMEntity>();
+            Collection = new List<EntityType>();
         }
 
-        internal void Add(ORMEntity entity)
+        internal void Add(EntityType entity)
         {
             Collection.Add(entity);
         }
@@ -53,7 +53,7 @@ namespace ORM
         public ORMEntity this[int index]
         {
             get { return Collection[index]; }
-            set { Collection.Insert(index, value); }
+            set { Collection.Insert(index, value as EntityType); }
         }
 
         public IEnumerator<ORMEntity> GetEnumerator()
@@ -83,9 +83,7 @@ namespace ORM
 
         internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn)
         {
-            using (var connection = new SQLConnection())
-            {
-                var sqlBuilder = new SQLBuilder();
+           var sqlBuilder = new SQLBuilder();
 
                 sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
@@ -93,12 +91,11 @@ namespace ORM
                     return;
 
                 if (entity == null)
-                    connection.ExecuteCollectionQuery(this, sqlBuilder);
+                    SQLExecuter.ExecuteCollectionQuery(this, sqlBuilder);
                 else
-                    connection.ExecuteEntityQuery(entity, sqlBuilder);
+                    SQLExecuter.ExecuteEntityQuery(entity, sqlBuilder);
 
                 ExecutedQuery = sqlBuilder.GeneratedQuery;
-            }
         }
 
         public ORMCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
@@ -142,5 +139,13 @@ namespace ORM
 
             return this;
         }
+
+        public ORMCollection<EntityType> Inner() => default;
+
+        public ORMCollection<EntityType> Left() => default;
+
+        public ORMCollection<EntityType> Right() => default;
+
+        public ORMCollection<EntityType> Full() => default;
     }
 }

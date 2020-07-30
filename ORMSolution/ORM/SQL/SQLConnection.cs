@@ -1,57 +1,45 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
-using System.Data;
 using System.Threading;
 
 namespace ORM
 {
-    internal class SQLConnection : IDisposable
+    internal class SQLExecuter
     {
-        internal bool _isDisposed;
+        internal static AsyncLocal<SqlConnection> CurrentConnection { get; set; } = new AsyncLocal<SqlConnection>();
 
-        internal static AsyncLocal<SqlConnection> SqlConnection { get; set; } = new AsyncLocal<SqlConnection>();
-
-        public SQLConnection()
-        {
-            OpenConnection();
-        }
-
-        internal void OpenConnection()
-        {
-            if (SqlConnection.Value == null)
-                SqlConnection.Value = new SqlConnection(ORMUtilities.ConnectionString);
-
-            if (!ORMUtilities.IsUnitTesting && SqlConnection.Value.State == ConnectionState.Closed)
-            {
-                SqlConnection.Value.Open();
-            }
-        }
-
-        internal int ExecuteNonQuery(SQLBuilder sqlBuilder, NonQueryType nonQueryType)
+        internal static int ExecuteNonQuery(SQLBuilder sqlBuilder, NonQueryType nonQueryType)
         {
             if (!ORMUtilities.IsUnitTesting)
             {
-                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
+                using (var connection = new SqlConnection(ORMUtilities.ConnectionString))
                 {
-                    if (ORMUtilities.Transaction.Value != null)
-                    {
-                        command.Transaction = ORMUtilities.Transaction.Value;
-                    }
+                    CurrentConnection.Value = connection;
 
-                    if (sqlBuilder.SqlParameters != null)
+                    using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection))
                     {
-                        command.Parameters.AddRange(sqlBuilder.SqlParameters);
-                    }
+                        command.Connection.Open();
 
-                    switch (nonQueryType)
-                    {
-                        case NonQueryType.Insert:
-                            return (int)command.ExecuteScalar();
-                        case NonQueryType.Update:
-                            return command.ExecuteNonQuery();
-                        case NonQueryType.Delete:
-                        default:
-                            throw new NotImplementedException(nonQueryType.ToString());
+                        if (ORMUtilities.Transaction.Value != null)
+                        {
+                            command.Transaction = ORMUtilities.Transaction.Value;
+                        }
+
+                        if (sqlBuilder.SqlParameters != null)
+                        {
+                            command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                        }
+
+                        switch (nonQueryType)
+                        {
+                            case NonQueryType.Insert:
+                                return (int)command.ExecuteScalar();
+                            case NonQueryType.Update:
+                                return command.ExecuteNonQuery();
+                            case NonQueryType.Delete:
+                            default:
+                                throw new NotImplementedException(nonQueryType.ToString());
+                        }
                     }
                 }
             }
@@ -59,80 +47,63 @@ namespace ORM
             return 1;
         }
 
-        internal void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)
+        internal static void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             if (!ORMUtilities.IsUnitTesting)
             {
-                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
+                using (var connection = new SqlConnection(ORMUtilities.ConnectionString))
                 {
-                    if (sqlBuilder.SqlParameters != null)
-                    {
-                        command.Parameters.AddRange(sqlBuilder.SqlParameters);
-                    }
+                    CurrentConnection.Value = connection;
 
-                    using (var reader = command.ExecuteReader())
+                    using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection))
                     {
-                        ORMUtilities.DataReader(entity, reader, sqlBuilder);
+                        command.Connection.Open();
+
+                        if (sqlBuilder.SqlParameters != null)
+                        {
+                            command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                        }
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            ORMUtilities.DataReader(entity, reader, sqlBuilder);
+                        }
                     }
                 }
             }
         }
 
-        internal void ExecuteCollectionQuery<EntityType>(ORMCollection<EntityType> ormCollection, SQLBuilder sqlBuilder)
+        internal static void ExecuteCollectionQuery<EntityType>(ORMCollection<EntityType> ormCollection, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             if (!ORMUtilities.IsUnitTesting)
             {
-                using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, SqlConnection.Value))
+                using (var connection = new SqlConnection(ORMUtilities.ConnectionString))
                 {
-                    if (ORMUtilities.Transaction.Value != null)
-                    {
-                        command.Transaction = ORMUtilities.Transaction.Value;
-                    }
+                    CurrentConnection.Value = connection;
 
-                    if (sqlBuilder.SqlParameters != null)
+                    using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection))
                     {
-                        command.Parameters.AddRange(sqlBuilder.SqlParameters);
-                    }
+                          command.Connection.Open();
 
-                    using (var reader = command.ExecuteReader())
-                    {
-                        ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
+                        if (ORMUtilities.Transaction.Value != null)
+                        {
+                            command.Transaction = ORMUtilities.Transaction.Value;
+                        }
+
+                        if (sqlBuilder.SqlParameters != null)
+                        {
+                            command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                        }
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
+                        }
                     }
                 }
             }
-        }
-
-        internal void CloseConnection()
-        {
-            if (SqlConnection.Value.State == ConnectionState.Open)
-            {
-                SqlConnection.Value.Close();
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_isDisposed) return;
-
-            if (disposing)
-            {
-                if (!ORMUtilities.IsInTransaction())
-                {
-                    //CloseConnection();
-                    SqlConnection.Value.Dispose();
-                    SqlConnection.Value = null;
-                }
-            }
-
-            _isDisposed = true;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace ORMFakeDAL
 
         public UserRole(int userId, int roleId)
         {
-            base.FetchEntityByCombinedPrimaryKey<UserRoles, UserRole>(userId, roleId);
+            base.FetchEntityByPrimaryKey(userId, roleId);
         }
     }
 }

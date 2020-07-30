@@ -22,7 +22,7 @@ namespace ORMNUnit
                 nameof(user.Password)
             };
 
-            user.FetchEntityById<Users, User>(1, tableScheme);
+            user.FetchEntityByPrimaryKey(tableScheme, 1);
 
             Assert.AreEqual(expectedQuery, user.ExecutedQuery);
         }
@@ -30,7 +30,7 @@ namespace ORMNUnit
         [Test]
         public void BasicFetch_Join()
         {
-            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
             var user = new User();
 
@@ -42,7 +42,7 @@ namespace ORMNUnit
                 nameof(user.Organisation)
             };
 
-            user.FetchEntityById<Users, User>(1, tableScheme);
+            user.FetchEntityByPrimaryKey(tableScheme, 1);
 
             Assert.AreEqual(expectedQuery, user.ExecutedQuery);
         }
@@ -77,7 +77,7 @@ namespace ORMNUnit
         [Test]
         public void BasicInsert_Join()
         {
-            var expectedUserQuery         = "INSERT INTO [DBO].[USERS] ([DBO].[USERS].[USERNAME], [DBO].[USERS].[PASSWORD], [DBO].[USERS].[ORGANISATION]) VALUES('Unit', 'Test', '1'); SELECT CAST(SCOPE_IDENTITY() AS INT);";
+            var expectedUserQuery         = "INSERT INTO [DBO].[USERS] ([DBO].[USERS].[USERNAME], [DBO].[USERS].[PASSWORD], [DBO].[USERS].[ORGANISATION]) VALUES('Unit', 'Test', '-1'); SELECT CAST(SCOPE_IDENTITY() AS INT);";
             var expectedOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
 
             var user = new User()
@@ -108,7 +108,7 @@ namespace ORMNUnit
                 nameof(organisation.Name)
             };
 
-            organisation.FetchEntityById<Organisations, Organisation>(1, organisationTableScheme);
+            organisation.FetchEntityByPrimaryKey(organisationTableScheme, 1);
 
             user.Organisation = organisation;
             user.Save();
@@ -144,10 +144,31 @@ namespace ORMNUnit
 
             user.MutableTableScheme = tableScheme;
             user.IsDirtyList = dirtyFields;
-            user.OriginalFetchedValue = (User)Activator.CreateInstance(user.GetType());
+            user.OriginalFetchedValue = user.ShallowCopy();
 
-            user.FetchEntityById<Users, User>(1, tableScheme);
+            var organisation = new Organisation()
+            {
+                Name = "Unit"
+            };
+
+            var organisationTableScheme = new List<string>
+            {
+                nameof(organisation.Id),
+                nameof(organisation.Name)
+            };
+
+            (string fieldName, bool isDirty)[] dirtyOrganisationFields = new (string fieldName, bool isDirty)[organisationTableScheme.Count - organisation.PrimaryKey.Count];
+            dirtyOrganisationFields[0].fieldName = nameof(organisation.Name);
+            dirtyOrganisationFields[0].isDirty = false;
+
+            organisation.FetchEntityByPrimaryKey(organisationTableScheme, 1);
+            organisation.IsNew = false;
+            organisation.IsDirtyList = dirtyOrganisationFields;
+            organisation.OriginalFetchedValue = organisation.ShallowCopy();
+
+            user.IsNew = false;
             user.Password = "Test";
+            user.Organisation = organisation;
             user.Save();
 
             Assert.AreEqual(expectedQuery, user.ExecutedQuery);
@@ -181,10 +202,7 @@ namespace ORMNUnit
 
             user.MutableTableScheme = tableScheme;
             user.IsDirtyList = dirtyFields;
-            user.OriginalFetchedValue = (User)Activator.CreateInstance(user.GetType());
-
-            user.FetchEntityById<Users, User>(1, tableScheme);
-            user.Password = "Test";
+            user.OriginalFetchedValue = user.ShallowCopy();
 
             var organisation = new Organisation()
             {
@@ -201,10 +219,18 @@ namespace ORMNUnit
             dirtyOrganisationFields[0].fieldName = nameof(organisation.Name);
             dirtyOrganisationFields[0].isDirty = false;
 
+            organisation.MutableTableScheme = organisationTableScheme;
+            organisation.FetchEntityByPrimaryKey(organisationTableScheme, 1);
+            organisation.IsNew = false;
             organisation.IsDirtyList = dirtyOrganisationFields;
-            organisation.FetchEntityById<Organisations, Organisation>(1, organisationTableScheme);
+            organisation.OriginalFetchedValue = organisation.ShallowCopy();
 
             user.Organisation = organisation;
+
+            user.FetchEntityByPrimaryKey(tableScheme, 1);
+            user.Password = "Test";
+            user.IsNew = false;
+            user.OriginalFetchedValue = user.ShallowCopy();
             user.Save();
 
             Assert.AreEqual(expectedOrganisationQuery, organisation.ExecutedQuery);
@@ -236,9 +262,6 @@ namespace ORMNUnit
             dirtyUserFields[2].fieldName = nameof(user.Organisation);
             dirtyUserFields[2].isDirty = true;
 
-            user.FetchEntityById<Users, User>(1, tableUserScheme);
-            user.IsDirtyList = dirtyUserFields;
-
             (string fieldName, bool isDirty)[] dirtyOriginalUserFields = new (string fieldName, bool isDirty)[tableUserScheme.Count - user.PrimaryKey.Count];
             dirtyOriginalUserFields[0].fieldName = nameof(user.Username);
             dirtyOriginalUserFields[0].isDirty = false;
@@ -249,12 +272,6 @@ namespace ORMNUnit
             dirtyOriginalUserFields[2].fieldName = nameof(user.Organisation);
             dirtyOriginalUserFields[2].isDirty = false;
 
-            var originalUser = new User();
-            originalUser.FetchEntityById<Users, User>(1, tableUserScheme);
-            originalUser.IsDirtyList = dirtyOriginalUserFields;
-            originalUser.Password = "password";
-
-            user.OriginalFetchedValue = originalUser;
             user.Password = "qwerty";
 
             var organisation = new Organisation()
@@ -273,9 +290,20 @@ namespace ORMNUnit
             dirtyOrganisationFields[0].isDirty = false;
 
             organisation.MutableTableScheme = organisationTableScheme;
+            organisation.FetchEntityByPrimaryKey(organisationTableScheme, 1);
             organisation.IsDirtyList = dirtyOrganisationFields;
+            organisation.OriginalFetchedValue = organisation.ShallowCopy();
+
             user.Organisation = organisation;
 
+            var originalUser = user.ShallowCopy() as User;
+            originalUser.IsNew = false;
+            originalUser.IsDirtyList = dirtyOriginalUserFields;
+            originalUser.Password = "password";
+            user.FetchEntityByPrimaryKey(tableUserScheme, 1);
+            user.IsDirtyList = dirtyUserFields;
+            user.IsNew = false;
+            user.OriginalFetchedValue = originalUser;
             user.Save();
 
             Assert.AreEqual(expectedQuery, user.ExecutedQuery);
@@ -285,7 +313,7 @@ namespace ORMNUnit
         [Test]
         public void BasicUpdate_JoinInsert()
         {
-            var expectedUserOriginalQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedUserOriginalQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
             var expectedOrganisationQuery = "INSERT INTO [DBO].[ORGANISATIONS] ([DBO].[ORGANISATIONS].[NAME]) VALUES('Unit'); SELECT CAST(SCOPE_IDENTITY() AS INT);";
             var expectedUserQuery = "UPDATE [U] SET [U].[PASSWORD] = 'Test', [O].[NAME] = 'Unit' FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM1);";
 
@@ -311,7 +339,7 @@ namespace ORMNUnit
 
             user.MutableTableScheme = tableScheme;
             user.IsDirtyList = dirtyFields;
-            user.OriginalFetchedValue = (User)Activator.CreateInstance(user.GetType());
+            user.OriginalFetchedValue = user.ShallowCopy();
 
             var organisation = new Organisation()
             {
@@ -332,9 +360,9 @@ namespace ORMNUnit
             organisation.IsDirtyList = dirtyOrganisationFields;
             user.Organisation = organisation;
 
-            user.FetchEntityById<Users, User>(1, tableScheme);
+            user.FetchEntityByPrimaryKey(tableScheme, 1);
             user.Password = "Test";
-
+            user.IsNew = false;
             user.Save();
 
             Assert.AreEqual(expectedUserOriginalQuery, user.OriginalFetchedValue.ExecutedQuery);

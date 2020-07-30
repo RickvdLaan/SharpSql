@@ -8,6 +8,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -52,12 +53,7 @@ namespace ORM
 
         public static void TransactionBegin()
         {
-            if (SQLConnection.SqlConnection.Value == null)
-            {
-                new SQLConnection();
-            }
-
-            Transaction.Value = SQLConnection.SqlConnection.Value.BeginTransaction();
+            Transaction.Value = SQLExecuter.CurrentConnection.Value.BeginTransaction();
         }
 
         public static void TransactionCommit(bool rollbackTransactionOnFailure = false)
@@ -100,13 +96,6 @@ namespace ORM
             {
                 Transaction.Value.Dispose();
                 Transaction.Value = null;
-
-                if (SQLConnection.SqlConnection.Value.State == ConnectionState.Open)
-                {
-                    SQLConnection.SqlConnection.Value.Close();
-                }
-                SQLConnection.SqlConnection.Value.Dispose();
-                SQLConnection.SqlConnection.Value = null;
             }
         }
 
@@ -159,10 +148,17 @@ namespace ORM
 
         private static T ExecuteQuery<T>(Func<SqlCommand, T> method, string query, params object[] parameters)
         {
-            using (var connection = new SQLConnection())
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
             {
-                using (var command = new SqlCommand(query, SQLConnection.SqlConnection.Value))
+                SQLExecuter.CurrentConnection.Value = connection;
+
+                using (var command = new SqlCommand(query, connection))
                 {
+                    if (!IsUnitTesting)
+                    {
+                        command.Connection.Open();
+                    }
+
                     var regexMatches = Regex.Matches(query, @"\@[^ |\))]\w+")
                         .OfType<Match>()
                         .Select(m => m.Groups[0].Value)
@@ -177,6 +173,11 @@ namespace ORM
                             regexMatches.Count > 1 || regexMatches.Count == 0 ? "s were" : " was",
                             parameters.Length,
                             parameters.Length > 1 || parameters.Length == 0 ? "s were" : " was"));
+                    }
+
+                    if (Transaction.Value != null)
+                    {
+                        command.Transaction = Transaction.Value;
                     }
 
                     for (int i = 0; i < parameters.Length; i++)
@@ -219,7 +220,7 @@ namespace ORM
         }
 
         internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
-               where EntityType : ORMEntity
+            where EntityType : ORMEntity
         {
             while (reader.Read())
             {
@@ -228,7 +229,7 @@ namespace ORM
         }
 
         internal static void PopulateEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
-             where EntityType : ORMEntity
+            where EntityType : ORMEntity
         {
             if (sqlBuilder?.TableNameResolvePaths.Count > 0)
             {
@@ -242,6 +243,9 @@ namespace ORM
                 }
             }
 
+            // Once the entity is populated we can check whether or not this is a new or existing data row.
+            entity.IsNew = entity.PrimaryKey.Keys.Any(x => (int)entity[x.ColumnName] <= 0);
+
             if (!entity.DisableChangeTracking)
             {
                 entity.GetType()
@@ -250,7 +254,7 @@ namespace ORM
             }
         }
 
-          private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
+        private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             var tableIndex = 0;
@@ -300,39 +304,51 @@ namespace ORM
             {
                 throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
             }
-            else if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+
+            object value;
+
+            switch (entityPropertyInfo.PropertyType)
             {
-                object value;
-
-                switch (entityPropertyInfo.PropertyType)
-                {
-                    case Type dateTime when dateTime == typeof(DateTime?):
-                        value = reader.GetValue(iteration);
-                        break;
-                    case Type dateTime when dateTime == typeof(DateTime):
-                        if (reader.GetValue(iteration) == DBNull.Value)
-                        {
-                            throw new ORMPropertyNotNullableException($"Property {propertyName} is not nullable, but the database column equivelant is.");
-                        }
-
-                        value = reader.GetValue(iteration);
-                        break;
-                    default:
-                        value = reader.GetValue(iteration);
-                        break;
-                }
-
-                if (entityPropertyInfo.PropertyType.IsGenericType && entityPropertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                {
+                case Type type when type == typeof(DateTime?):
+                    value = reader.GetValue(iteration);
+                    break;
+                case Type type when type == typeof(DateTime):
                     if (reader.GetValue(iteration) == DBNull.Value)
                     {
-                        entityPropertyInfo.SetValue(entity, null);
+                        throw new ORMPropertyNotNullableException($"Property {propertyName} is not nullable, but the database column equivelant is.");
                     }
-                }
-                else
+
+                    value = reader.GetValue(iteration);
+                    break;
+                case Type type when type.IsSubclassOf(typeof(ORMEntity)):
+                    var subEntity = Activator.CreateInstance(type.UnderlyingSystemType);
+
+                    var fetchEntityByPrimaryKey = subEntity.GetType().BaseType
+                        .GetMethod(nameof(ORMEntity.FetchEntityByPrimaryKey),
+                        BindingFlags.Instance | BindingFlags.NonPublic,
+                        Type.DefaultBinder,
+                        new Type[] { typeof(object) },
+                        null);
+
+                    value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { reader.GetValue(iteration) });
+
+                    entity.EntityRelations.Add(value as ORMEntity);
+                    break;
+                default:
+                    value = reader.GetValue(iteration);
+                    break;
+            }
+
+            if (entityPropertyInfo.PropertyType.IsGenericType && entityPropertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                if (reader.GetValue(iteration) == DBNull.Value)
                 {
-                    entityPropertyInfo.SetValue(entity, value);
+                    entityPropertyInfo.SetValue(entity, null);
                 }
+            }
+            else
+            {
+                entityPropertyInfo.SetValue(entity, value);
             }
         }
 
