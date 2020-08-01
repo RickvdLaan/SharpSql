@@ -11,6 +11,8 @@ namespace ORMFakeDAL
         [ORMColumn(RoleConstants.ColumnName)]
         public string Description { get; set; }
 
+        public Role() { }
+
         public Role(int id)
         {
             base.FetchEntityByPrimaryKey(id);

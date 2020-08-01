@@ -31,7 +31,8 @@ namespace ORM
                         {
                             ORMUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
                             ORMUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
-                            ORMUtilities.ManyToManyRelations.Add(tableAttribute.CollectionType, (tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight));
+                            ORMUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight), tableAttribute);
+                            ORMUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeRight, tableAttribute.CollectionTypeLeft), tableAttribute);
                         }
                         if (!ORMUtilities.IsUnitTesting
                          && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)

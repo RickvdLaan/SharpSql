@@ -2,7 +2,10 @@
 using Microsoft.Extensions.Configuration;
 using ORM.Attributes;
 using ORM.Exceptions;
+using ORM.Interfaces;
+using ORM.ORM;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -23,7 +26,7 @@ namespace ORM
 
         internal static Dictionary<Type, Type> CollectionEntityRelations { get; private set; }
 
-        internal static Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)> ManyToManyRelations { get; private set; }
+        internal static Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), ORMTableAttribute> ManyToManyRelations { get; private set; }
 
         internal static Dictionary<Type, List<string>> CachedColumns { get; private set; }
 
@@ -42,7 +45,7 @@ namespace ORM
         {
             IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(ORMUnitTestAttribute), false).Any());
             CollectionEntityRelations = new Dictionary<Type, Type>();
-            ManyToManyRelations = new Dictionary<Type, (Type CollectionTypeLeft, Type CollectionTypeRight)>();
+            ManyToManyRelations = new Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), ORMTableAttribute>();
             CachedColumns = new Dictionary<Type, List<string>>();
         }
 
@@ -208,6 +211,12 @@ namespace ORM
             where CollectionType : ORMCollection<EntityType>
             where EntityType : ORMEntity
         {
+            if (sqlBuilder?.ContainsToManyJoins == true)
+            {
+                PopulateCollection<CollectionType, EntityType>(collection, reader, sqlBuilder);
+                return;
+            }
+
             while (reader.Read())
             {
                 var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
@@ -268,19 +277,162 @@ namespace ORM
                 {
                     continue;
                 }
-                for (int i = 0; i < tableColumnCount; i++)
+
+                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : "";
+                if(!objectPath.StartsWith(SQLBuilder.MANY_TO_MANY_JOIN, StringComparison.Ordinal))
                 {
-                    if (sqlBuilder.TableNameResolvePaths.ContainsKey(name))
+                    var objectToFill = GetObjectAtPath(entity, objectPath);
+                
+                    for (int i = 0; i < tableColumnCount; i++)
                     {
-                        SetEntityProperty(GetObjectAtPath(entity, sqlBuilder.TableNameResolvePaths[name]), reader, i, tableIndex);
-                    }
-                    else
-                    {
-                        SetEntityProperty(entity, reader, i, tableIndex);
+                        SetEntityProperty(objectToFill, reader, i, tableIndex);
                     }
                 }
 
                 tableIndex += tableColumnCount;
+            }
+        }
+
+        private static void PopulateCollection<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, SQLBuilder sqlBuilder)
+            where CollectionType : ORMCollection<EntityType>
+            where EntityType : ORMEntity
+        {
+            Dictionary<ORMPrimaryKeyIdentification, Dictionary<string, List<ORMEntity>>> manyToManyData = new Dictionary<ORMPrimaryKeyIdentification, Dictionary<string, List<ORMEntity>>>(new ORMPrimaryKeyIdentificationComparer());
+            Dictionary<ORMPrimaryKeyIdentification, EntityType> knownEntities = new Dictionary<ORMPrimaryKeyIdentification, EntityType>(new ORMPrimaryKeyIdentificationComparer());
+
+            List<(string, int[])> manyToManyJoinIndexes = new List<(string, int[])>();
+            Dictionary<string, Type> manyToManyJoinTypes = new Dictionary<string, Type>();
+
+            var tableIndex = 0;
+            foreach (var (name, _) in sqlBuilder.TableOrder)
+            {
+                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : "";
+                var tableColumnCount = sqlBuilder.TableNameColumnCount[name];
+
+                if (objectPath.StartsWith(SQLBuilder.MANY_TO_MANY_JOIN_DATA, StringComparison.Ordinal))
+                {
+                    var indexes = new List<int>();
+                    for (int i = 0; i < tableColumnCount; i++)
+                    {
+                        indexes.Add(tableIndex + i);
+                    }
+                    manyToManyJoinIndexes.Add((objectPath.Split('.')[1], indexes.ToArray()));
+                }
+                tableIndex += tableColumnCount;
+            }
+
+            void AddManyToManyObject(ORMPrimaryKeyIdentification key, DbDataReader _reader)
+            {
+                Dictionary<string, List<ORMEntity>> relations;
+                if (manyToManyData.ContainsKey(key))
+                {
+                    relations = manyToManyData[key];
+                }
+                else
+                {
+                    relations = new Dictionary<string, List<ORMEntity>>();
+                    manyToManyData[key] = relations;
+                }
+
+                foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
+                {
+                    var instance = (ORMEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
+                    foreach (var index in indexes)
+                    {
+                        SetEntityProperty(instance, _reader, index);
+                    }
+
+                    if (relations.ContainsKey(fieldName))
+                    {
+                        relations[fieldName].Add(instance);
+                    }
+                    else
+                    {
+                        relations[fieldName] = new List<ORMEntity>()
+                        {
+                            instance
+                        };
+                    }
+                }
+            }
+            
+            int[] primaryKeyIndexes = null;
+
+            bool isFirst = true;
+            while (reader.Read())
+            {
+                ORMPrimaryKeyIdentification pk = default;
+                if (!isFirst)
+                {
+                    pk = new ORMPrimaryKeyIdentification(reader, primaryKeyIndexes);
+                    if (knownEntities.ContainsKey(pk))
+                    {
+                        // Only do to many linking here
+                        AddManyToManyObject(pk, reader);
+                        continue;
+                    }
+                }
+                
+                var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
+                entity.DisableChangeTracking = collection.DisableChangeTracking;
+
+                if (isFirst)
+                {
+                    primaryKeyIndexes = ORMPrimaryKeyIdentification.DeterminePrimaryKeyIndexes(reader, entity);
+
+                    foreach (var (fieldName, _) in manyToManyJoinIndexes)
+                    {
+                        var type = entity.GetType().GetProperty(fieldName, entity.PublicFlags).PropertyType;
+                        if (!typeof(ORMEntity).IsAssignableFrom(type.GetType()))
+                        {
+                            type = CollectionEntityRelations[type];
+                        }
+                        manyToManyJoinTypes.Add(fieldName, type);
+                    }
+
+                    pk = new ORMPrimaryKeyIdentification(reader, primaryKeyIndexes);
+                    isFirst = false;
+                }
+
+                PopulateEntity(entity, reader, sqlBuilder);
+                AddManyToManyObject(pk, reader);
+
+                knownEntities.Add(pk, entity);
+            }
+
+            foreach(var kvPair in manyToManyData)
+            {
+                var entity = knownEntities[kvPair.Key];
+                foreach(var data in kvPair.Value)
+                {
+                    var property = entity.GetType().GetProperty(data.Key, entity.PublicFlags);
+                    if (typeof(IORMCollection).IsAssignableFrom(property.PropertyType))
+                    {
+                        var subcollection = Activator.CreateInstance(property.PropertyType);
+                        var collectionProperty = property.PropertyType.GetProperty(nameof(ORMCollection<ORMEntity>.Collection), entity.PublicFlags);
+                        var list = collectionProperty.GetValue(subcollection) as IList;
+                        foreach (var item in data.Value)
+                        {
+                            list.Add(item);
+                        }
+                        property.SetValue(entity, subcollection);
+                    }
+                    else if(typeof(IList).IsAssignableFrom(property.PropertyType))
+                    {
+                        var subcollection = (IList)Activator.CreateInstance(property.PropertyType);
+                        foreach (var item in data.Value)
+                        {
+                            subcollection.Add(item);
+                        }
+                        property.SetValue(entity, subcollection);
+                    }
+                    else
+                    {
+                        throw new Exception("Something went wrong trying to cast to a subcollection");
+                    }
+                }
+
+                collection.Add(entity);
             }
         }
 
@@ -310,15 +462,15 @@ namespace ORM
             switch (entityPropertyInfo.PropertyType)
             {
                 case Type type when type == typeof(DateTime?):
-                    value = reader.GetValue(iteration);
+                    value = reader.GetValue(iteration + tableIndex);
                     break;
                 case Type type when type == typeof(DateTime):
-                    if (reader.GetValue(iteration) == DBNull.Value)
+                    if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
                     {
                         throw new ORMPropertyNotNullableException($"Property {propertyName} is not nullable, but the database column equivelant is.");
                     }
 
-                    value = reader.GetValue(iteration);
+                    value = reader.GetValue(iteration + tableIndex);
                     break;
                 case Type type when type.IsSubclassOf(typeof(ORMEntity)):
                     var subEntity = Activator.CreateInstance(type.UnderlyingSystemType);

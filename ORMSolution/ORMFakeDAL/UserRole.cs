@@ -5,10 +5,10 @@ namespace ORMFakeDAL
 {
     public class UserRole : ORMEntity
     {
-        [ORMPrimaryKey]
+        [ORMPrimaryKey, ORMForeignKey(typeof(User))]
         public int UserId { get; private set; }
 
-        [ORMPrimaryKey]
+        [ORMPrimaryKey, ORMForeignKey(typeof(Role))]
         public int RoleId { get; private set; }
 
         public UserRole(int userId, int roleId)

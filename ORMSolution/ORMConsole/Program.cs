@@ -15,6 +15,12 @@ namespace ORMConsole
 
             new ORMInitialize(configuration);
 
+            var user = new Users();
+            user.Join(x => new object[]{ x.Roles.Right(), x.Organisation.Right() });
+            user.Where(x => x.Id == 1);
+
+            user.Fetch();
+            ShowOutput(user);
             Console.Read();
         }
 

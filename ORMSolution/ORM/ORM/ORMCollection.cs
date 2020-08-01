@@ -1,4 +1,5 @@
 ﻿using ORM.Attributes;
+using ORM.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Linq.Expressions;
 namespace ORM
 {
     [Serializable]
-    public class ORMCollection<EntityType> : IEnumerable<ORMEntity> where EntityType : ORMEntity
+    public class ORMCollection<EntityType> : IORMCollection, IEnumerable<ORMEntity> where EntityType : ORMEntity
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
@@ -33,7 +34,7 @@ namespace ORM
             get { return (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute)); }
         }
 
-        internal List<EntityType> _collection;
+        internal List<EntityType> _collection = new List<EntityType>();
         public List<EntityType> Collection
         {
             get { return _collection; }

@@ -14,6 +14,9 @@ namespace ORM
     internal class SQLBuilder
     {
         private const string Param = "@PARAM";
+        internal const string MANY_TO_MANY_JOIN = "MM_Join_";
+        internal const string MANY_TO_MANY_JOIN_COUPLER = MANY_TO_MANY_JOIN + "Conn.";
+        internal const string MANY_TO_MANY_JOIN_DATA = MANY_TO_MANY_JOIN + "Data.";
 
         public string GeneratedQuery { get; private set; }
 
@@ -28,6 +31,8 @@ namespace ORM
         public Dictionary<string, int> TableNameColumnCount { get; private set; } = new Dictionary<string, int>();
 
         public Dictionary<string, string> TableNameResolvePaths { get; private set; } = new Dictionary<string, string>();
+
+        public bool ContainsToManyJoins { get; private set; } = true;
 
         internal ORMTableAttribute TableAttribute { get; set; }
 
@@ -470,16 +475,65 @@ namespace ORM
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GenerateJoinQuery(MemberExpression expression, string joinType)
         {
-            var join = CalculateJoins(TableAttribute, expression.Member.Name);
-            Joins.Add(join);
+            var targetProperty = expression.Member.DeclaringType.GetProperty(expression.Member.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
 
+            var relations = ORMUtilities.ManyToManyRelations.GetValueOrDefault((ORMUtilities.CollectionEntityRelations[expression.Member.DeclaringType], targetProperty.PropertyType));
             var stringBuilder = new StringBuilder();
 
+            if (relations != null)
+            {
+                ContainsToManyJoins = true;
+
+                var properties = relations.EntityType.GetProperties();
+
+                SQLJoin firstJoin = new SQLJoin()
+                {
+                    LeftTableAttribute = TableAttribute,
+                    LeftPropertyInfo = TableAttribute.EntityType.GetProperties().Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null).First(),
+                    RightTableAttribute = relations.CollectionType.GetCustomAttribute<ORMTableAttribute>(),
+                    RightPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute)?.Relation == expression.Member.DeclaringType).ToArray()
+                };
+
+                SQLJoin secondJoin = new SQLJoin()
+                {
+                    LeftTableAttribute = relations.CollectionType.GetCustomAttribute<ORMTableAttribute>(),
+                    LeftPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute)?.Relation == ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType]).First(),
+                    RightTableAttribute = targetProperty.PropertyType.GetCustomAttribute<ORMTableAttribute>(),
+                    RightPropertyInfo = ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties().Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null).ToArray()
+                };
+
+                AddQueryTableName(firstJoin.RightTableAttribute);
+                AddQueryTableName(secondJoin.RightTableAttribute);
+
+                Joins.Add(firstJoin);
+                Joins.Add(secondJoin);
+
+                GenerateJoinSql(joinType, stringBuilder, firstJoin);
+                GenerateJoinSql(joinType, stringBuilder, secondJoin);
+
+                var parentTableName = _queryTableNames[firstJoin.RightTableAttribute.TableName];
+                var basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : MANY_TO_MANY_JOIN_COUPLER;
+                TableNameResolvePaths.Add(_queryTableNames[firstJoin.RightTableAttribute.TableName], basePath + targetProperty.Name);
+
+                parentTableName = _queryTableNames[secondJoin.RightTableAttribute.TableName];
+                basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : MANY_TO_MANY_JOIN_DATA;
+                TableNameResolvePaths.Add(_queryTableNames[secondJoin.RightTableAttribute.TableName], basePath + targetProperty.Name);
+
+                return stringBuilder.ToString();
+            }
+
+            var join = CalculateJoins(TableAttribute, expression.Member.Name);
+            Joins.Add(join);
+            GenerateJoinSql(joinType, stringBuilder, join);
+            return stringBuilder.ToString();
+        }
+
+        private void GenerateJoinSql(string joinType, StringBuilder stringBuilder, SQLJoin join)
+        {
             for (int i = 0; i < join.RightPropertyInfo.Length; i++)
             {
                 stringBuilder.Append($" {joinType} JOIN [dbo].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo[i].Name}]");
             }
-            return stringBuilder.ToString();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
