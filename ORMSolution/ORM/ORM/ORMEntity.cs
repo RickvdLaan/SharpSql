@@ -25,6 +25,9 @@ namespace ORM
                 if (DisableChangeTracking || IsNew)
                     return true;
 
+                if (!IsNew && OriginalFetchedValue == null)
+                    return false;
+
                 if (!ORMUtilities.IsUnitTesting)
                     UpdateIsDirtyList();
 

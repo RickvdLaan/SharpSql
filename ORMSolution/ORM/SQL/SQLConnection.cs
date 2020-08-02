@@ -12,36 +12,28 @@ namespace ORM
         {
             if (!ORMUtilities.IsUnitTesting)
             {
-                using (var connection = new SqlConnection(ORMUtilities.ConnectionString))
+                using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+                CurrentConnection.Value = connection;
+
+                using var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection);
+                command.Connection.Open();
+
+                if (ORMUtilities.Transaction.Value != null)
                 {
-                    CurrentConnection.Value = connection;
-
-                    using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection))
-                    {
-                        command.Connection.Open();
-
-                        if (ORMUtilities.Transaction.Value != null)
-                        {
-                            command.Transaction = ORMUtilities.Transaction.Value;
-                        }
-
-                        if (sqlBuilder.SqlParameters != null)
-                        {
-                            command.Parameters.AddRange(sqlBuilder.SqlParameters);
-                        }
-
-                        switch (nonQueryType)
-                        {
-                            case NonQueryType.Insert:
-                                return (int)command.ExecuteScalar();
-                            case NonQueryType.Update:
-                                return command.ExecuteNonQuery();
-                            case NonQueryType.Delete:
-                            default:
-                                throw new NotImplementedException(nonQueryType.ToString());
-                        }
-                    }
+                    command.Transaction = ORMUtilities.Transaction.Value;
                 }
+
+                if (sqlBuilder.SqlParameters != null)
+                {
+                    command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                }
+
+                return nonQueryType switch
+                {
+                    NonQueryType.Insert => (int)command.ExecuteScalar(),
+                    NonQueryType.Update => command.ExecuteNonQuery(),
+                    _ => throw new NotImplementedException(nonQueryType.ToString()),
+                };
             }
 
             return 1;
@@ -52,25 +44,19 @@ namespace ORM
         {
             if (!ORMUtilities.IsUnitTesting)
             {
-                using (var connection = new SqlConnection(ORMUtilities.ConnectionString))
+                using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+                CurrentConnection.Value = connection;
+
+                using var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection);
+                command.Connection.Open();
+
+                if (sqlBuilder.SqlParameters != null)
                 {
-                    CurrentConnection.Value = connection;
-
-                    using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection))
-                    {
-                        command.Connection.Open();
-
-                        if (sqlBuilder.SqlParameters != null)
-                        {
-                            command.Parameters.AddRange(sqlBuilder.SqlParameters);
-                        }
-
-                        using (var reader = command.ExecuteReader())
-                        {
-                            ORMUtilities.DataReader(entity, reader, sqlBuilder);
-                        }
-                    }
+                    command.Parameters.AddRange(sqlBuilder.SqlParameters);
                 }
+
+                using var reader = command.ExecuteReader();
+                ORMUtilities.DataReader(entity, reader, sqlBuilder);
             }
         }
 
@@ -79,30 +65,24 @@ namespace ORM
         {
             if (!ORMUtilities.IsUnitTesting)
             {
-                using (var connection = new SqlConnection(ORMUtilities.ConnectionString))
+                using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+                CurrentConnection.Value = connection;
+
+                using var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection);
+                command.Connection.Open();
+
+                if (ORMUtilities.Transaction.Value != null)
                 {
-                    CurrentConnection.Value = connection;
-
-                    using (var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection))
-                    {
-                          command.Connection.Open();
-
-                        if (ORMUtilities.Transaction.Value != null)
-                        {
-                            command.Transaction = ORMUtilities.Transaction.Value;
-                        }
-
-                        if (sqlBuilder.SqlParameters != null)
-                        {
-                            command.Parameters.AddRange(sqlBuilder.SqlParameters);
-                        }
-
-                        using (var reader = command.ExecuteReader())
-                        {
-                            ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
-                        }
-                    }
+                    command.Transaction = ORMUtilities.Transaction.Value;
                 }
+
+                if (sqlBuilder.SqlParameters != null)
+                {
+                    command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                }
+
+                using var reader = command.ExecuteReader();
+                ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
             }
         }
     }

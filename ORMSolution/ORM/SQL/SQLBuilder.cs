@@ -79,20 +79,13 @@ namespace ORM
 
         public void BuildNonQuery(ORMEntity entity, NonQueryType nonQueryType)
         {
-            switch (nonQueryType)
+            GeneratedQuery = nonQueryType switch
             {
-                case NonQueryType.Insert:
-                    GeneratedQuery = InsertInto(entity);
-                    break;
-                case NonQueryType.Update:
-                    GeneratedQuery = Update(entity);
-                    break;
-                case NonQueryType.Delete:
-                    GeneratedQuery = Delete(entity);
-                    break;
-                default:
-                    throw new NotImplementedException(nonQueryType.ToString());
-            }
+                NonQueryType.Insert => InsertInto(entity),
+                NonQueryType.Update => Update(entity),
+                NonQueryType.Delete => Delete(entity),
+                _ => throw new NotImplementedException(nonQueryType.ToString()),
+            };
         }
 
         private string InsertInto(ORMEntity entity)
@@ -366,31 +359,23 @@ namespace ORM
                         {
                             ParseExpression(methodCallExpression.Arguments.OfType<ConstantExpression>().First());
                         }
-                        switch (methodCallExpression.Method.Name)
+                        return methodCallExpression.Method.Name switch
                         {
-                            case nameof(string.Contains):   // ORMEntityExtensions.Contains
-                                return $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count} + '%')";
-                            case nameof(string.StartsWith): // ORMEntityExtensions.StartsWith
-                                return $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE {Param + _sqlParameters.Count} + '%')";
-                            case nameof(string.EndsWith):   // ORMEntityExtensions.EndsWith
-                                return $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count})";
-                            case nameof(string.ToString):
-                                return ParseExpression(methodCallExpression.Object);
-                            case nameof(ORMEntityExtensions.Ascending):
-                                return $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} ASC";
-                            case nameof(ORMEntityExtensions.Descending):
-                                return $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} DESC";
-                            case nameof(ORMEntity.Left):
-                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "LEFT");
-                            case nameof(ORMEntity.Right):
-                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "RIGHT");
-                            case nameof(ORMEntity.Inner):
-                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "INNER");
-                            case nameof(ORMEntity.Full):
-                                return GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "FULL");
-                            default:
-                                throw new NotImplementedException(methodCallExpression.Method.Name);
-                        }
+                            // ORMEntityExtensions.Contains
+                            nameof(string.Contains) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count} + '%')",
+                            // ORMEntityExtensions.StartsWith
+                            nameof(string.StartsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE {Param + _sqlParameters.Count} + '%')",
+                            // ORMEntityExtensions.EndsWith
+                            nameof(string.EndsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count})",
+                            nameof(string.ToString) => ParseExpression(methodCallExpression.Object),
+                            nameof(ORMEntityExtensions.Ascending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} ASC",
+                            nameof(ORMEntityExtensions.Descending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} DESC",
+                            nameof(ORMEntity.Left) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "LEFT"),
+                            nameof(ORMEntity.Right) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "RIGHT"),
+                            nameof(ORMEntity.Inner) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "INNER"),
+                            nameof(ORMEntity.Full) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "FULL"),
+                            _ => throw new NotImplementedException(methodCallExpression.Method.Name),
+                        };
                     }
                 case LambdaExpression lambdaExpression:
                     {

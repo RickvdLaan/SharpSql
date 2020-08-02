@@ -45,10 +45,7 @@ namespace ORM
 
             public override int GetHashCode()
             {
-                int hashCode = -1375677921;
-                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ColumnName);
-                hashCode = hashCode * -1521134295 + EqualityComparer<object>.Default.GetHashCode(Value);
-                return hashCode;
+                return System.HashCode.Combine(ColumnName, Value);
             }
 
             public void Deconstruct(out string columnName, out object id)
