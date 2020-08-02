@@ -11,12 +11,11 @@ namespace ORMNUnit
         [OneTimeSetUp]
         public void Initialize()
         {
-            // Hack to force load the ORMFakeDAL assembly since the ORM has no clue of its existance
-            // during initialization.
-            new Users();
-            // ¯\_(ツ)_/¯
-
             new ORMInitialize();
+
+            new User(0);
+            new Users().Fetch();
+            ORMUtilities.ExecuteDirectQuery<Users, User>(string.Empty);
         }
     }
 }
