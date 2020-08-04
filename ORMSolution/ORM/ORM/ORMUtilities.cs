@@ -411,15 +411,6 @@ namespace ORM
                         }
                         property.SetValue(entity, subcollection);
                     }
-                    else if(typeof(IList).IsAssignableFrom(property.PropertyType))
-                    {
-                        var subcollection = (IList)Activator.CreateInstance(property.PropertyType);
-                        foreach (var item in data.Value)
-                        {
-                            subcollection.Add(item);
-                        }
-                        property.SetValue(entity, subcollection);
-                    }
                     else
                     {
                         throw new Exception("Something went wrong trying to cast to a subcollection");

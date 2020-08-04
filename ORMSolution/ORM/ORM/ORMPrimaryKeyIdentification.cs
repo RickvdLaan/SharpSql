@@ -53,8 +53,6 @@ namespace ORM.ORM
 
             return primaryKeyIndexes;
         }
-
-
     }
 
     internal class ORMPrimaryKeyIdentificationComparer : IEqualityComparer<ORMPrimaryKeyIdentification>
