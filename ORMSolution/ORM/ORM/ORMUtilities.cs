@@ -8,13 +8,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Xml;
 
 namespace ORM
 {
@@ -23,6 +23,8 @@ namespace ORM
         internal static string ConnectionString { get; private set; }
 
         internal static bool IsUnitTesting { get; private set; }
+
+        internal static List<XmlDocument> MemoryTables { get; set; }
 
         internal static Dictionary<Type, Type> CollectionEntityRelations { get; private set; }
 
@@ -47,6 +49,11 @@ namespace ORM
             CollectionEntityRelations = new Dictionary<Type, Type>();
             ManyToManyRelations = new Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), ORMTableAttribute>();
             CachedColumns = new Dictionary<Type, List<string>>();
+
+            if (IsUnitTesting)
+            {
+                MemoryTables = new List<XmlDocument>();
+            }
         }
 
         public static bool IsInTransaction()
@@ -201,7 +208,7 @@ namespace ORM
             return collection;
         }
 
-        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, SQLBuilder sqlBuilder)
+        internal static void DataReader<CollectionType, EntityType>(CollectionType collection, IDataReader reader, SQLBuilder sqlBuilder)
             where CollectionType : ORMCollection<EntityType>
             where EntityType : ORMEntity
         {
@@ -222,7 +229,7 @@ namespace ORM
             }
         }
 
-        internal static void DataReader<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
+        internal static void DataReader<EntityType>(EntityType entity, IDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             while (reader.Read())
@@ -231,7 +238,7 @@ namespace ORM
             }
         }
 
-        internal static void PopulateEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
+        internal static void PopulateEntity<EntityType>(EntityType entity, IDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             if (sqlBuilder?.TableNameResolvePaths.Count > 0)
@@ -240,7 +247,7 @@ namespace ORM
             }
             else
             {
-                for (int i = 0; i < reader.VisibleFieldCount; i++)
+                for (int i = 0; i < reader.FieldCount; i++)
                 {
                     SetEntityProperty(entity, reader, i);
                 }
@@ -257,7 +264,7 @@ namespace ORM
             }
         }
 
-        private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, DbDataReader reader, SQLBuilder sqlBuilder)
+        private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, IDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             var tableIndex = 0;
@@ -287,7 +294,7 @@ namespace ORM
             }
         }
 
-        private static void PopulateCollection<CollectionType, EntityType>(CollectionType collection, DbDataReader reader, SQLBuilder sqlBuilder)
+        private static void PopulateCollection<CollectionType, EntityType>(CollectionType collection, IDataReader reader, SQLBuilder sqlBuilder)
             where CollectionType : ORMCollection<EntityType>
             where EntityType : ORMEntity
         {
@@ -315,7 +322,7 @@ namespace ORM
                 tableIndex += tableColumnCount;
             }
 
-            void AddManyToManyObject(ORMPrimaryKeyIdentification key, DbDataReader _reader)
+            void AddManyToManyObject(ORMPrimaryKeyIdentification key, IDataReader _reader)
             {
                 Dictionary<string, List<ORMEntity>> relations;
                 if (manyToManyData.ContainsKey(key))
@@ -422,7 +429,7 @@ namespace ORM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetEntityProperty(ORMEntity entity, DbDataReader reader, int iteration, int tableIndex = 0)
+        private static void SetEntityProperty(ORMEntity entity, IDataReader reader, int iteration, int tableIndex = 0)
         {
             var propertyName = reader.GetName(iteration + tableIndex);
             var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
@@ -462,12 +469,28 @@ namespace ORM
 
                     var fetchEntityByPrimaryKey = subEntity.GetType().BaseType
                         .GetMethod(nameof(ORMEntity.FetchEntityByPrimaryKey),
-                        BindingFlags.Instance | BindingFlags.NonPublic,
+                        BindingFlags.Instance | BindingFlags.Public,
                         Type.DefaultBinder,
                         new Type[] { typeof(object) },
                         null);
 
-                    value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { reader.GetValue(iteration) });
+                    if (IsUnitTesting)
+                    {
+                        // @Todo: @Check: Moet hier wel of niet de tableIndex bij? Eerst was het niet, maar misschien was dit fout?
+                        if (string.IsNullOrEmpty(reader.GetValue(iteration).ToString()))
+                        {
+                            value = null;
+                        }
+                        else
+                        {
+                            // Somehow we need to check it's internal 
+                            value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { Convert.ChangeType(reader.GetValue(iteration), typeof(int)) });
+                        }
+                    }
+                    else
+                    {
+                        value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { reader.GetValue(iteration) });
+                    }
 
                     entity.EntityRelations.Add(value as ORMEntity);
                     break;
@@ -476,11 +499,27 @@ namespace ORM
                     break;
             }
 
+            if (IsUnitTesting)
+            {
+                if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null)
+                {
+                    value = Convert.ChangeType(value, Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType));
+                }
+                else
+                {
+                    value = Convert.ChangeType(value, entityPropertyInfo.PropertyType);
+                }
+            }
+
             if (entityPropertyInfo.PropertyType.IsGenericType && entityPropertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 if (reader.GetValue(iteration) == DBNull.Value)
                 {
                     entityPropertyInfo.SetValue(entity, null);
+                }
+                else
+                {
+                    entityPropertyInfo.SetValue(entity, value);
                 }
             }
             else
@@ -509,6 +548,16 @@ namespace ORM
                 }
             }
             return entity;
+        }
+
+        public static void LoadMemoryTables(params string[] xmlFilePaths)
+        {
+            foreach (var xmlFilePath in xmlFilePaths)
+            {
+                var xmlDocument = new XmlDocument();
+                xmlDocument.Load(xmlFilePath);
+                MemoryTables.Add(xmlDocument);
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
+using System.Data;
 using System.Linq;
 
 namespace ORM.ORM
@@ -10,7 +10,7 @@ namespace ORM.ORM
         public int HashCode { get; private set; }
         public object[] PKValues { get; private set; }
 
-        internal ORMPrimaryKeyIdentification(DbDataReader reader, int[] primaryKeyIndexes)
+        internal ORMPrimaryKeyIdentification(IDataReader reader, int[] primaryKeyIndexes)
         {
             if (primaryKeyIndexes == null)
             {
@@ -30,7 +30,7 @@ namespace ORM.ORM
         }
 
 
-        internal static int[] DeterminePrimaryKeyIndexes(DbDataReader reader, ORMEntity entity)
+        internal static int[] DeterminePrimaryKeyIndexes(IDataReader reader, ORMEntity entity)
         {
             var pks = entity.GetPrimaryKeyPropertyInfo();
             var primaryKeyIndexes = new int[pks.Length];

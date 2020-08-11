@@ -2,6 +2,9 @@
 using ORM;
 using ORM.Attributes;
 using ORMFakeDAL;
+using System.Collections.Generic;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace ORMNUnit
 {
@@ -12,6 +15,9 @@ namespace ORMNUnit
         public void Initialize()
         {
             new ORMInitialize();
+
+            ORMUtilities.LoadMemoryTables("MemoryTables/USERS.xml",
+                                          "MemoryTables/ORGANISATIONS.xml");
 
             new User(0);
             new Users().Fetch();

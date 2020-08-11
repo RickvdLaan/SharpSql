@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using System;
 using ORM.Attributes;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Xml.Linq;
+using System.Xml;
+
+[assembly: InternalsVisibleTo("ORMNUnit")]
 
 namespace ORM
 {

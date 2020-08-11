@@ -9,15 +9,18 @@ namespace ORMConsole
     {
         static void Main()
         {
+            #region Init
             IConfiguration configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .Build();
+                   .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                   .Build();
 
             new ORMInitialize(configuration);
+            #endregion
 
             Console.Read();
         }
 
+#pragma warning disable IDE0051
         private static void ShowOutput(Users users)
         {
             foreach (User user in users)
@@ -43,5 +46,6 @@ namespace ORMConsole
                 Console.WriteLine("-------------------");
             }
         }
+#pragma warning restore IDE0051
     }
 }

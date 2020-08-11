@@ -136,14 +136,14 @@ namespace ORM
             return propertyInfo;
         }
 
-        protected ORMEntity FetchEntityByPrimaryKey(object primaryKey)
+        public ORMEntity FetchEntityByPrimaryKey(object primaryKey)
         {
             PrimaryKey.Keys[0].Value = primaryKey;
 
             return FetchDynamicEntity(PrimaryKey);
         }
 
-        protected ORMEntity FetchEntityByPrimaryKey(params object[] primaryKeys)
+        public ORMEntity FetchEntityByPrimaryKey(params object[] primaryKeys)
         {
             for (int i = 0; i < primaryKeys.Length; i++)
             {
@@ -188,32 +188,6 @@ namespace ORM
 
             return this;
         }
-
-        #region NUnit
-
-        internal void FetchEntityByPrimaryKey(List<string> tableScheme, object primaryKey)
-        {
-            FetchEntityByPrimaryKey(tableScheme, new object[] { primaryKey });
-        }
-
-        internal void FetchEntityByPrimaryKey(List<string> tableScheme, params object[] primaryKeys)
-        {
-            MutableTableScheme = tableScheme;
-
-            foreach (var columnName in TableScheme)
-            {
-                var propertyInfo = GetType().GetProperty(columnName, PublicFlags);
-
-                if (propertyInfo != null && propertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-                {
-                    EntityRelations.Add(this[propertyInfo.Name] as ORMEntity);
-                }
-            }
-
-            FetchEntityByPrimaryKey(primaryKeys);
-        }
-
-        #endregion
 
         public virtual void Save()
         {
