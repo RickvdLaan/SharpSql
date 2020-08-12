@@ -4,8 +4,6 @@ using System;
 using ORM.Attributes;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
-using System.Xml;
 
 [assembly: InternalsVisibleTo("ORMNUnit")]
 
@@ -13,6 +11,14 @@ namespace ORM
 {
     public sealed class ORMInitialize
     {
+        internal ORMInitialize(params string[] xmlFilePaths)
+        {
+            ORMUtilities.MemoryDatabase = new ORMMemoryDatabase();
+            ORMUtilities.MemoryDatabase.LoadMemoryTables(xmlFilePaths);
+
+            new ORMInitialize();
+        }
+
         public ORMInitialize(IConfiguration configuration = null)
         {
             new ORMUtilities(configuration);
@@ -39,26 +45,38 @@ namespace ORM
                             ORMUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight), tableAttribute);
                             ORMUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeRight, tableAttribute.CollectionTypeLeft), tableAttribute);
                         }
-                        if (!ORMUtilities.IsUnitTesting
-                         && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
+                        if (!ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
                          && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
                         {
-                            var sqlBuilder = new SQLBuilder();
-                            sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
-                            var rows = ORMUtilities.ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
-                                  .CreateDataReader()
-                                  .GetSchemaTable()
-                                  .Rows;
-
-                            var columns = new List<string>(rows.Count);
-
-                            for (int i = 0; i < rows.Count; i++)
+                            if (!ORMUtilities.IsUnitTesting)
                             {
-                                columns.Add((string)rows[i][0]);
-                            }
+                                var sqlBuilder = new SQLBuilder();
+                                sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
+                                var rows = ORMUtilities.ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
+                                      .CreateDataReader()
+                                      .GetSchemaTable()
+                                      .Rows;
 
-                            ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
-                            ORMUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
+                                var columns = new List<string>(rows.Count);
+
+                                for (int i = 0; i < rows.Count; i++)
+                                {
+                                    columns.Add((string)rows[i][0]);
+                                }
+
+                                ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
+                                ORMUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
+                            }
+                            else
+                            {
+                                var columns = ORMUtilities.MemoryDatabase.FetchTableColumns(tableAttribute.TableName);
+
+                                if (columns != null)
+                                {
+                                    ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
+                                    ORMUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
+                                }
+                            }
                         }
                     }
                 }

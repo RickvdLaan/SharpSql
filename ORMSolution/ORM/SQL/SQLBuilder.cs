@@ -305,7 +305,11 @@ namespace ORM
 
             for (int i = 0; i < _sqlParameters.Count; i++)
             {
-                SqlParameters[i] = new SqlParameter(Param + (i + 1), _sqlParameters[i]);
+                SqlParameters[i] = new SqlParameter(Param + (i + 1), _sqlParameters[i])
+                {
+                    // @Todo: @Check: not a 100% sure this is correct in all cases.
+                    SourceColumn = ((whereExpression as BinaryExpression).Left as MemberExpression).Member.Name
+                };
             }
 
             return where;

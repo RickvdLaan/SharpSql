@@ -28,8 +28,7 @@ namespace ORM
                 if (!IsNew && OriginalFetchedValue == null)
                     return false;
 
-                if (!ORMUtilities.IsUnitTesting)
-                    UpdateIsDirtyList();
+                UpdateIsDirtyList();
 
                 return IsDirtyList.Any(x => x.IsDirty == true);
             }
@@ -102,7 +101,7 @@ namespace ORM
 
             IsNew = OriginalFetchedValue == null;
 
-            if (!ORMUtilities.IsUnitTesting && !DisableChangeTracking)
+            if (!DisableChangeTracking)
             {
                 IsDirtyList = new (string, bool)[TableScheme.Count - PrimaryKey.Count];
             }

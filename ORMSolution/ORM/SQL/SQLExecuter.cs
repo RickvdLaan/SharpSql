@@ -1,11 +1,8 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
-using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Xml;
-using System.Xml.Linq;
 
 namespace ORM
 {
@@ -65,36 +62,28 @@ namespace ORM
                 }
 
                 using var reader = command.ExecuteReader();
-                ORMUtilities.DataReader(entity, reader, sqlBuilder);
+                SQLHelper.DataReader(entity, reader, sqlBuilder);
             }
             else
             {
-                DataTable dataTable = null;
-
-                foreach (var memoryTable in ORMUtilities.MemoryTables)
+                // Single primary key
+                if (entity.PrimaryKey.Keys.Count == 1)
                 {
-                    foreach (XmlNode childNode in memoryTable.DocumentElement.ChildNodes)
-                    {
-                        if (childNode.Name.Equals(ORMUtilities.CollectionEntityRelations[entity.GetType()].Name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            dataTable = new DataTable();
+                    var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
+                    var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == entity.PrimaryKey.Keys[0].ColumnName).FirstOrDefault().Value;
 
-                            StringReader theReader = new StringReader(memoryTable.DocumentElement.OuterXml);
-                            DataSet theDataSet = new DataSet();
-                            theDataSet.ReadXml(theReader);
+                    var dataTable = ORMUtilities.MemoryDatabase.FetchEntityById(tableName, entity.PrimaryKey, id);
 
-                            dataTable = theDataSet.Tables[0];
-                            break;
-                        }
-                    }
+                    if (dataTable == null)
+                        throw new ArgumentException($"No record found for {entity.PrimaryKey.Keys[0].ColumnName}: {id}.");
 
-                    if (dataTable != null)
-                    {
-                        break;
-                    }
+                    SQLHelper.DataReader(entity, dataTable.CreateDataReader(), sqlBuilder);
                 }
-
-                ORMUtilities.DataReader(entity, dataTable.CreateDataReader(), sqlBuilder);
+                // Shared primary key
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
         }
 
@@ -120,7 +109,7 @@ namespace ORM
                 }
 
                 using var reader = command.ExecuteReader();
-                ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
+                SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
             }
             else
             {
@@ -128,7 +117,7 @@ namespace ORM
 
                 // Todo
 
-                ORMUtilities.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, dataTable.CreateDataReader(), sqlBuilder);
+                SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, dataTable.CreateDataReader(), sqlBuilder);
             }
         }
     }

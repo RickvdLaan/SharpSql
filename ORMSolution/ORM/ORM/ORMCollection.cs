@@ -84,19 +84,19 @@ namespace ORM
 
         internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn)
         {
-           var sqlBuilder = new SQLBuilder();
+            var sqlBuilder = new SQLBuilder();
 
-                sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+            sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
-                if (ExecutedQuery == sqlBuilder.GeneratedQuery)
-                    return;
+            if (ExecutedQuery == sqlBuilder.GeneratedQuery)
+                return;
 
-                if (entity == null)
-                    SQLExecuter.ExecuteCollectionQuery(this, sqlBuilder);
-                else
-                    SQLExecuter.ExecuteEntityQuery(entity, sqlBuilder);
+            if (entity == null)
+                SQLExecuter.ExecuteCollectionQuery(this, sqlBuilder);
+            else
+                SQLExecuter.ExecuteEntityQuery(entity, sqlBuilder);
 
-                ExecutedQuery = sqlBuilder.GeneratedQuery;
+            ExecutedQuery = sqlBuilder.GeneratedQuery;
         }
 
         public ORMCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
