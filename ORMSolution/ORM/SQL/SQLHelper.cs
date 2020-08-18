@@ -65,6 +65,11 @@ namespace ORM
                 entity.GetType()
                       .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
                       .SetValue(entity, entity.ShallowCopy());
+
+                foreach (var relation in entity.EntityRelations.Where(x => !x.IsNew))
+                {
+                    entity.OriginalFetchedValue[relation.GetType().Name] = (entity[relation.GetType().Name] as ORMEntity).OriginalFetchedValue;
+                }
             }
         }
 
@@ -102,8 +107,8 @@ namespace ORM
             where CollectionType : ORMCollection<EntityType>
             where EntityType : ORMEntity
         {
-            Dictionary<ORMPrimaryKeyIdentification, Dictionary<string, List<ORMEntity>>> manyToManyData = new Dictionary<ORMPrimaryKeyIdentification, Dictionary<string, List<ORMEntity>>>(new ORMPrimaryKeyIdentificationComparer());
-            Dictionary<ORMPrimaryKeyIdentification, EntityType> knownEntities = new Dictionary<ORMPrimaryKeyIdentification, EntityType>(new ORMPrimaryKeyIdentificationComparer());
+            Dictionary<ORMPrimaryKey, Dictionary<string, List<ORMEntity>>> manyToManyData = new Dictionary<ORMPrimaryKey, Dictionary<string, List<ORMEntity>>>(new ORMPrimaryKey());
+            Dictionary<ORMPrimaryKey, EntityType> knownEntities = new Dictionary<ORMPrimaryKey, EntityType>(new ORMPrimaryKey());
 
             var manyToManyJoinIndexes = new List<(string, int[])>();
             var manyToManyJoinTypes = new Dictionary<string, Type>();
@@ -126,7 +131,7 @@ namespace ORM
                 tableIndex += tableColumnCount;
             }
 
-            void AddManyToManyObject(ORMPrimaryKeyIdentification key, IDataReader _reader)
+            void AddManyToManyObject(ORMPrimaryKey key, IDataReader _reader)
             {
                 Dictionary<string, List<ORMEntity>> relations;
                 if (manyToManyData.ContainsKey(key))
@@ -166,10 +171,10 @@ namespace ORM
             bool isFirst = true;
             while (reader.Read())
             {
-                ORMPrimaryKeyIdentification pk = default;
+                ORMPrimaryKey pk = default;
                 if (!isFirst)
                 {
-                    pk = new ORMPrimaryKeyIdentification(reader, primaryKeyIndexes);
+                    pk = new ORMPrimaryKey(reader, primaryKeyIndexes);
                     if (knownEntities.ContainsKey(pk))
                     {
                         // Only do to many linking here
@@ -183,7 +188,7 @@ namespace ORM
 
                 if (isFirst)
                 {
-                    primaryKeyIndexes = ORMPrimaryKeyIdentification.DeterminePrimaryKeyIndexes(reader, entity);
+                    primaryKeyIndexes = ORMPrimaryKey.DeterminePrimaryKeyIndexes(reader, entity);
 
                     foreach (var (fieldName, _) in manyToManyJoinIndexes)
                     {
@@ -195,7 +200,7 @@ namespace ORM
                         manyToManyJoinTypes.Add(fieldName, type);
                     }
 
-                    pk = new ORMPrimaryKeyIdentification(reader, primaryKeyIndexes);
+                    pk = new ORMPrimaryKey(reader, primaryKeyIndexes);
                     isFirst = false;
                 }
 
@@ -287,19 +292,18 @@ namespace ORM
                         if (string.IsNullOrEmpty(reader.GetValue(iteration + tableIndex).ToString()))
                         {
                             value = null;
+                            entity.EntityRelations.Add(subEntity as ORMEntity);
+                            break;
                         }
                         else
                         {
-                            // Single primary key
                             if (((ORMEntity)subEntity).PrimaryKey.Keys.Count == 1)
                             {
-                                var subEntityIdName = ((ORMEntity)subEntity).PrimaryKey.Keys[0].ColumnName;
-                                var subEntityIdType = subEntity.GetType().GetProperty(subEntityIdName).PropertyType;
+                                var subEntityIdType = subEntity.GetType().GetProperty(((ORMEntity)subEntity).PrimaryKey.Keys[0].ColumnName).PropertyType;
                                 var id = Convert.ChangeType(reader.GetValue(iteration + tableIndex), subEntityIdType);
 
                                 value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { id });
                             }
-                            // Shared primary key
                             else
                             {
                                 throw new NotImplementedException();

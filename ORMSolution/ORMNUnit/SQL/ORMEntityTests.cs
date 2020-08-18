@@ -90,37 +90,37 @@ namespace ORMNUnit
         [Test]
         public void Insert()
         {
-
+            Assert.AreEqual(true, false);
         }
 
         [Test]
         public void Insert_Join()
         {
-
+            Assert.AreEqual(true, false);
         }
 
         [Test]
         public void Update()
         {
-
+            Assert.AreEqual(true, false);
         }
 
         [Test]
         public void Update_Join()
         {
-
+            Assert.AreEqual(true, false);
         }
 
         [Test]
         public void Update_JoinInsert()
         {
-
+            Assert.AreEqual(true, false);
         }
 
         [Test]
         public void Update_DirtyJoin()
         {
-
+            Assert.AreEqual(true, false);
         }
     }
 }

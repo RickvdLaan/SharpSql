@@ -14,7 +14,8 @@ namespace ORMNUnit
 
             var users = new Users();
             users.Fetch();
-            
+
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -27,6 +28,7 @@ namespace ORMNUnit
             users.Select(x => new object[] { x.Username, x.Password });
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -37,7 +39,8 @@ namespace ORMNUnit
 
             var users = new Users();
             users.Fetch(1);
-            
+
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -50,6 +53,7 @@ namespace ORMNUnit
             users.Join(x => x.Organisation.Left());
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -62,6 +66,7 @@ namespace ORMNUnit
             users.Join(x => x.Organisation.Right());
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -74,6 +79,7 @@ namespace ORMNUnit
             users.Join(x => x.Organisation.Inner());
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -86,6 +92,7 @@ namespace ORMNUnit
             users.Join(x => x.Organisation.Full());
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -98,6 +105,7 @@ namespace ORMNUnit
             users.Where(x => x.Id == 19 && x.Id == 12);
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -110,6 +118,7 @@ namespace ORMNUnit
             users.Where(x => x.Id < 1);
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -122,6 +131,7 @@ namespace ORMNUnit
             users.Where(x => x.Id > 1);
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -135,6 +145,7 @@ namespace ORMNUnit
                  .Where(x => x.Id <= 1);
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -147,6 +158,7 @@ namespace ORMNUnit
             users.Where(x => x.Id >= 1);
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -169,6 +181,7 @@ namespace ORMNUnit
                  .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch(1);
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -184,7 +197,8 @@ namespace ORMNUnit
             users.Where(x => x.Id.ToString().StartsWith("1") || x.Password.Contains("qwerty") || x.Password.StartsWith("welkom"))
                  .OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch();
-            
+
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -197,28 +211,29 @@ namespace ORMNUnit
             users.OrderBy(x => new object[] { x.Username.Descending(), x.Password.Ascending() });
             users.Fetch();
 
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
         [Test]
         public void DirectQuery_Simple()
         {
-            // The framework shouldn't tamper with the query.
             var expectedQuery = "SELECT TOP 10 * FROM USERS;";
             var directQuery   = "SELECT TOP 10 * FROM USERS;";
             var collection    = ORMUtilities.ExecuteDirectQuery<Users, User>(directQuery);
-            
+
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, collection.ExecutedQuery);
         }
 
         [Test]
         public void DirectQuery_Complex()
         {
-            // The framework shouldn't tamper with the query.
             var expectedQuery = "SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;";
             var directQuery   = "SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;";
             var collection    = ORMUtilities.ExecuteDirectQuery<Users, User>(directQuery, 1, 2);
-            
+
+            Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, collection.ExecutedQuery);
         }
     }

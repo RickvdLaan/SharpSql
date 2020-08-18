@@ -1,4 +1,5 @@
 ﻿using ORM.Attributes;
+using ORM.Exceptions;
 using ORM.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -67,19 +68,26 @@ namespace ORM
                 var thisValue = this[TableScheme[i]];
                 var originalValue = OriginalFetchedValue?[TableScheme[i]];
 
-                if ((thisValue != null && !thisValue.Equals(originalValue))
-                 || (thisValue == null && originalValue != null))
+                if (EntityRelations.Any(x => x.GetType().Name == TableScheme[i]) && (thisValue == null || this[TableScheme[i]].GetType() != GetType()))
                 {
-                    IsDirtyList[i - 1] = (TableScheme[i], true);
+                    IsDirtyList[i - 1] = (TableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
                 }
                 else
                 {
-                    IsDirtyList[i - 1] = (TableScheme[i], false);
+                    if ((thisValue != null && !thisValue.Equals(originalValue))
+                     || (thisValue == null && originalValue != null))
+                    {
+                        IsDirtyList[i - 1] = (TableScheme[i], true);
+                    }
+                    else
+                    {
+                        IsDirtyList[i - 1] = (TableScheme[i], false);
+                    }
                 }
             }
         }
 
-        public ORMEntity() 
+        public ORMEntity()
         {
             var attributes = new List<ORMPrimaryKeyAttribute>();
 
@@ -94,9 +102,20 @@ namespace ORM
 
             PrimaryKey = new ORMPrimaryKey(attributes.Count);
 
-            for (int i = 0; i < attributes.Count; i++)
+            if (attributes.Count > 1)
             {
-                PrimaryKey.Add(attributes[i].Name, null);
+                foreach (var attribute in attributes)
+                {
+                    PrimaryKey.Add(attribute.Name, null);
+                }
+            }
+            else if (attributes.Count == 1)
+            {
+                PrimaryKey.Add(attributes[0].Name, null);
+            }
+            else
+            {
+                throw new ORMPrimaryKeyAttributeNotImplementedException(GetType());
             }
 
             IsNew = OriginalFetchedValue == null;
@@ -115,7 +134,7 @@ namespace ORM
         public object this[string columnName]
         {
             get { return GetType().GetProperty(columnName, PublicIgnoreCaseFlags | NonPublicFlags).GetValue(this); }
-            set { GetType().GetProperty(PrimaryKey.Keys.FirstOrDefault(x => x.ColumnName == columnName).ColumnName).SetValue(this, value); }
+            set  { GetType().GetProperty(columnName).SetValue(this, value); }
         }
 
         internal PropertyInfo[] GetPrimaryKeyPropertyInfo()
@@ -152,7 +171,7 @@ namespace ORM
             return FetchDynamicEntity(PrimaryKey);
         }
 
-        private ORMEntity FetchDynamicEntity(ORMPrimaryKey combinedPrimaryKey)
+        private ORMEntity FetchDynamicEntity(ORMPrimaryKey primaryKey)
         {
             BinaryExpression whereExpression = null;
 
@@ -162,7 +181,7 @@ namespace ORM
                 var memberExpression = Expression.Property(Expression.Parameter(GetType(), $"x"), GetPrimaryKeyPropertyInfo()[i]);
 
                 // Contains the actual id represented as a ConstantExpression: {id_value}.
-                var constantExpression = Expression.Constant(combinedPrimaryKey.Keys[i].Value, combinedPrimaryKey.Keys[i].Value.GetType());
+                var constantExpression = Expression.Constant(primaryKey.Keys[i].Value, primaryKey.Keys[i].Value.GetType());
 
                 // Combines the expressions represtend as a Expression: {(x.InternalPrimaryKeyName == id_value)}
                 if (whereExpression == null)
@@ -205,8 +224,8 @@ namespace ORM
                             var entityRelationId = (int)(this[relation.GetType().Name] as ORMEntity)[relation.PrimaryKey.Keys[i].ColumnName];
                             var entityJoin = this[relation.GetType().Name];
 
-                            //entityJoin.GetType().GetProperty(relation.PrimaryKey.Keys[i].ColumnName).SetValue(entityJoin, entityRelationId);
-                            //entityJoin.GetType().GetProperty(nameof(ExecutedQuery)).SetValue(entityJoin, (this[relation.GetType().Name] as ORMEntity).ExecutedQuery);
+                            entityJoin.GetType().GetProperty(relation.PrimaryKey.Keys[i].ColumnName).SetValue(entityJoin, entityRelationId);
+                            entityJoin.GetType().GetProperty(nameof(ExecutedQuery)).SetValue(entityJoin, (this[relation.GetType().Name] as ORMEntity).ExecutedQuery);
                         }
                     }
                 }
@@ -217,8 +236,14 @@ namespace ORM
 
                     int id = SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Insert);
 
-                    // @Todo: @bug: needs to be fixed for combined primary keys.
-                    this[PrimaryKey.Keys[0].ColumnName] = id;
+                    if (PrimaryKey.Keys.Count == 1)
+                    {
+                        this[PrimaryKey.Keys[0].ColumnName] = id;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
                 }
                 else
                 {

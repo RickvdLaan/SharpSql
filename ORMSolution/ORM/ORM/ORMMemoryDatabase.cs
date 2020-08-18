@@ -62,7 +62,6 @@ namespace ORM
 
             foreach (XmlElement record in tableRecords)
             {
-                // Single primary key
                 if (primaryKey.Keys.Count == 1)
                 {
                     var xmlAttribute = record.GetAttributeNode(primaryKey.Keys[0].ColumnName);
@@ -75,7 +74,6 @@ namespace ORM
                         return theDataSet.Tables[0];
                     }
                 }
-                // Shared primary key
                 else
                 {
                     throw new NotImplementedException();

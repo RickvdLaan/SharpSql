@@ -66,7 +66,6 @@ namespace ORM
             }
             else
             {
-                // Single primary key
                 if (entity.PrimaryKey.Keys.Count == 1)
                 {
                     var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
@@ -79,7 +78,6 @@ namespace ORM
 
                     SQLHelper.DataReader(entity, dataTable.CreateDataReader(), sqlBuilder);
                 }
-                // Shared primary key
                 else
                 {
                     throw new NotImplementedException();

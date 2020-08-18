@@ -305,11 +305,17 @@ namespace ORM
 
             for (int i = 0; i < _sqlParameters.Count; i++)
             {
-                SqlParameters[i] = new SqlParameter(Param + (i + 1), _sqlParameters[i])
+                // @Todo: @Check: @Bug: This is obviously incorrect and only works for specific cases.
+                // Needs to be refactored.
+                // Id == 1 - ok fine -> BinaryExpression
+                // Id == 1 || Id == 2? -> Lambda
+                if (whereExpression is BinaryExpression)
                 {
-                    // @Todo: @Check: not a 100% sure this is correct in all cases.
-                    SourceColumn = ((whereExpression as BinaryExpression).Left as MemberExpression).Member.Name
-                };
+                    SqlParameters[i] = new SqlParameter(Param + (i + 1), _sqlParameters[i])
+                    {
+                        SourceColumn = ((whereExpression as BinaryExpression).Left as MemberExpression).Member.Name
+                    };
+                }
             }
 
             return where;

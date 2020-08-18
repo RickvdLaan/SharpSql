@@ -1,34 +1,52 @@
-﻿using System;
+﻿using ORM.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
 namespace ORM
 {
-    internal struct ORMPrimaryKeyIdentification
+    public class ORMPrimaryKey : IEqualityComparer<ORMPrimaryKey>
     {
         public int HashCode { get; private set; }
-        public object[] PKValues { get; private set; }
 
-        internal ORMPrimaryKeyIdentification(IDataReader reader, int[] primaryKeyIndexes)
+        public int Count => Keys.Count;
+
+        public List<IORMPrimaryKey> Keys { get; private set; }
+
+        internal ORMPrimaryKey() { }
+
+        public ORMPrimaryKey(int totalAmountOfKeys)
+        {
+            Keys = new List<IORMPrimaryKey>(totalAmountOfKeys);
+        }
+
+        internal ORMPrimaryKey(IDataReader reader, int[] primaryKeyIndexes)
         {
             if (primaryKeyIndexes == null)
             {
                 throw new ArgumentException("Primary keys not set");
             }
 
-            PKValues = new object[primaryKeyIndexes.Length];
             var hashCode = new HashCode();
             for (int i = 0; i < primaryKeyIndexes.Length; i++)
             {
                 var value = reader.GetValue(i);
-                PKValues[i] = value;
+                Keys[i].Value = value;
                 hashCode.Add(value);
             }
 
             HashCode = hashCode.ToHashCode();
         }
 
+        public int GetHashCode(ORMPrimaryKey obj) => obj.HashCode;
+
+        public bool Equals(ORMPrimaryKey x, ORMPrimaryKey y) => x.HashCode == y.HashCode && Enumerable.SequenceEqual(x.Keys, y.Keys);
+
+        public void Add(string columnName, object value)
+        {
+            Keys.Add(new PrimaryKey(columnName, value));
+        }
 
         internal static int[] DeterminePrimaryKeyIndexes(IDataReader reader, ORMEntity entity)
         {
@@ -53,12 +71,5 @@ namespace ORM
 
             return primaryKeyIndexes;
         }
-    }
-
-    internal class ORMPrimaryKeyIdentificationComparer : IEqualityComparer<ORMPrimaryKeyIdentification>
-    {
-        public bool Equals(ORMPrimaryKeyIdentification x, ORMPrimaryKeyIdentification y) => x.HashCode == y.HashCode && Enumerable.SequenceEqual(x.PKValues, y.PKValues);
-
-        public int GetHashCode(ORMPrimaryKeyIdentification obj) => obj.HashCode;
     }
 }
