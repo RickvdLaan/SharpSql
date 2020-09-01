@@ -62,7 +62,7 @@ namespace ORM
         {
             for (int i = 0; i < TableScheme.Count; i++)
             {
-                if (PrimaryKey.Keys.Any(x => x.ColumnName == TableScheme[i]))
+                if (PrimaryKey.Keys.Any(x => x.ColumnName == TableScheme[i])) // ToDo: && !AutoIncrement + other locations.
                     continue;
 
                 var thisValue = this[TableScheme[i]];
@@ -238,7 +238,7 @@ namespace ORM
 
                     if (PrimaryKey.Keys.Count == 1)
                     {
-                        this[PrimaryKey.Keys[0].ColumnName] = id;
+                        UpdateSinglePrimaryKey(id);
                     }
                     else
                     {
@@ -271,6 +271,17 @@ namespace ORM
         internal ORMEntity ShallowCopy()
         {
             return MemberwiseClone() as ORMEntity;
+        }
+
+        internal void UpdateSinglePrimaryKey(int id)
+        {
+            this[PrimaryKey.Keys[0].ColumnName] = id;
+            PrimaryKey.Keys[0].Value = id;
+        }
+
+        internal void UpdateCombinedPrimaryKey()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -10,14 +10,14 @@ namespace ORM
     {
         internal static AsyncLocal<SqlConnection> CurrentConnection { get; set; } = new AsyncLocal<SqlConnection>();
 
-        internal static int ExecuteNonQuery(SQLBuilder sqlBuilder, NonQueryType nonQueryType)
+        internal static int ExecuteNonQuery(string generatedQuery, SqlParameter[] sqlParameters, NonQueryType nonQueryType)
         {
             if (!ORMUtilities.IsUnitTesting)
             {
                 using var connection = new SqlConnection(ORMUtilities.ConnectionString);
                 CurrentConnection.Value = connection;
 
-                using var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection);
+                using var command = new SqlCommand(generatedQuery, connection);
                 command.Connection.Open();
 
                 if (ORMUtilities.Transaction.Value != null)
@@ -25,9 +25,9 @@ namespace ORM
                     command.Transaction = ORMUtilities.Transaction.Value;
                 }
 
-                if (sqlBuilder.SqlParameters != null)
+                if (sqlParameters != null)
                 {
-                    command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                    command.Parameters.AddRange(sqlParameters);
                 }
 
                 return nonQueryType switch
@@ -43,6 +43,11 @@ namespace ORM
 
                 return 1;
             }
+        }
+
+        internal static int ExecuteNonQuery(SQLBuilder sqlBuilder, NonQueryType nonQueryType)
+        {
+            return ExecuteNonQuery(sqlBuilder.GeneratedQuery, sqlBuilder.SqlParameters, nonQueryType);
         }
 
         internal static void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)

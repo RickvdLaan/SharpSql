@@ -28,7 +28,7 @@ namespace ORM
             return @this.ToString("yyyy-MM-dd HH:mm:ss.fff");
         }
 
-        public static string SqlValue(this ORMEntity entity, string columnName, string addon)
+        public static object SqlValue(this ORMEntity entity, string columnName)
         {
             object value;
 
@@ -38,7 +38,7 @@ namespace ORM
                     if (((DateTime?)entity[columnName]).HasValue)
                         value = ((DateTime?)entity[columnName]).Value.ToSqlString();
                     else
-                        return $"NULL{addon}";
+                        return DBNull.Value;
                     break;
                 case Type dateTime when dateTime == typeof(DateTime):
                     value = ((DateTime)entity[columnName]).ToSqlString();
@@ -50,11 +50,11 @@ namespace ORM
 
             if (value == null)
             {
-                return $"NULL{addon}";
+                return DBNull.Value;
             }
             else
             {
-                return $"'{value}'{addon}";
+                return value;
             }
         }
     }

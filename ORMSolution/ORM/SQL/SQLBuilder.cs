@@ -109,27 +109,31 @@ namespace ORM
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
-                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
+                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i])) // @ToDo: && !IsAutoIncrement
                     continue;
 
                 var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
+                var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
+
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
                     for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                     {
+                        // @ToDo: if IsAutoIncrement? continue;
+
                         if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j]))
                         {
-                            stringBuilder.Append($"'{entityColumnJoin.GetType().GetProperty(entityColumnJoin.TableScheme[j]).GetValue(entityColumnJoin)}'");
+                            stringBuilder.Append(AddSqlParameter(entityColumnJoin.GetType().GetProperty(entityColumnJoin.TableScheme[j]).GetValue(entityColumnJoin)));
                             break;
                         }
                     }
                 }
                 else
                 {
-                    var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
-
-                    stringBuilder.Append(entity.SqlValue(entity.TableScheme[i], addon));
+                    stringBuilder.Append(AddSqlParameter(entity.SqlValue(entity.TableScheme[i])));
                 }
+
+                stringBuilder.Append(addon);
             }
 
             stringBuilder.Append(")");
@@ -183,7 +187,7 @@ namespace ORM
 
         private string Where(Expression whereExpression)
         {
-            return $" WHERE {ParseWhereExpression(whereExpression)}";
+            return $" WHERE {ParseExpression(whereExpression)}";
         }
 
         private string OrderBy(Expression sortExpression)
@@ -217,17 +221,16 @@ namespace ORM
                 {
                     if (entityColumnJoin.IsDirty && entityColumnJoin.IsNew && !entityColumnJoin.IsDirtyList.Any(x => x.IsDirty))
                     {
-                        stringBuilder.Insert(0, $"{Update(entityColumnJoin, true)} ");
+                        var query = InsertInto(entityColumnJoin);
 
-                        if (entity.IsDirtyList.Any(x => x.IsDirty == true))
-                        {
-                            if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
-                                continue;
+                        var id = SQLExecuter.ExecuteNonQuery(query, null, NonQueryType.Insert);
 
-                            var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() < i) ? string.Empty : ", ");
+                        stringBuilder.Insert(0, query);
 
-                            stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + ParseSqlParameters(addon) + " ");
-                        }
+                        // Mist addon
+                        var addon = string.Empty;
+
+                        stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + AddSqlParameter(entity.SqlValue(entity.TableScheme[i])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                     }
                     else
                     {
@@ -245,7 +248,7 @@ namespace ORM
                             {
                                 var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.IsDirty == true).Count() <= j) ? string.Empty : ", ");
 
-                                stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j], addon) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                                stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + AddSqlParameter(entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                             }
                         }
                     }
@@ -257,7 +260,7 @@ namespace ORM
 
                     var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= i - 1) ? string.Empty : ", ");
 
-                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + entity.SqlValue(entity.TableScheme[i], addon) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + AddSqlParameter(entity.SqlValue(entity.TableScheme[i])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                 }
             }
 
@@ -297,31 +300,7 @@ namespace ORM
             return ';';
         }
 
-        private string ParseWhereExpression(Expression whereExpression)
-        {
-            var where = ParseExpression(whereExpression);
-
-            SqlParameters = new SqlParameter[_sqlParameters.Count];
-
-            for (int i = 0; i < _sqlParameters.Count; i++)
-            {
-                // @Todo: @Check: @Bug: This is obviously incorrect and only works for specific cases.
-                // Needs to be refactored.
-                // Id == 1 - ok fine -> BinaryExpression
-                // Id == 1 || Id == 2? -> Lambda
-                if (whereExpression is BinaryExpression)
-                {
-                    SqlParameters[i] = new SqlParameter(Param + (i + 1), _sqlParameters[i])
-                    {
-                        SourceColumn = ((whereExpression as BinaryExpression).Left as MemberExpression).Member.Name
-                    };
-                }
-            }
-
-            return where;
-        }
-
-        private string ParseExpression(Expression body, bool useCache = true)
+        private string ParseExpression(Expression body, string source = null)
         {
             switch (body)
             {
@@ -332,21 +311,21 @@ namespace ORM
                     switch (binaryExpression.NodeType)
                     {
                         case ExpressionType.Equal:
-                            return $"({ParseExpression(left)} = {ParseExpression(right)})";
+                            return $"({ParseExpression(left)} = {ParseExpression(right, (left as MemberExpression).Member.Name)})";
                         case ExpressionType.LessThan:
-                            return $"({ParseExpression(left)} < {ParseExpression(right)})";
+                            return $"({ParseExpression(left)} < {ParseExpression(right, (left as MemberExpression).Member.Name)})";
                         case ExpressionType.GreaterThan:
-                            return $"({ParseExpression(left)} > {ParseExpression(right)})";
+                            return $"({ParseExpression(left)} > {ParseExpression(right, (left as MemberExpression).Member.Name)})";
                         case ExpressionType.LessThanOrEqual:
-                            return $"({ParseExpression(left)} <= {ParseExpression(right)})";
+                            return $"({ParseExpression(left)} <= {ParseExpression(right, (left as MemberExpression).Member.Name)})";
                         case ExpressionType.GreaterThanOrEqual:
-                            return $"({ParseExpression(left)} >= {ParseExpression(right)})";
+                            return $"({ParseExpression(left)} >= {ParseExpression(right, (left as MemberExpression).Member.Name)})";
                         case ExpressionType.Or:
                         case ExpressionType.OrElse:
-                            return $"({ParseExpression(left)} OR {ParseExpression(right)})";
+                            return $"({ParseExpression(left)} OR {ParseExpression(right, (left as MemberExpression).Member.Name)})";
                         case ExpressionType.And:
                         case ExpressionType.AndAlso:
-                            return $"({ParseExpression(left)} AND {ParseExpression(right)})";
+                            return $"({ParseExpression(left)} AND {ParseExpression(right, (left as MemberExpression).Member.Name)})";
                         default:
                             throw new NotImplementedException(body.NodeType.ToString());
                     }
@@ -359,9 +338,7 @@ namespace ORM
                     }
                 case ConstantExpression constantExpression:
                     {
-                        _sqlParameters.Add(constantExpression.Value);
-
-                        return $"{Param + _sqlParameters.Count}";
+                        return AddSqlParameter(constantExpression.Value, source);
                     }
                 case MethodCallExpression methodCallExpression:
                     {
@@ -420,6 +397,20 @@ namespace ORM
                 case null:
                     throw new ArgumentNullException(nameof(body));
             }
+        }
+
+        private string AddSqlParameter(object value, string source = null)
+        {
+            _sqlParameters.Add(value);
+
+            SqlParameters = new SqlParameter[_sqlParameters.Count];
+
+            SqlParameters[_sqlParameters.Count - 1] = new SqlParameter(Param + _sqlParameters.Count, _sqlParameters[_sqlParameters.Count - 1])
+            {
+                SourceColumn = source
+            };
+
+            return $"{Param + _sqlParameters.Count}";
         }
 
         private void AddQueryTableName(ORMTableAttribute table)
@@ -540,23 +531,6 @@ namespace ORM
                                             || x.Method.Name == nameof(ORMEntity.Right)
                                             || x.Method.Name == nameof(ORMEntity.Inner)
                                             || x.Method.Name == nameof(ORMEntity.Full));
-        }
-
-        private string ParseSqlParameters(string addon)
-        {
-            foreach (var sqlParameter in SqlParameters)
-            {
-                if (sqlParameter == null)
-                {
-                    return $"NULL{addon}";
-                }
-                else
-                {
-                    return $"{sqlParameter}{addon}";
-                }
-            }
-
-            return string.Empty;
         }
     }
 }
