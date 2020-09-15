@@ -17,6 +17,61 @@ namespace ORMConsole
             new ORMInitialize(configuration);
             #endregion
 
+            // A few cases for the initial Update Unit Tests.
+
+            // Case 1
+            //var user1 = new User(1)
+            //{
+            //    Password = "fjkldsfj",
+            //};
+
+            //user1.Save();
+
+            // Case 2
+            //var organisation2 = new Organisation(1);
+
+            //var user2 = new User(1)
+            //{
+            //    Password = "fjkldsfj",
+            //    Organisation = organisation2
+
+            //};
+
+            //user2.Save();
+
+            // Case 3
+            //var organisation3 = new Organisation(1)
+            //{
+            //    Name = "Nieuwe naam"
+            //};
+
+            //var user3 = new User(1)
+            //{
+            //    Password = "fjkldsfj",
+            //    Organisation = organisation3
+            //};
+
+            //user3.Save();
+
+            // Case 4
+            //var user4 = new User(1)
+            //{
+            //    Password = "fjkldsfj",
+            //    Organisation = new Organisation() { Name = "IkBenNieuw" }
+            //};
+
+            //user4.Save();
+
+            // Case 5
+            //var user5 = new User(1)
+            //{
+            //    Password = "fjkldsfj",
+            //    // Organisation was already null.
+            //    Organisation = null
+            //};
+
+            //user5.Save();
+
             Console.Read();
         }
 

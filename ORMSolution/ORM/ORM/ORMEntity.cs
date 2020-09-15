@@ -68,9 +68,16 @@ namespace ORM
                 var thisValue = this[TableScheme[i]];
                 var originalValue = OriginalFetchedValue?[TableScheme[i]];
 
-                if (EntityRelations.Any(x => x.GetType().Name == TableScheme[i]) && (thisValue == null || this[TableScheme[i]].GetType() != GetType()))
+                if (EntityRelations.Any(x => x != null && x.GetType().Name == TableScheme[i]) && (thisValue == null || this[TableScheme[i]].GetType() != GetType()))
                 {
-                    IsDirtyList[i - 1] = (TableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
+                    if (thisValue?.GetHashCode() != originalValue?.GetHashCode())
+                    {
+                        IsDirtyList[i - 1] = (TableScheme[i], true);
+                    }
+                    else
+                    {
+                        IsDirtyList[i - 1] = (TableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
+                    }
                 }
                 else
                 {
@@ -177,6 +184,12 @@ namespace ORM
 
             for (int i = 0; i < PrimaryKey.Count; i++)
             {
+                if (primaryKey.Keys[i].Value == DBNull.Value)
+                {
+                    // DBNull, so there's nothing to fetch.
+                    return null;
+                }
+
                 // Contains the id represented as a MemberExpression: {x.InternalPrimaryKeyName}.
                 var memberExpression = Expression.Property(Expression.Parameter(GetType(), $"x"), GetPrimaryKeyPropertyInfo()[i]);
 
@@ -215,7 +228,11 @@ namespace ORM
 
                 foreach (var relation in EntityRelations)
                 {
-                    if ((this[relation.GetType().Name] as ORMEntity).IsDirty)
+                    if (this[relation.GetType().Name] == null && OriginalFetchedValue[relation.GetType().Name] != null)
+                    {
+                        continue;
+                    }
+                    else if ((this[relation.GetType().Name] as ORMEntity).IsDirty)
                     {
                         (this[relation.GetType().Name] as ORMEntity).Save();
 

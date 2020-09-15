@@ -101,42 +101,42 @@ namespace ORM
 
         public ORMCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
         {
-            SelectExpression = expression;
+            SelectExpression = expression ?? throw new ArgumentNullException();
 
             return this;
         }
 
         public ORMCollection<EntityType> Join(Expression<Func<EntityType, object>> expression)
         {
-            JoinExpression = expression;
+            JoinExpression = expression ?? throw new ArgumentNullException();
 
             return this;
         }
 
         internal ORMCollection<EntityType> InternalJoin(Expression expression)
         {
-            InternalJoinExpression = expression;
+            InternalJoinExpression = expression ?? throw new ArgumentNullException();
 
             return this;
         }
 
         public ORMCollection<EntityType> Where(Expression<Func<EntityType, bool>> expression)
         {
-            WhereExpression = expression;
+            WhereExpression = expression ?? throw new ArgumentNullException();
 
             return this;
         }
 
         internal ORMCollection<EntityType> InternalWhere(BinaryExpression expression)
         {
-            InternalWhereExpression = expression;
+            InternalWhereExpression = expression ?? throw new ArgumentNullException();
 
             return this;
         }
 
         public ORMCollection<EntityType> OrderBy(Expression<Func<EntityType, object>> expression)
         {
-            SortExpression = expression;
+            SortExpression = expression ?? throw new ArgumentNullException();
 
             return this;
         }

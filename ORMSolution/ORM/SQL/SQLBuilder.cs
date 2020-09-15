@@ -120,10 +120,11 @@ namespace ORM
                     for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                     {
                         // @ToDo: if IsAutoIncrement? continue;
+                        var columnName = entityColumnJoin.TableScheme[j];
 
-                        if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j]))
+                        if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == columnName))
                         {
-                            stringBuilder.Append(AddSqlParameter(entityColumnJoin.GetType().GetProperty(entityColumnJoin.TableScheme[j]).GetValue(entityColumnJoin)));
+                            stringBuilder.Append(AddSqlParameter((entityColumnJoin.GetType().GetProperty(columnName).GetValue(entityColumnJoin), columnName)));
                             break;
                         }
                     }
@@ -195,7 +196,7 @@ namespace ORM
             return $" ORDER BY {ParseExpression(sortExpression)}";
         }
 
-        private string Update(ORMEntity entity, bool ignoreStuff = false)
+        private string Update(ORMEntity entity)
         {
             var stringBuilder = new StringBuilder();
 
@@ -209,28 +210,26 @@ namespace ORM
                 stringBuilder.Append($"UPDATE [{tableAlias}] SET ".ToUpperInvariant());
             }
 
+            int entityFieldUpdateCount = 0;
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
-                if (!ignoreStuff
-                 && (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i])
+                if ((entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]) // ToDo: && !entity.AutoIncrement + other locations.
                  || !entity.IsDirtyList[i - 1].IsDirty))
                     continue;
 
                 var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
+
+                // Checks if the current entity is a joined entity.
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
-                    if (entityColumnJoin.IsDirty && entityColumnJoin.IsNew && !entityColumnJoin.IsDirtyList.Any(x => x.IsDirty))
+                    // Join object is new, or one or more fields of the join object has dirty fields.
+                    if (entityColumnJoin.IsNew && !entityColumnJoin.IsDirtyList.Any(x => x.IsDirty))
                     {
-                        var query = InsertInto(entityColumnJoin);
-
-                        var id = SQLExecuter.ExecuteNonQuery(query, null, NonQueryType.Insert);
-
-                        stringBuilder.Insert(0, query);
-
-                        // Mist addon
-                        var addon = string.Empty;
-
-                        stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + AddSqlParameter(entity.SqlValue(entity.TableScheme[i])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                        AddUpdatedParameter(stringBuilder, entity, fieldPropertyInfo, tableAlias, ref entityFieldUpdateCount, i);
+                    }
+                    else if (entity.IsDirtyList[i - 1].IsDirty)
+                    {
+                        AddUpdatedParameter(stringBuilder, entity, fieldPropertyInfo, tableAlias, ref entityFieldUpdateCount, i);
                     }
                     else
                     {
@@ -240,7 +239,7 @@ namespace ORM
 
                         for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                         {
-                            if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j])
+                            if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j]) // ToDo: && !entityColumnJoin.AutoIncrement + other locations.
                             || !entityColumnJoin.IsDirtyList[j - 1].IsDirty)
                                 continue;
 
@@ -255,15 +254,11 @@ namespace ORM
                 }
                 else
                 {
-                    if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
-                        continue;
-
-                    var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= i - 1) ? string.Empty : ", ");
-
-                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[i]}] = ".ToUpperInvariant() + AddSqlParameter(entity.SqlValue(entity.TableScheme[i])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                    AddUpdatedParameter(stringBuilder, entity, fieldPropertyInfo, tableAlias, ref entityFieldUpdateCount, i);
                 }
             }
 
+            // Where
             if (!entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName))
               || entity.IsDirtyList.Any(x => x.IsDirty == true))
             {
@@ -283,6 +278,29 @@ namespace ORM
             }
 
             return stringBuilder.ToString();
+        }
+
+        private void AddUpdatedParameter(StringBuilder stringBuilder, ORMEntity entity, PropertyInfo propertyInfo, string tableAlias, ref int entityFieldUpdateCount, int currentTableSchemeIndex)
+        {
+            if (propertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && propertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
+            {
+                if (entity.PrimaryKey.Keys.Count == 1)
+                {
+                    var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
+
+                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = ".ToUpperInvariant() + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + (string.IsNullOrEmpty(addon) ? " " : addon));
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
+
+                stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = ".ToUpperInvariant() + AddSqlParameter(entity.SqlValue(entity.TableScheme[currentTableSchemeIndex])) + (string.IsNullOrEmpty(addon) ? " " : addon));
+            }
         }
 
         private string Delete(ORMEntity entity)
@@ -338,7 +356,7 @@ namespace ORM
                     }
                 case ConstantExpression constantExpression:
                     {
-                        return AddSqlParameter(constantExpression.Value, source);
+                        return AddSqlParameter((constantExpression.Value, source));
                     }
                 case MethodCallExpression methodCallExpression:
                     {
@@ -399,15 +417,30 @@ namespace ORM
             }
         }
 
-        private string AddSqlParameter(object value, string source = null)
+        private string AddSqlParameter((object value, string sourceColumn) mappedValue)
         {
-            _sqlParameters.Add(value);
+            _sqlParameters.Add(mappedValue.value);
 
-            SqlParameters = new SqlParameter[_sqlParameters.Count];
-
-            SqlParameters[_sqlParameters.Count - 1] = new SqlParameter(Param + _sqlParameters.Count, _sqlParameters[_sqlParameters.Count - 1])
+            if (SqlParameters == null)
             {
-                SourceColumn = source
+                SqlParameters = new SqlParameter[_sqlParameters.Count];
+            }
+            else
+            {
+                // @FixMe, @Performance, @Quick&Dirty: This makes me sad... but we also don't want SqlParameters to become
+                // a variable. Fix at some point in the future.
+                //
+                // Note that this is being done with EVERY parameter that gets added :) so allow me to
+                // cry here a bit... or a lot... :)
+                SqlParameter[] copySqlParameters = new SqlParameter[SqlParameters.Length];
+                Array.Copy(SqlParameters, copySqlParameters, SqlParameters.Length);
+                Array.Resize(ref copySqlParameters, _sqlParameters.Count);
+                SqlParameters = copySqlParameters;
+            }
+
+            SqlParameters[_sqlParameters.Count - 1] = new SqlParameter(Param + _sqlParameters.Count, _sqlParameters[^1])
+            {
+                SourceColumn = mappedValue.sourceColumn
             };
 
             return $"{Param + _sqlParameters.Count}";
