@@ -24,8 +24,6 @@ namespace ORM
 
         private readonly Dictionary<char, int> _tableCharCounts = new Dictionary<char, int>(5);
 
-        private readonly List<object> _sqlParameters = new List<object>(10);
-
         public List<(string name, Type type)> TableOrder { get; private set; } = new List<(string name, Type type)>(10);
 
         public Dictionary<string, int> TableNameColumnCount { get; private set; } = new Dictionary<string, int>();
@@ -36,7 +34,7 @@ namespace ORM
 
         internal ORMTableAttribute TableAttribute { get; set; }
 
-        internal SqlParameter[] SqlParameters { get; private set; }
+        internal List<SqlParameter> SqlParameters { get; private set; } = new List<SqlParameter>(16);
 
         private List<SQLJoin> Joins { get; set; } = new List<SQLJoin>();
 
@@ -139,6 +137,7 @@ namespace ORM
 
             stringBuilder.Append(")");
             stringBuilder.Append(Semicolon());
+            // @ToDo: Make this optinal? Or only do it has to be done?
             stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
 
             return stringBuilder.ToString();
@@ -233,23 +232,27 @@ namespace ORM
                     }
                     else
                     {
-                        AddQueryTableName(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entityColumnJoin.GetType()], entityColumnJoin.GetType()));
+                        // @ToDo: @Investigate: @FixMe: I think this is no longer being used. The code,
+                        // including the else can be removed later if it's indeed no longer being used.
+                        throw new NotImplementedException();
 
-                        var tableJoinAlias = TableOrder.First(x => x.type == entityColumnJoin.GetType()).name;
+                        //AddQueryTableName(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entityColumnJoin.GetType()], entityColumnJoin.GetType()));
 
-                        for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
-                        {
-                            if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j]) // ToDo: && !entityColumnJoin.AutoIncrement + other locations.
-                            || !entityColumnJoin.IsDirtyList[j - 1].IsDirty)
-                                continue;
+                        //var tableJoinAlias = TableOrder.First(x => x.type == entityColumnJoin.GetType()).name;
 
-                            if (entityColumnJoin.IsDirty)
-                            {
-                                var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.IsDirty == true).Count() <= j) ? string.Empty : ", ");
+                        //for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
+                        //{
+                        //    if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j]) // ToDo: && !entityColumnJoin.AutoIncrement + other locations.
+                        //    || !entityColumnJoin.IsDirtyList[j - 1].IsDirty)
+                        //        continue;
 
-                                stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + AddSqlParameter(entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
-                            }
-                        }
+                        //    if (entityColumnJoin.IsDirty)
+                        //    {
+                        //        var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.IsDirty == true).Count() <= j) ? string.Empty : ", ");
+
+                        //        stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + AddSqlParameter(entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                        //    }
+                        //}
                     }
                 }
                 else
@@ -292,6 +295,7 @@ namespace ORM
                 }
                 else
                 {
+                    // Combined primary key.
                     throw new NotImplementedException();
                 }
             }
@@ -305,6 +309,8 @@ namespace ORM
 
         private string Delete(ORMEntity entity)
         {
+            // We won't add support for drop table, this can be done through a direct query.
+
             throw new NotImplementedException();
         }
 
@@ -367,18 +373,18 @@ namespace ORM
                         return methodCallExpression.Method.Name switch
                         {
                             // ORMEntityExtensions.Contains
-                            nameof(string.Contains) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count} + '%')",
+                            nameof(string.Contains) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + SqlParameters.Count} + '%')",
                             // ORMEntityExtensions.StartsWith
-                            nameof(string.StartsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE {Param + _sqlParameters.Count} + '%')",
+                            nameof(string.StartsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE {Param + SqlParameters.Count} + '%')",
                             // ORMEntityExtensions.EndsWith
-                            nameof(string.EndsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + _sqlParameters.Count})",
+                            nameof(string.EndsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + SqlParameters.Count})",
                             nameof(string.ToString) => ParseExpression(methodCallExpression.Object),
-                            nameof(ORMEntityExtensions.Ascending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} ASC",
-                            nameof(ORMEntityExtensions.Descending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} DESC",
-                            nameof(ORMEntity.Left) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "LEFT"),
-                            nameof(ORMEntity.Right) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "RIGHT"),
-                            nameof(ORMEntity.Inner) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "INNER"),
-                            nameof(ORMEntity.Full) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, "FULL"),
+                            nameof(ORMEntityExtensions.Ascending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} {DataDictionary.OrderByAsc}",
+                            nameof(ORMEntityExtensions.Descending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} {DataDictionary.OrderByDesc}",
+                            nameof(ORMEntity.Left) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinLeft),
+                            nameof(ORMEntity.Right) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinRight),
+                            nameof(ORMEntity.Inner) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinInner),
+                            nameof(ORMEntity.Full) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinFull),
                             _ => throw new NotImplementedException(methodCallExpression.Method.Name),
                         };
                     }
@@ -419,31 +425,12 @@ namespace ORM
 
         private string AddSqlParameter((object value, string sourceColumn) mappedValue)
         {
-            _sqlParameters.Add(mappedValue.value);
-
-            if (SqlParameters == null)
-            {
-                SqlParameters = new SqlParameter[_sqlParameters.Count];
-            }
-            else
-            {
-                // @FixMe, @Performance, @Quick&Dirty: This makes me sad... but we also don't want SqlParameters to become
-                // a variable. Fix at some point in the future.
-                //
-                // Note that this is being done with EVERY parameter that gets added :) so allow me to
-                // cry here a bit... or a lot... :)
-                SqlParameter[] copySqlParameters = new SqlParameter[SqlParameters.Length];
-                Array.Copy(SqlParameters, copySqlParameters, SqlParameters.Length);
-                Array.Resize(ref copySqlParameters, _sqlParameters.Count);
-                SqlParameters = copySqlParameters;
-            }
-
-            SqlParameters[_sqlParameters.Count - 1] = new SqlParameter(Param + _sqlParameters.Count, _sqlParameters[^1])
+            SqlParameters.Add(new SqlParameter(Param + (SqlParameters.Count + 1), mappedValue.value)
             {
                 SourceColumn = mappedValue.sourceColumn
-            };
+            });
 
-            return $"{Param + _sqlParameters.Count}";
+            return SqlParameters[^1].ParameterName;
         }
 
         private void AddQueryTableName(ORMTableAttribute table)
@@ -485,7 +472,7 @@ namespace ORM
 
             // Lookup parent path if available and add this current path to the list
             var parentTableName = _queryTableNames[tableAttribute.TableName];
-            var basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : "";
+            var basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : string.Empty;
             TableNameResolvePaths.Add(_queryTableNames[rightTableAttribute.TableName], basePath + propertyInfo.Name());
 
             return join;

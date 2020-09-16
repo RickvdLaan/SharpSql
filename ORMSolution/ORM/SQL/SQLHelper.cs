@@ -88,7 +88,7 @@ namespace ORM
                     continue;
                 }
 
-                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : "";
+                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : string.Empty;
                 if (!objectPath.StartsWith(SQLBuilder.MANY_TO_MANY_JOIN, StringComparison.Ordinal))
                 {
                     var objectToFill = GetObjectAtPath(entity, objectPath);
@@ -116,7 +116,7 @@ namespace ORM
             var tableIndex = 0;
             foreach (var (name, _) in sqlBuilder.TableOrder)
             {
-                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : "";
+                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : string.Empty;
                 var tableColumnCount = sqlBuilder.TableNameColumnCount[name];
 
                 if (objectPath.StartsWith(SQLBuilder.MANY_TO_MANY_JOIN_DATA, StringComparison.Ordinal))
@@ -285,6 +285,13 @@ namespace ORM
 
                     if (!ORMUtilities.IsUnitTesting)
                     {
+                        if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+                        {
+                            value = null;
+                            entity.EntityRelations.Add(subEntity as ORMEntity);
+                            break;
+                        }
+
                         value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { reader.GetValue(iteration + tableIndex) });
                     }
                     else
@@ -320,8 +327,7 @@ namespace ORM
 
             if (ORMUtilities.IsUnitTesting)
             {
-                // Unit tests columns are all of type string, therefore they require to be converted to its respective type.
-
+                // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
                 if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null)
                 {
                     value = Convert.ChangeType(value, Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType));
@@ -334,7 +340,7 @@ namespace ORM
 
             if (entityPropertyInfo.PropertyType.IsGenericType && entityPropertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                if (reader.GetValue(iteration) == DBNull.Value)
+                if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
                 {
                     entityPropertyInfo.SetValue(entity, null);
                 }

@@ -27,7 +27,7 @@ namespace ORMConsole
 
             //user1.Save();
 
-            // Case 2
+            //// Case 2
             //var organisation2 = new Organisation(1);
 
             //var user2 = new User(1)
@@ -39,7 +39,7 @@ namespace ORMConsole
 
             //user2.Save();
 
-            // Case 3
+            //// Case 3
             //var organisation3 = new Organisation(1)
             //{
             //    Name = "Nieuwe naam"
@@ -53,7 +53,7 @@ namespace ORMConsole
 
             //user3.Save();
 
-            // Case 4
+            //// Case 4
             //var user4 = new User(1)
             //{
             //    Password = "fjkldsfj",
@@ -62,7 +62,7 @@ namespace ORMConsole
 
             //user4.Save();
 
-            // Case 5
+            //// Case 5
             //var user5 = new User(1)
             //{
             //    Password = "fjkldsfj",

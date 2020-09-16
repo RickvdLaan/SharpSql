@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading;
@@ -10,7 +11,7 @@ namespace ORM
     {
         internal static AsyncLocal<SqlConnection> CurrentConnection { get; set; } = new AsyncLocal<SqlConnection>();
 
-        internal static int ExecuteNonQuery(string generatedQuery, SqlParameter[] sqlParameters, NonQueryType nonQueryType)
+        internal static int ExecuteNonQuery(string generatedQuery, List<SqlParameter> sqlParameters, NonQueryType nonQueryType)
         {
             if (!ORMUtilities.IsUnitTesting)
             {
@@ -27,7 +28,10 @@ namespace ORM
 
                 if (sqlParameters != null)
                 {
-                    command.Parameters.AddRange(sqlParameters);
+                    foreach (SqlParameter sqlParameter in sqlParameters)
+                    {
+                        command.Parameters.Add(sqlParameter);
+                    }
                 }
 
                 return nonQueryType switch
@@ -63,7 +67,10 @@ namespace ORM
 
                 if (sqlBuilder.SqlParameters != null)
                 {
-                    command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                    foreach (SqlParameter sqlParameter in sqlBuilder.SqlParameters)
+                    {
+                        command.Parameters.Add(sqlParameter);
+                    }
                 }
 
                 using var reader = command.ExecuteReader();
@@ -108,7 +115,10 @@ namespace ORM
 
                 if (sqlBuilder.SqlParameters != null)
                 {
-                    command.Parameters.AddRange(sqlBuilder.SqlParameters);
+                    foreach (SqlParameter sqlParameter in sqlBuilder.SqlParameters)
+                    {
+                        command.Parameters.Add(sqlParameter);
+                    }
                 }
 
                 using var reader = command.ExecuteReader();

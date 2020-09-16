@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace ORM
 {
-    public class ORMEntity : ORMObject, IORMEntity
+    public class ORMEntity : ORMObject, IEquatable<ORMEntity>, IORMEntity
     {
         public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
 
@@ -60,23 +60,23 @@ namespace ORM
 
         private void UpdateIsDirtyList()
         {
-            for (int i = 0; i < TableScheme.Count; i++)
+            for (int i = 0; i < MutableTableScheme.Count; i++)
             {
-                if (PrimaryKey.Keys.Any(x => x.ColumnName == TableScheme[i])) // ToDo: && !AutoIncrement + other locations.
+                if (PrimaryKey.Keys.Any(x => x.ColumnName == MutableTableScheme[i])) // ToDo: && !AutoIncrement + other locations.
                     continue;
 
-                var thisValue = this[TableScheme[i]];
-                var originalValue = OriginalFetchedValue?[TableScheme[i]];
+                var thisValue = this[MutableTableScheme[i]];
+                var originalValue = OriginalFetchedValue?[MutableTableScheme[i]];
 
-                if (EntityRelations.Any(x => x != null && x.GetType().Name == TableScheme[i]) && (thisValue == null || this[TableScheme[i]].GetType() != GetType()))
+                if (EntityRelations.Any(x => x != null && x.GetType().Name == MutableTableScheme[i]) && (thisValue == null || this[MutableTableScheme[i]].GetType() != GetType()))
                 {
-                    if (thisValue?.GetHashCode() != originalValue?.GetHashCode())
+                    if (thisValue != null && !thisValue.Equals(originalValue))
                     {
-                        IsDirtyList[i - 1] = (TableScheme[i], true);
+                        IsDirtyList[i - 1] = (MutableTableScheme[i], true);
                     }
                     else
                     {
-                        IsDirtyList[i - 1] = (TableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
+                        IsDirtyList[i - 1] = (MutableTableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
                     }
                 }
                 else
@@ -84,11 +84,11 @@ namespace ORM
                     if ((thisValue != null && !thisValue.Equals(originalValue))
                      || (thisValue == null && originalValue != null))
                     {
-                        IsDirtyList[i - 1] = (TableScheme[i], true);
+                        IsDirtyList[i - 1] = (MutableTableScheme[i], true);
                     }
                     else
                     {
-                        IsDirtyList[i - 1] = (TableScheme[i], false);
+                        IsDirtyList[i - 1] = (MutableTableScheme[i], false);
                     }
                 }
             }
@@ -144,6 +144,70 @@ namespace ORM
             set  { GetType().GetProperty(columnName).SetValue(this, value); }
         }
 
+        public override bool Equals(object other)
+        {
+            return Equals(other as ORMEntity);
+        }
+
+        public bool Equals(ORMEntity other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+            if (GetType() != other.GetType())
+            {
+                return false;
+            }
+
+            return GetHashCode().Equals(other.GetHashCode());
+        }
+
+        public override int GetHashCode()
+        {
+            // Overflow is fine in this case.
+            unchecked
+            {
+                var hash = (int)2166136261;
+
+                for (int i = 0; i < MutableTableScheme.Count; i++)
+                {
+                    hash = (hash * 16777619) ^ this[MutableTableScheme[i]].GetHashCode();
+                }
+
+                hash = (hash * 16777619) ^ IsDirty.GetHashCode();
+                hash = (hash * 16777619) ^ PrimaryKey.GetHashCode();
+
+                return hash;
+            }
+        }
+
+        public static bool operator ==(ORMEntity leftSide, ORMEntity rightSide)
+        {
+            if (leftSide is null)
+            {
+                if (rightSide is null)
+                {
+                    // null == null = true.
+                    return true;
+                }
+
+                // Only the left side is null.
+                return false;
+            }
+            // Equals handles case of null on right side.
+            return leftSide.Equals(rightSide);
+        }
+
+        public static bool operator !=(ORMEntity leftSide, ORMEntity rightSide)
+        {
+            return !(leftSide == rightSide);
+        }
+
         internal PropertyInfo[] GetPrimaryKeyPropertyInfo()
         {
             PropertyInfo[] propertyInfo = new PropertyInfo[PrimaryKey.Count];
@@ -154,7 +218,7 @@ namespace ORM
 
                 if (propertyInfo[i] == null)
                 {
-                    throw new ArgumentException($"No PK-property found for name: \"{PrimaryKey.Keys[i]}\" in {GetType().Name}.");
+                    throw new ArgumentException($"No PK-property found for name: [{PrimaryKey.Keys[i]}] in [{GetType().Name}].");
                 }
             }
 
@@ -203,14 +267,23 @@ namespace ORM
                     whereExpression = Expression.AndAlso(whereExpression, Expression.Equal(memberExpression, constantExpression));
             }
 
-            dynamic collection = Activator.CreateInstance(ORMUtilities.CollectionEntityRelations[GetType()]);
-            collection.InternalWhere(whereExpression);
-            collection.Fetch(this, 1);
+            // Instantiates and fetches the run-time collection.
+            var collection = Activator.CreateInstance(ORMUtilities.CollectionEntityRelations[GetType()]);
+            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.InternalWhere), NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(collection, new object[] { whereExpression });
+            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long) }, null).Invoke(collection, new object[] { this, 1 });
+
+            // Old - Pt.1 - undecided on which is better at this point.
+            //dynamic collection = Activator.CreateInstance(ORMUtilities.CollectionEntityRelations[GetType()]);
+            //collection.InternalWhere(whereExpression);
+            //collection.Fetch(this, 1);
 
             if (!ORMUtilities.IsUnitTesting && IsNew)
                 throw new Exception($"No [{GetType().Name}] found for {string.Join(", ", PrimaryKey.Keys.Select(x => x.ToString()).ToArray())}.");
 
-            ExecutedQuery = collection.ExecutedQuery;
+            ExecutedQuery = (string)collection.GetType().GetProperty(nameof(ORMCollection<ORMEntity>.ExecutedQuery)).GetValue(collection);
+
+            // Old - Pt.2 - undecided on which is better at this point.
+            // ExecutedQuery = collection.ExecutedQuery;
 
             if (OriginalFetchedValue != null)
             {
@@ -259,7 +332,7 @@ namespace ORM
                     }
                     else
                     {
-                        throw new NotImplementedException();
+                        UpdateCombinedPrimaryKey();
                     }
                 }
                 else
@@ -275,6 +348,16 @@ namespace ORM
         public virtual void Delete()
         {
             throw new NotImplementedException();
+        }
+
+        public RuntimeType ValueAs<RuntimeType>() where RuntimeType : ORMEntity
+        {
+            if (this is RuntimeType entity)
+            {
+                return entity;
+            }
+
+            throw new InvalidCastException($"Cannot convert object of type [{GetType().Name}] to type [{typeof(RuntimeType).Name}].");
         }
 
         public ORMEntity Inner() => default;
