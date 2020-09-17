@@ -2,7 +2,7 @@
 
 **Summary**
 
-A simple open source ORM Framework written in .NET Standard 2.0.
+A simple pre-ahlpha ORM Framework written in .NET Standard 2.1. Currently closed source, but open for viewing with the default copyright laws in place.
 
 ## Table of contents
 
@@ -542,6 +542,6 @@ SQL Server 2005 or higher
 
 ### 7.3 Supported .NET versions
 
-NET Standard 2.0, .NET Standard 2.1., .NET Core 3.0, .NET Core 3.1.
+NET Standard 2.1., .NET Core 3.0, .NET Core 3.1.
 
 *[ Back to top](#table-of-contents)*
