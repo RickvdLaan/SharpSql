@@ -17,6 +17,8 @@ namespace ORMConsole
             new ORMInitialize(configuration);
             #endregion
 
+            #region ToDo Unit Tests
+
             // A few cases for the initial Update Unit Tests.
 
             // Case 1
@@ -71,6 +73,17 @@ namespace ORMConsole
             //};
 
             //user5.Save();
+
+            // A few (unique/special) cases in that have to be unit tested to make sure they don't break.
+
+            //// Case 6
+            //var users6 = new Users();
+            //users6.Join(x => new object[] { x.Organisation, x.Organisation.Inner() });
+            //users6.Where(x => x.Id.ToString() == "1" || x.Id.ToString() == "2");
+            //users6.OrderBy(x => x.Id.Ascending());
+            //users6.Fetch();
+
+            #endregion
 
             Console.Read();
         }

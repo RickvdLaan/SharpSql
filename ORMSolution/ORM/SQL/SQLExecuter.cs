@@ -92,6 +92,7 @@ namespace ORM
                 }
                 else
                 {
+                    // Combined primary key.
                     throw new NotImplementedException();
                 }
             }

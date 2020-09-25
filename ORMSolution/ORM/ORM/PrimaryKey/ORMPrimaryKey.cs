@@ -22,6 +22,7 @@ namespace ORM
         }
 
         internal ORMPrimaryKey(IDataReader reader, int[] primaryKeyIndexes)
+            : this(primaryKeyIndexes.Length)
         {
             if (primaryKeyIndexes == null)
             {
@@ -31,9 +32,8 @@ namespace ORM
             var hashCode = new HashCode();
             for (int i = 0; i < primaryKeyIndexes.Length; i++)
             {
-                var value = reader.GetValue(i);
-                Keys[i].Value = value;
-                hashCode.Add(value);
+                Add(reader.GetName(i), reader.GetValue(i));
+                hashCode.Add(reader.GetValue(i));
             }
 
             HashCode = hashCode.ToHashCode();

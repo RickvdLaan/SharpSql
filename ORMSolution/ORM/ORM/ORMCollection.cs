@@ -11,55 +11,122 @@ namespace ORM
     [Serializable]
     public class ORMCollection<EntityType> : IORMCollection, IEnumerable<ORMEntity> where EntityType : ORMEntity
     {
-        public string ExecutedQuery { get; internal set; } = "An unknown query has been executed.";
+        /// <summary>
+        /// Gets the executed query or returns <see cref="string.Empty"/>.
+        /// </summary>
+        public string ExecutedQuery { get; internal set; } = string.Empty;
 
-        public bool DisableChangeTracking { get; set; }
+        /// <summary>
+        /// Gets the number of elements contained in the <see cref="ORMCollection{EntityType}"/>.
+        /// </summary>
+        public int Count => MutableEntityCollection.Count;
 
+        /// <summary>
+        /// Gets whether change tracking is enabled or disabled; it's <see langword="false"/> by <see langword="default"/>.
+        /// </summary>
+        public bool DisableChangeTracking { get; internal set; } = false;
+
+        /// <summary>
+        /// Gets the table scheme of the current collection of <see cref="ORMEntity"/> objects.
+        /// </summary>
         public ReadOnlyCollection<string> TableScheme => ORMUtilities.CachedColumns[GetType()].AsReadOnly();
 
-        internal Expression<Func<EntityType, object>> SelectExpression { get; set; }
+        /// <summary>
+        /// Gets a read-only collection of fetched <see cref="ORMEntity"/> entities.
+        /// </summary>
+        public ReadOnlyCollection<ORMEntity> EntityCollection => MutableEntityCollection.AsReadOnly();
 
-        internal Expression<Func<EntityType, object>> JoinExpression { get; set; }
+        internal ORMTableAttribute TableAttribute => (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
 
-        internal Expression InternalJoinExpression { get; set; }
+        private List<ORMEntity> MutableEntityCollection { get; set; } = new List<ORMEntity>();
 
-        internal Expression<Func<EntityType, bool>> WhereExpression { get; set; }
+        private Expression<Func<EntityType, object>> SelectExpression { get; set; }
 
-        internal Expression InternalWhereExpression { get; set; }
+        private Expression<Func<EntityType, object>> JoinExpression { get; set; }
 
-        internal Expression<Func<EntityType, object>> SortExpression { get; set; }
+        private Expression InternalJoinExpression { get; set; }
 
-        internal ORMTableAttribute TableAttribute
-        { 
-            get { return (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute)); }
-        }
+        private Expression<Func<EntityType, bool>> WhereExpression { get; set; }
 
-        internal List<EntityType> _collection = new List<EntityType>();
-        public List<EntityType> Collection
+        private Expression InternalWhereExpression { get; set; }
+
+        private Expression<Func<EntityType, object>> SortExpression { get; set; }
+
+        public ORMCollection() { }
+
+        /// <summary>
+        /// Fetches all the records from the database.
+        /// </summary>
+        public void Fetch()
         {
-            get { return _collection; }
-            internal set { _collection = value; }
+            Fetch(-1);
         }
 
-        public ORMCollection()
+        /// <summary>
+        /// Fetches a maximum number records from the database.
+        /// </summary>
+        /// <param name="maxNumberOfItemsToReturn">The maximum number of records to return.</param>
+        public void Fetch(long maxNumberOfItemsToReturn)
         {
-            Collection = new List<EntityType>();
+            Fetch(null, maxNumberOfItemsToReturn);
         }
 
-        internal void Add(EntityType entity)
+        /// <summary>
+        /// Saves the changes made to the database.
+        /// </summary>
+        public void SaveChanges()
         {
-            Collection.Add(entity);
+            // A naive approach - but it works for now. We probably want to create some kind of state
+            // for objects and add batch execution.
+            foreach (var entity in MutableEntityCollection)
+            {
+                if (entity.IsMarkAsDeleted)
+                {
+                    entity.Delete();
+                }
+                else if (entity.IsDirty)
+                {
+                    entity.Save();
+                }
+            }
         }
 
-        public ORMEntity this[int index]
+        /// <summary>
+        /// Adds the provided <see cref="ORMEntity"/> to the current collection.
+        /// </summary>
+        /// <param name="entity">The <see cref="ORMEntity"/> to be added.</param>
+        public void Add(ORMEntity entity)
         {
-            get { return Collection[index]; }
-            set { Collection.Insert(index, value as EntityType); }
+            MutableEntityCollection.Add(entity);
         }
 
+        /// <summary>
+        /// Marks the provided <see cref="ORMEntity"/> to be deleted.
+        /// </summary>
+        /// <param name="entity">The <see cref="ORMEntity"/> to be deleted.</param>
+        public void Remove(ORMEntity entity)
+        {
+            MutableEntityCollection.Find(x => x.Equals(entity)).IsMarkAsDeleted = true;
+        }
+
+        /// <summary>
+        /// Returns the amount of records in the database for the current table.
+        /// </summary>
+        /// <returns>The record count in the database for the current table</returns>
+        public static int Records()
+        {
+            return (int)ORMUtilities.ExecuteDirectQuery(new SQLBuilder().Count(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
+        }
+
+        #region IEnumerable<ORMEntity>
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the <see cref="ORMCollection{EntityType}"/>.
+        /// </summary>
+        /// <returns>A <see cref="List{EntityType}.Enumerator"/>.</returns>
         public IEnumerator<ORMEntity> GetEnumerator()
         {
-            return Collection.GetEnumerator();
+            return MutableEntityCollection.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -67,19 +134,59 @@ namespace ORM
             return GetEnumerator();
         }
 
-        public void Fetch()
+        #endregion
+
+        /// <summary>
+        /// <para>Sets the select expression to select a specific amount of columns; <see langword="default"/> is all columns.</para>
+        /// <para>By not setting the select expression the <see langword="default"/> is used.</para>
+        /// </summary>
+        /// <param name="expression">The select expression.</param>
+        /// <exception cref="ArgumentNullException">When setting an expression; the argument cannot be left null.</exception>
+        /// <returns>Returns the current instance of <see cref="ORMCollection{EntityType}"/>.</returns>
+        public ORMCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
         {
-            Fetch(-1);
+            SelectExpression = expression ?? throw new ArgumentNullException();
+
+            return this;
         }
 
-        public static int Records()
+        /// <summary>
+        /// Sets the join expression; not mentioning a join-type automatically uses the left join.
+        /// </summary>
+        /// <param name="expression">The join expression.</param>
+        /// <exception cref="ArgumentNullException">When setting an expression; the argument cannot be left null.</exception>
+        /// <returns>Returns the current instance of <see cref="ORMCollection{EntityType}"/>.</returns>
+        public ORMCollection<EntityType> Join(Expression<Func<EntityType, object>> expression)
         {
-            return (int)ORMUtilities.ExecuteDirectQuery(new SQLBuilder().Count(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
+            JoinExpression = expression ?? throw new ArgumentNullException();
+
+            return this;
         }
 
-        public void Fetch(long maxNumberOfItemsToReturn)
+        /// <summary>
+        /// Sets the where expression used to filter records.
+        /// </summary>
+        /// <param name="expression">The where expression.</param>
+        /// <exception cref="ArgumentNullException">When setting an expression; the argument cannot be left null.</exception>
+        /// <returns>Returns the current instance of <see cref="ORMCollection{EntityType}"/>.</returns>
+        public ORMCollection<EntityType> Where(Expression<Func<EntityType, bool>> expression)
         {
-            Fetch(null, maxNumberOfItemsToReturn);
+            WhereExpression = expression ?? throw new ArgumentNullException();
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the order by expression used to sort the result-set in ascending or descending order.
+        /// </summary>
+        /// <param name="expression">The order by expression.</param>
+        /// <exception cref="ArgumentNullException">When setting an expression; the argument cannot be left null.</exception>
+        /// <returns>Returns the current instance of <see cref="ORMCollection{EntityType}"/>.</returns>
+        public ORMCollection<EntityType> OrderBy(Expression<Func<EntityType, object>> expression)
+        {
+            SortExpression = expression ?? throw new ArgumentNullException();
+
+            return this;
         }
 
         internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn)
@@ -99,30 +206,9 @@ namespace ORM
             ExecutedQuery = sqlBuilder.GeneratedQuery;
         }
 
-        public ORMCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
-        {
-            SelectExpression = expression ?? throw new ArgumentNullException();
-
-            return this;
-        }
-
-        public ORMCollection<EntityType> Join(Expression<Func<EntityType, object>> expression)
-        {
-            JoinExpression = expression ?? throw new ArgumentNullException();
-
-            return this;
-        }
-
         internal ORMCollection<EntityType> InternalJoin(Expression expression)
         {
             InternalJoinExpression = expression ?? throw new ArgumentNullException();
-
-            return this;
-        }
-
-        public ORMCollection<EntityType> Where(Expression<Func<EntityType, bool>> expression)
-        {
-            WhereExpression = expression ?? throw new ArgumentNullException();
 
             return this;
         }
@@ -133,20 +219,5 @@ namespace ORM
 
             return this;
         }
-
-        public ORMCollection<EntityType> OrderBy(Expression<Func<EntityType, object>> expression)
-        {
-            SortExpression = expression ?? throw new ArgumentNullException();
-
-            return this;
-        }
-
-        public ORMCollection<EntityType> Inner() => default;
-
-        public ORMCollection<EntityType> Left() => default;
-
-        public ORMCollection<EntityType> Right() => default;
-
-        public ORMCollection<EntityType> Full() => default;
     }
 }

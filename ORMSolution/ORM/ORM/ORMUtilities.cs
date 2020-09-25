@@ -97,11 +97,11 @@ namespace ORM
             }
         }
 
-        public static CollectionType ExecuteDirectQuery<CollectionType, EntityType>(string query, params object[] parameters)
+        public static CollectionType ExecuteDirectQuery<CollectionType, EntityType>(string query, bool disableChangeTracking = false, params object[] parameters)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
-            var collection = ConvertTo<CollectionType, EntityType>(ExecuteDirectQuery(query, parameters));
+            var collection = ConvertTo<CollectionType, EntityType>(ExecuteDirectQuery(query, parameters), disableChangeTracking);
 
             collection.ExecutedQuery = query;
 
@@ -118,11 +118,14 @@ namespace ORM
             return ExecuteQuery(ExecuteReader, query, parameters);
         }
 
-        public static CollectionType ConvertTo<CollectionType, EntityType>(DataTable dataTable)
+        public static CollectionType ConvertTo<CollectionType, EntityType>(DataTable dataTable, bool disableChangeTracking)
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
-            var collection = new CollectionType();
+            var collection = new CollectionType()
+            {
+                DisableChangeTracking = disableChangeTracking
+            };
 
             using (var reader = dataTable.CreateDataReader())
             {

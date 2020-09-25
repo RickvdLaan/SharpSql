@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace ORM
@@ -219,7 +218,7 @@ namespace ORM
                     if (typeof(IORMCollection).IsAssignableFrom(property.PropertyType))
                     {
                         var subcollection = Activator.CreateInstance(property.PropertyType);
-                        var collectionProperty = property.PropertyType.GetProperty(nameof(ORMCollection<ORMEntity>.Collection), entity.PublicFlags);
+                        var collectionProperty = property.PropertyType.GetProperty(nameof(ORMCollection<ORMEntity>.EntityCollection), entity.PublicFlags);
                         var list = collectionProperty.GetValue(subcollection) as IList;
                         foreach (var item in data.Value)
                         {
@@ -258,7 +257,7 @@ namespace ORM
                 throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
             }
 
-            object value;
+            object value = null;
 
             switch (entityPropertyInfo.PropertyType)
             {
@@ -268,7 +267,7 @@ namespace ORM
                 case Type type when type == typeof(DateTime):
                     if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
                     {
-                        throw new ORMPropertyNotNullableException($"Property {propertyName} is not nullable, but the database column equivelant is.");
+                        throw new ORMPropertyNotNullableException($"Property [{propertyName}] is not nullable, but the database column equivelant is.");
                     }
 
                     value = reader.GetValue(iteration + tableIndex);
@@ -278,7 +277,7 @@ namespace ORM
 
                     var fetchEntityByPrimaryKey = subEntity.GetType().BaseType
                         .GetMethod(nameof(ORMEntity.FetchEntityByPrimaryKey),
-                        BindingFlags.Instance | BindingFlags.Public,
+                        entity.PublicFlags,
                         Type.DefaultBinder,
                         new Type[] { typeof(object) },
                         null);
@@ -287,9 +286,12 @@ namespace ORM
                     {
                         if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
                         {
-                            value = null;
-                            entity.EntityRelations.Add(subEntity as ORMEntity);
                             break;
+                        }
+
+                        if (entity.DisableChangeTracking)
+                        {
+                            (subEntity as ORMEntity).DisableChangeTracking = entity.DisableChangeTracking;
                         }
 
                         value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { reader.GetValue(iteration + tableIndex) });
@@ -298,8 +300,6 @@ namespace ORM
                     {
                         if (string.IsNullOrEmpty(reader.GetValue(iteration + tableIndex).ToString()))
                         {
-                            value = null;
-                            entity.EntityRelations.Add(subEntity as ORMEntity);
                             break;
                         }
                         else
@@ -309,10 +309,16 @@ namespace ORM
                                 var subEntityIdType = subEntity.GetType().GetProperty(((ORMEntity)subEntity).PrimaryKey.Keys[0].ColumnName).PropertyType;
                                 var id = Convert.ChangeType(reader.GetValue(iteration + tableIndex), subEntityIdType);
 
+                                if (entity.DisableChangeTracking)
+                                {
+                                    (subEntity as ORMEntity).DisableChangeTracking = entity.DisableChangeTracking;
+                                }
+
                                 value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { id });
                             }
                             else
                             {
+                                // Combined primary key.
                                 throw new NotImplementedException();
                             }
                         }
@@ -338,16 +344,9 @@ namespace ORM
                 }
             }
 
-            if (entityPropertyInfo.PropertyType.IsGenericType && entityPropertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
             {
-                if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
-                {
-                    entityPropertyInfo.SetValue(entity, null);
-                }
-                else
-                {
-                    entityPropertyInfo.SetValue(entity, value);
-                }
+                entityPropertyInfo.SetValue(entity, null);
             }
             else
             {

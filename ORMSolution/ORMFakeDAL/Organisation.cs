@@ -12,7 +12,7 @@ namespace ORMFakeDAL
 
         public Organisation() { }
 
-        public Organisation(int fetchByUserId)
+        public Organisation(int fetchByUserId, bool disableChangeTracking = default) : base(disableChangeTracking)
         {
             base.FetchEntityByPrimaryKey(fetchByUserId);
         }

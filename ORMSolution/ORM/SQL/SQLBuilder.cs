@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using ORM.Attributes;
+using ORM.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -107,7 +108,7 @@ namespace ORM
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
-                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i])) // @ToDo: && !IsAutoIncrement
+                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]) && entity.IsAutoIncrement)
                     continue;
 
                 var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
@@ -117,7 +118,6 @@ namespace ORM
                 {
                     for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                     {
-                        // @ToDo: if IsAutoIncrement? continue;
                         var columnName = entityColumnJoin.TableScheme[j];
 
                         if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == columnName))
@@ -182,7 +182,80 @@ namespace ORM
 
         private string Join(Expression expression)
         {
-            return ParseExpression(expression);
+            // If no join type has been provided, it'll automatically use a left join.
+            return ParseExpression(ParseJoinExpression(expression));
+        }
+
+        private Expression ParseJoinExpression(Expression expression)
+        {
+            if (expression is LambdaExpression lambdaExpression)
+            {
+                if (lambdaExpression.Body is MemberExpression memberExpression)
+                {
+                    return ParseJoinExpression(memberExpression);
+                }
+                if (lambdaExpression.Body is MethodCallExpression methodCallExpression1)
+                {
+                    if (methodCallExpression1.Method.Name != nameof(ORMEntity.Left)
+                     && methodCallExpression1.Method.Name != nameof(ORMEntity.Inner))
+                    {
+                        InvalidJoinException(methodCallExpression1.Method);
+                    }
+                }
+                else if (lambdaExpression.Body is NewArrayExpression newArrayExpression)
+                {
+                    var expressions = new List<Expression>(newArrayExpression.Expressions.Count);
+
+                    for (int i = 0; i < newArrayExpression.Expressions.Count; i++)
+                    {
+                        if (newArrayExpression.Expressions[i].Type.IsSubclassOf(typeof(ORMEntity)))
+                        {
+                            expressions.Add(Expression.Call(newArrayExpression.Expressions[i], typeof(ORMEntity).GetMethod(nameof(ORMEntity.Left))));
+                        }
+                        else if (newArrayExpression.Expressions[i] is MethodCallExpression methodCallExpression)
+                        {
+                            if (methodCallExpression.Method.Name != nameof(ORMEntity.Left)
+                             && methodCallExpression.Method.Name != nameof(ORMEntity.Inner))
+                            {
+                                InvalidJoinException((newArrayExpression.Expressions[i] as MethodCallExpression).Method);
+                            }
+
+                            expressions.Add(methodCallExpression);
+                        }
+                        else
+                        {
+                            InvalidJoinException((PropertyInfo)(newArrayExpression.Expressions[i] as MemberExpression).Member);
+                        }
+                    }
+
+                    return Expression.NewArrayInit(typeof(object), expressions);
+                }
+                else if (lambdaExpression.Body is UnaryExpression unaryExpression)
+                {
+                    return ParseJoinExpression(unaryExpression.Operand);
+                }
+            }
+            else if (expression is MemberExpression memberExpression)
+            {
+                if (memberExpression.Type.IsSubclassOf(typeof(ORMEntity)))
+                {
+                    return Expression.Call(memberExpression, typeof(ORMEntity).GetMethod(nameof(ORMEntity.Left)));
+                }
+
+                InvalidJoinException((PropertyInfo)memberExpression.Member);
+            }
+
+            return expression;
+        }
+
+        private void InvalidJoinException(PropertyInfo propertyInfo)
+        {
+            throw new ORMInvalidJoinException(propertyInfo);
+        }
+
+        private void InvalidJoinException(MethodInfo methodInfo)
+        {
+            throw new ORMInvalidJoinException(methodInfo);
         }
 
         private string Where(Expression whereExpression)
@@ -212,8 +285,8 @@ namespace ORM
             int entityFieldUpdateCount = 0;
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
-                if ((entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]) // ToDo: && !entity.AutoIncrement + other locations.
-                 || !entity.IsDirtyList[i - 1].IsDirty))
+                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i] && entity.IsAutoIncrement)
+                || !entity.IsDirtyList[i - 1].IsDirty)
                     continue;
 
                 var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
@@ -242,7 +315,7 @@ namespace ORM
 
                         //for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
                         //{
-                        //    if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j]) // ToDo: && !entityColumnJoin.AutoIncrement + other locations.
+                        //    if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == entityColumnJoin.TableScheme[j] entityColumnJoin.IsAutoIncrement)
                         //    || !entityColumnJoin.IsDirtyList[j - 1].IsDirty)
                         //        continue;
 
@@ -263,7 +336,7 @@ namespace ORM
 
             // Where
             if (!entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName))
-              || entity.IsDirtyList.Any(x => x.IsDirty == true))
+            || (entity.IsDirtyList.Any(x => x.IsDirty == true)))
             {
                 stringBuilder.Append(From(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType())));
 
@@ -335,21 +408,21 @@ namespace ORM
                     switch (binaryExpression.NodeType)
                     {
                         case ExpressionType.Equal:
-                            return $"({ParseExpression(left)} = {ParseExpression(right, (left as MemberExpression).Member.Name)})";
+                            return $"({ParseExpression(left)} = {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.LessThan:
-                            return $"({ParseExpression(left)} < {ParseExpression(right, (left as MemberExpression).Member.Name)})";
+                            return $"({ParseExpression(left)} < {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.GreaterThan:
-                            return $"({ParseExpression(left)} > {ParseExpression(right, (left as MemberExpression).Member.Name)})";
+                            return $"({ParseExpression(left)} > {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.LessThanOrEqual:
-                            return $"({ParseExpression(left)} <= {ParseExpression(right, (left as MemberExpression).Member.Name)})";
+                            return $"({ParseExpression(left)} <= {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.GreaterThanOrEqual:
-                            return $"({ParseExpression(left)} >= {ParseExpression(right, (left as MemberExpression).Member.Name)})";
+                            return $"({ParseExpression(left)} >= {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.Or:
                         case ExpressionType.OrElse:
-                            return $"({ParseExpression(left)} OR {ParseExpression(right, (left as MemberExpression).Member.Name)})";
+                            return $"({ParseExpression(left)} OR {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.And:
                         case ExpressionType.AndAlso:
-                            return $"({ParseExpression(left)} AND {ParseExpression(right, (left as MemberExpression).Member.Name)})";
+                            return $"({ParseExpression(left)} AND {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         default:
                             throw new NotImplementedException(body.NodeType.ToString());
                     }
@@ -382,9 +455,7 @@ namespace ORM
                             nameof(ORMEntityExtensions.Ascending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} {DataDictionary.OrderByAsc}",
                             nameof(ORMEntityExtensions.Descending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} {DataDictionary.OrderByDesc}",
                             nameof(ORMEntity.Left) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinLeft),
-                            nameof(ORMEntity.Right) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinRight),
                             nameof(ORMEntity.Inner) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinInner),
-                            nameof(ORMEntity.Full) => GenerateJoinQuery(methodCallExpression.Object as MemberExpression, DataDictionary.JoinFull),
                             _ => throw new NotImplementedException(methodCallExpression.Method.Name),
                         };
                     }
@@ -548,9 +619,27 @@ namespace ORM
             return newArrayExpression.Expressions
                                      .OfType<MethodCallExpression>()
                                      .Any(x => x.Method.Name == nameof(ORMEntity.Left)
-                                            || x.Method.Name == nameof(ORMEntity.Right)
-                                            || x.Method.Name == nameof(ORMEntity.Inner)
-                                            || x.Method.Name == nameof(ORMEntity.Full));
+                                            || x.Method.Name == nameof(ORMEntity.Inner));
+        }
+
+        private string GetMemberExpressionFromExpression(Expression expression)
+        {
+            if (expression is MemberExpression memberExpression)
+            {
+                return memberExpression.Member.Name;
+            }
+            else if (expression is MethodCallExpression methodCallExpression)
+            {
+                return GetMemberExpressionFromExpression(methodCallExpression.Object);
+            }
+            else if (expression is BinaryExpression binaryExpression)
+            {
+                return GetMemberExpressionFromExpression(binaryExpression.Left);
+            }
+            else
+            {
+                throw new NotImplementedException(expression.GetType().FullName);
+            }
         }
     }
 }
