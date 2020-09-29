@@ -6,6 +6,11 @@ namespace ORM.Attributes
     {
         internal string Name { get; set; }
 
-        public ORMPrimaryKeyAttribute() { }
+        internal bool IsAutoIncrement { get; set; }
+
+        public ORMPrimaryKeyAttribute(bool isAutoIncrement = true) 
+        {
+            IsAutoIncrement = isAutoIncrement;
+        }
     }
 }
