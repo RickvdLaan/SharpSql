@@ -112,7 +112,7 @@ namespace ORM
             }
             else
             {
-                //throw new ORMPrimaryKeyAttributeNotImplementedException(GetType());
+                throw new ORMPrimaryKeyAttributeNotImplementedException(GetType());
             }
 
             IsNew = OriginalFetchedValue == null;

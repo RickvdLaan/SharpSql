@@ -127,9 +127,7 @@ namespace ORM
             }
             else
             {
-                DataTable dataTable = new DataTable();
-
-                // Todo
+                var dataTable = ORMUtilities.MemoryDatabase.Fetch(sqlBuilder);
 
                 SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, dataTable.CreateDataReader(), sqlBuilder);
             }

@@ -31,13 +31,13 @@ namespace ORM
 
         public Dictionary<string, string> TableNameResolvePaths { get; private set; } = new Dictionary<string, string>();
 
-        public bool ContainsToManyJoins { get; private set; } = true;
+        public bool ContainsToManyJoins { get; private set; } = false;
 
         internal ORMTableAttribute TableAttribute { get; set; }
 
         internal List<SqlParameter> SqlParameters { get; private set; } = new List<SqlParameter>(16);
 
-        private List<SQLJoin> Joins { get; set; } = new List<SQLJoin>();
+        internal List<SQLJoin> Joins { get; set; } = new List<SQLJoin>();
 
         public override string ToString()
         {

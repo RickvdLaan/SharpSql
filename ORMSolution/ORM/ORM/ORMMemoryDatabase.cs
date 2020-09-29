@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Xml;
 
 namespace ORM
@@ -67,11 +68,11 @@ namespace ORM
                     var xmlAttribute = record.GetAttributeNode(primaryKey.Keys[0].ColumnName);
                     if (xmlAttribute != null && xmlAttribute.Value.Equals(id.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
-                        var theReader = new StringReader(record.OuterXml);
-                        var theDataSet = new DataSet();
-                        theDataSet.ReadXml(theReader);
+                        var reader = new StringReader(record.OuterXml);
+                        var dataSet = new DataSet();
+                        dataSet.ReadXml(reader);
 
-                        return theDataSet.Tables[0];
+                        return dataSet.Tables[0];
                     }
                 }
                 else
@@ -81,6 +82,98 @@ namespace ORM
             }
 
             return null;
+        }
+
+        public DataTable Fetch(SQLBuilder sqlBuilder)
+        {
+            var query = sqlBuilder.GeneratedQuery;
+
+            var top = GetTopCount(query);
+
+            var path = BasePath + sqlBuilder.TableAttribute.TableName.ToUpperInvariant();
+
+            // Cloning the XmlDocument so it doesn't affect the main MemoryDatabase.
+            var clonedXmlDocument = ORMUtilities.MemoryDatabase.MemoryTables.Clone();
+            var tableRecords = clonedXmlDocument.SelectNodes(path);
+
+            var dataSet = new DataSet();
+
+            var enumerator = tableRecords.GetEnumerator();
+            enumerator.MoveNext();
+            for (int i = 0; i < tableRecords.Count && (top == -1 || i < top); i++)
+            {
+                var record = RemoveUnnecessaryColumns(enumerator.Current as XmlElement, query);
+
+                var stringReader = new StringReader(record.OuterXml);
+
+                var tempDataSet = new DataSet();
+                tempDataSet.ReadXml(stringReader);
+                DataRow[] rows = new DataRow[tempDataSet.Tables[0].Rows.Count];
+                tempDataSet.Tables[0].Rows.CopyTo(rows, 0);
+                dataSet.Merge(rows);
+
+                enumerator.MoveNext();
+            }
+
+            if (sqlBuilder.ContainsToManyJoins)
+            {
+                
+            }
+
+            return dataSet.Tables[0];
+        }
+
+        private int GetTopCount(string query)
+        {
+            if (query.Contains("SELECT TOP"))
+            {
+                var startIndex = query.IndexOf('(') + 1;
+                var length = query.IndexOf(')') - query.IndexOf('(') - 1;
+                return Convert.ToInt32(query.Substring(startIndex, length));
+            }
+
+            return -1;
+        }
+
+        private XmlElement RemoveUnnecessaryColumns(XmlElement record, string query)
+        {
+            if (!query.Contains("SELECT *"))
+            {
+                var startIndex = query.IndexOf("SELECT") + 6;
+                var length = query.IndexOf("FROM") - startIndex;
+
+                if (query.StartsWith("SELECT TOP")
+                 && query.Substring(startIndex, length).Contains("*"))
+                {
+                    return record;
+                }
+
+                var columns = query.Substring(startIndex, length).Trim().Split(',');
+
+                for (int i = 0; i < columns.Length; i++)
+                {
+                    var columnStartIndex = columns[i].LastIndexOf('[') + 1;
+                    var columnlength = columns[i].LastIndexOf(']') - columnStartIndex;
+
+                    columns[i] = columns[i].Substring(columnStartIndex, columnlength);
+                }
+
+                var attributesToRemove = new List<XmlAttribute>();
+                foreach (XmlAttribute attribute in record.Attributes)
+                {
+                    if (!columns.Any(x => x.Equals(attribute.Name, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        attributesToRemove.Add(attribute);
+                    }
+                }
+
+                foreach (var attribute in attributesToRemove)
+                {
+                    record.Attributes.Remove(attribute);
+                }
+            }
+
+            return record;
         }
 
         public List<string> FetchTableColumns(string tableName)

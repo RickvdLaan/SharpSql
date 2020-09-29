@@ -18,9 +18,9 @@ namespace ORM
             ORMUtilities.MemoryDatabase = new ORMMemoryDatabase();
             ORMUtilities.MemoryDatabase.LoadMemoryTables(xmlFilePaths);
 
-            new ORMInitialize();
+            new ORMInitialize(null, true);
         }
-
+        
         private void LoadAllReferencedAssemblies()
         {
             var referencedPaths = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll");
@@ -60,11 +60,14 @@ namespace ORM
             }
         }
 
-        public ORMInitialize(IConfiguration configuration = null)
+        public ORMInitialize(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false)
         {
             new ORMUtilities(configuration);
 
-            LoadAllReferencedAssemblies();
+            if (loadAllReferencedAssemblies)
+            {
+                LoadAllReferencedAssemblies();
+            }
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {

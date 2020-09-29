@@ -1,7 +1,6 @@
 ﻿using NUnit.Framework;
 using ORM;
 using ORM.Attributes;
-using ORMFakeDAL;
 
 namespace ORMNUnit
 {
@@ -13,10 +12,6 @@ namespace ORMNUnit
         {
             new ORMInitialize("MemoryTables/USERS.xml",
                               "MemoryTables/ORGANISATIONS.xml");
-
-            new User(1);
-            new Users().Fetch();
-            ORMUtilities.ExecuteDirectQuery<Users, User>(string.Empty);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace ORMNUnit
             var users = new Users();
             users.Fetch();
 
-            Assert.AreEqual(true, false);
+            Assert.AreEqual(5, users.Count);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -29,7 +29,21 @@ namespace ORMNUnit
             users.Select(x => new object[] { x.Username, x.Password });
             users.Fetch();
 
-            Assert.AreEqual(true, false);
+            Assert.AreEqual(5, users.Count);
+
+            Assert.IsFalse(users.Any(x => x.IsNew != true));
+            Assert.IsFalse(users.Any(x => x.IsDirty != true));
+            Assert.IsFalse(users.Any(x => x.IsAutoIncrement != true));
+            Assert.IsFalse(users.Any(x => x.IsMarkAsDeleted != false));
+            Assert.IsFalse(users.Any(x => x.DisableChangeTracking != false));
+
+            Assert.IsTrue(users.All(x => (x as User).Id == -1));
+            Assert.IsTrue(users.All(x => (x as User).Username != string.Empty));
+            Assert.IsTrue(users.All(x => (x as User).Password != string.Empty));
+            Assert.IsTrue(users.All(x => (x as User).Organisation == null));
+            Assert.IsTrue(users.All(x => (x as User).DateCreated == null));
+            Assert.IsTrue(users.All(x => (x as User).DateLastModified == null));
+
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -41,7 +55,7 @@ namespace ORMNUnit
             var users = new Users();
             users.Fetch(1);
 
-            Assert.AreEqual(true, false);
+            Assert.AreEqual(1, users.Count);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
