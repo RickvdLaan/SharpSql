@@ -94,6 +94,15 @@ namespace ORM
 
             // Cloning the XmlDocument so it doesn't affect the main MemoryDatabase.
             var clonedXmlDocument = ORMUtilities.MemoryDatabase.MemoryTables.Clone();
+
+            if (sqlBuilder.Joins.Any())
+            {
+                foreach (var join in sqlBuilder.Joins)
+                {
+                    path += "|" +BasePath + join.RightTableAttribute.TableName.ToUpperInvariant();
+                }
+            }
+            
             var tableRecords = clonedXmlDocument.SelectNodes(path);
 
             var dataSet = new DataSet();
@@ -115,9 +124,19 @@ namespace ORM
                 enumerator.MoveNext();
             }
 
-            if (sqlBuilder.ContainsToManyJoins)
+            if (sqlBuilder.Joins.Any())
             {
-                
+                int i = 1;
+
+                foreach (var join in sqlBuilder.Joins)
+                {
+                    var relationName = $"{join.LeftTableAttribute.TableName}_Relation_{join.RightTableAttribute.TableName}";
+                    var left = dataSet.Tables[join.LeftTableAttribute.TableName].Columns["Organisation"];
+                    var right = dataSet.Tables[join.RightTableAttribute.TableName].Columns["Id"];
+                    dataSet.Relations.Add(relationName, left, right);
+                    dataSet.AcceptChanges();
+                    i++;
+                }
             }
 
             return dataSet.Tables[0];

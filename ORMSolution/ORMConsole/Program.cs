@@ -85,6 +85,10 @@ namespace ORMConsole
 
             #endregion
 
+            var users = new Users();
+            users.Join(x => x.Organisation.Inner());
+            users.Fetch();
+
             Console.Read();
         }
 
