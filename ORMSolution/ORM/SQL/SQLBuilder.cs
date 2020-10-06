@@ -487,6 +487,11 @@ namespace ORM
 
                         return query;
                     }
+                case NewExpression newExpression:
+                    {
+                        // users.Join(x => new { x.Organisation });
+                        throw new NotImplementedException();
+                    }
                 default:
                     throw new NotImplementedException(body.NodeType.ToString());
                 case null:

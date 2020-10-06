@@ -108,7 +108,7 @@ namespace ORM
 
                 var tempDataSet = new DataSet();
                 tempDataSet.ReadXml(stringReader);
-                DataRow[] rows = new DataRow[tempDataSet.Tables[0].Rows.Count];
+                var rows = new DataRow[tempDataSet.Tables[0].Rows.Count];
                 tempDataSet.Tables[0].Rows.CopyTo(rows, 0);
                 dataSet.Merge(rows);
 
@@ -129,6 +129,7 @@ namespace ORM
             {
                 var startIndex = query.IndexOf('(') + 1;
                 var length = query.IndexOf(')') - query.IndexOf('(') - 1;
+
                 return Convert.ToInt32(query.Substring(startIndex, length));
             }
 
@@ -186,7 +187,7 @@ namespace ORM
 
             if (tableRecords.Count == 0)
             {
-                // Return null when no xml record was found for the current table.
+                // Return null when no xml records were found for the current table.
                 return null;
             }
 

@@ -18,7 +18,7 @@ namespace ORM
             ORMUtilities.MemoryDatabase = new ORMMemoryDatabase();
             ORMUtilities.MemoryDatabase.LoadMemoryTables(xmlFilePaths);
 
-            new ORMInitialize(null, true);
+            new ORMInitialize(configuration: null, loadAllReferencedAssemblies: true);
         }
         
         private void LoadAllReferencedAssemblies()
