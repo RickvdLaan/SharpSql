@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -87,7 +88,7 @@ namespace ORM
             return null;
         }
 
-        public ORMCollection<EntityType> Fetch<EntityType>(ORMCollection<EntityType> collection, SQLBuilder sqlBuilder)
+        public IDataReader Fetch<EntityType>(SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             var query = sqlBuilder.GeneratedQuery;
@@ -109,12 +110,14 @@ namespace ORM
             {
                 foreach (var join in sqlBuilder.Joins)
                 {
-                    path += "|" +BasePath + join.RightTableAttribute.TableName.ToUpperInvariant();
+                    path += "|" + BasePath + join.RightTableAttribute.TableName.ToUpperInvariant();
 
                     objectTypes.Add((ORMEntity)Activator.CreateInstance(join.RightTableAttribute.EntityType));
                 }
             }
-            
+
+            var table = new DataTable();
+
             // All of the table records.
             var tableRecords = clonedXmlDocument.SelectNodes(path);
 
@@ -124,7 +127,7 @@ namespace ORM
             {
                 if (sqlBuilder.Joins.Any() && sqlBuilder.Joins.Any(x => tableRecords[i].Name.Equals(x.RightTableAttribute.TableName, StringComparison.InvariantCultureIgnoreCase)))
                 {
-                    break;
+                    continue;
                 }
 
                 var record = RemoveUnnecessaryColumns(enumerator.Current as XmlElement, query);
@@ -148,46 +151,60 @@ namespace ORM
                     throw new NotImplementedException();
 
                 var reader = FetchEntityById(tableName, primaryKey, id);
+                reader.Read();
+                var row = table.NewRow();
 
-                while (reader.Read())
+                var itemArray = rows[0].ItemArray.ToList();
+
+                if (i == 0)
                 {
                     for (int j = 0; j < reader.FieldCount; j++)
                     {
-                        SQLHelper.SetEntityProperty(entity, reader, j);
-                    }
-                }
+                        table.Columns.Add(tableName + '|' + columns[j]);
 
-                if (sqlBuilder.Joins.Any())
-                {
-                    var tempList = new List<bool>();
+                        if (sqlBuilder.Joins.Any() && j == 0)
+                        {
+                            foreach (var join in sqlBuilder.Joins)
+                            {
+                                var subentity = objectTypes.First(x => ORMUtilities.CollectionEntityRelations[x.GetType()].Name.Equals(tableName, StringComparison.InvariantCultureIgnoreCase)).ShallowCopy();
+                                var subprimaryKey = subentity.PrimaryKey;
+                                var subcolumns = FetchTableColumns(join.RightTableAttribute.TableName);
+                                var subindex = columns.FindIndex(x => x == subprimaryKey.Keys[0].ColumnName);
+                                var subid = entity[join.LeftPropertyInfo.Name];
+
+                                var retrievedid = reader.GetValue(index);
+
+                                var reader2 = FetchEntityById(join.RightTableAttribute.TableName, subprimaryKey, retrievedid);
+                                reader2.Read();
+                                for (int k = 0; k < reader2.FieldCount; k++)
+                                {
+                                    itemArray.Add(reader2.GetValue(k));
+                                }
+
+                            }
+                        }
+                    }
                     foreach (var join in sqlBuilder.Joins)
                     {
-                        if (entity[join.LeftPropertyInfo.Name] != null
-                         && sqlBuilder.GeneratedQuery.Contains($"INNER JOIN [DBO].[{join.RightTableAttribute.TableName}]", StringComparison.InvariantCultureIgnoreCase)
-                         || sqlBuilder.GeneratedQuery.Contains($"LEFT JOIN [DBO].[{join.RightTableAttribute.TableName}]", StringComparison.InvariantCultureIgnoreCase))
+                        if (i == 0)
                         {
-                            tempList.Add(true);
-                        }
-                        else
-                        {
-                            tempList.Add(false);
+                            foreach (var columnName in FetchTableColumns(join.RightTableAttribute.TableName))
+                            {
+                                table.Columns.Add(join.RightTableAttribute.TableName + '|' + columnName);
+                            }
                         }
                     }
+                }
 
-                    if (!tempList.Contains(false))
-                    {
-                        collection.Add(entity);
-                    }
-                }
-                else
-                {
-                    collection.Add(entity);
-                }
+                row.ItemArray = itemArray.ToArray();
+
+                table.Rows.Add(row);
 
                 enumerator.MoveNext();
             }
 
-            return collection;
+
+            return table.CreateDataReader();
         }
 
         private IDataReader CreateDataTable<EntityType>(ORMCollection<EntityType> values)

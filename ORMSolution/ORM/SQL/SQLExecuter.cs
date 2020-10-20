@@ -127,9 +127,9 @@ namespace ORM
             }
             else
             {
-                ORMUtilities.MemoryDatabase.Fetch<EntityType>(ormCollection, sqlBuilder);
+                using var reader = ORMUtilities.MemoryDatabase.Fetch<EntityType>(sqlBuilder);
 
-                //SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
+                SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
             }
         }
     }
