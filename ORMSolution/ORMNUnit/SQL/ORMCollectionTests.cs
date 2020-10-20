@@ -68,7 +68,7 @@ namespace ORMNUnit
             users.Join(x => x.Organisation.Left());
             users.Fetch();
 
-            Assert.AreEqual(true, false);
+            Assert.AreEqual(5, users.Count);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -81,7 +81,7 @@ namespace ORMNUnit
             users.Join(x => x.Organisation.Inner());
             users.Fetch();
 
-            Assert.AreEqual(true, false);
+            Assert.AreEqual(4, users.Count);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 

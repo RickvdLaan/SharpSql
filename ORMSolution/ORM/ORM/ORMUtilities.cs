@@ -145,8 +145,12 @@ namespace ORM
 
                 return dataTable;
             }
+            else
+            {
+                throw new NotImplementedException();
 
-            return new DataTable();
+                //MemoryDatabase.Fetch(null, null);
+            }
         }
 
         private static int ExecuteWriter(SqlCommand command)

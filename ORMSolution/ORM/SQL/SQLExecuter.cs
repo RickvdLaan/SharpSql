@@ -83,12 +83,12 @@ namespace ORM
                     var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
                     var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == entity.PrimaryKey.Keys[0].ColumnName).FirstOrDefault().Value;
 
-                    var dataTable = ORMUtilities.MemoryDatabase.FetchEntityById(tableName, entity.PrimaryKey, id);
+                    var reader = ORMUtilities.MemoryDatabase.FetchEntityById(tableName, entity.PrimaryKey, id);
 
-                    if (dataTable == null)
+                    if (reader == null)
                         throw new ArgumentException($"No record found for {entity.PrimaryKey.Keys[0].ColumnName}: {id}.");
 
-                    SQLHelper.DataReader(entity, dataTable.CreateDataReader(), sqlBuilder);
+                    SQLHelper.DataReader(entity, reader, sqlBuilder);
                 }
                 else
                 {
@@ -127,9 +127,9 @@ namespace ORM
             }
             else
             {
-                var dataTable = ORMUtilities.MemoryDatabase.Fetch(sqlBuilder);
+                ORMUtilities.MemoryDatabase.Fetch<EntityType>(ormCollection, sqlBuilder);
 
-                SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, dataTable.CreateDataReader(), sqlBuilder);
+                //SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
             }
         }
     }

@@ -7,15 +7,18 @@ using System.Xml;
 
 namespace ORM
 {
+    /// <summary>
+    /// Internally used to fetch data from the xml memory tables for the unit tests.
+    /// </summary>
     internal class ORMMemoryDatabase
     {
+        private const string MemoryDatabase = "DATABASE";
+
+        private const string RootMemoryTable = "DATA";
+
+        private const string BasePath = "//" + MemoryDatabase + "/" + RootMemoryTable + "/";
+
         public XmlDocument MemoryTables { get; set; } = new XmlDocument();
-
-        private string MemoryDatabase => "DATABASE";
-
-        private string RootMemoryTable => "DATA";
-
-        private string BasePath => $"//{ MemoryDatabase }/{ RootMemoryTable }/";
 
         public ORMMemoryDatabase()
         {
@@ -49,7 +52,7 @@ namespace ORM
             }
         }
 
-        public DataTable FetchEntityById(string tableName, ORMPrimaryKey primaryKey, object id)
+        public IDataReader FetchEntityById(string tableName, ORMPrimaryKey primaryKey, object id)
         {
             if (string.IsNullOrEmpty(tableName))
                 throw new ArgumentNullException();
@@ -66,13 +69,13 @@ namespace ORM
                 if (primaryKey.Keys.Count == 1)
                 {
                     var xmlAttribute = record.GetAttributeNode(primaryKey.Keys[0].ColumnName);
-                    if (xmlAttribute != null && xmlAttribute.Value.Equals(id.ToString(), StringComparison.OrdinalIgnoreCase))
+                    if (xmlAttribute != null && xmlAttribute.Value.Equals(id.ToString(), StringComparison.InvariantCultureIgnoreCase))
                     {
                         var reader = new StringReader(record.OuterXml);
                         var dataSet = new DataSet();
                         dataSet.ReadXml(reader);
 
-                        return dataSet.Tables[0];
+                        return dataSet.Tables[0].CreateDataReader();
                     }
                 }
                 else
@@ -84,7 +87,8 @@ namespace ORM
             return null;
         }
 
-        public DataTable Fetch(SQLBuilder sqlBuilder)
+        public ORMCollection<EntityType> Fetch<EntityType>(ORMCollection<EntityType> collection, SQLBuilder sqlBuilder)
+            where EntityType : ORMEntity
         {
             var query = sqlBuilder.GeneratedQuery;
 
@@ -95,22 +99,34 @@ namespace ORM
             // Cloning the XmlDocument so it doesn't affect the main MemoryDatabase.
             var clonedXmlDocument = ORMUtilities.MemoryDatabase.MemoryTables.Clone();
 
+            List<ORMEntity> objectTypes = new List<ORMEntity>
+            {
+                (ORMEntity)Activator.CreateInstance(sqlBuilder.TableAttribute.EntityType)
+            };
+
+            // If the sqlBuilder contains any joins, append them.
             if (sqlBuilder.Joins.Any())
             {
                 foreach (var join in sqlBuilder.Joins)
                 {
                     path += "|" +BasePath + join.RightTableAttribute.TableName.ToUpperInvariant();
+
+                    objectTypes.Add((ORMEntity)Activator.CreateInstance(join.RightTableAttribute.EntityType));
                 }
             }
             
+            // All of the table records.
             var tableRecords = clonedXmlDocument.SelectNodes(path);
-
-            var dataSet = new DataSet();
 
             var enumerator = tableRecords.GetEnumerator();
             enumerator.MoveNext();
             for (int i = 0; i < tableRecords.Count && (top == -1 || i < top); i++)
             {
+                if (sqlBuilder.Joins.Any() && sqlBuilder.Joins.Any(x => tableRecords[i].Name.Equals(x.RightTableAttribute.TableName, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    break;
+                }
+
                 var record = RemoveUnnecessaryColumns(enumerator.Current as XmlElement, query);
 
                 var stringReader = new StringReader(record.OuterXml);
@@ -119,27 +135,65 @@ namespace ORM
                 tempDataSet.ReadXml(stringReader);
                 var rows = new DataRow[tempDataSet.Tables[0].Rows.Count];
                 tempDataSet.Tables[0].Rows.CopyTo(rows, 0);
-                dataSet.Merge(rows);
+
+                var tableName = rows[0].Table.TableName;
+                var entity = objectTypes.First(x => ORMUtilities.CollectionEntityRelations[x.GetType()].Name.Equals(tableName, StringComparison.InvariantCultureIgnoreCase)).ShallowCopy();
+                var primaryKey = entity.PrimaryKey;
+                var columns = FetchTableColumns(tableName);
+                var index = columns.FindIndex(x => x == primaryKey.Keys[0].ColumnName);
+                var id = rows[0].ItemArray[index];
+
+                // Combined primary key not yet implemented.
+                if (primaryKey.Count > 1)
+                    throw new NotImplementedException();
+
+                var reader = FetchEntityById(tableName, primaryKey, id);
+
+                while (reader.Read())
+                {
+                    for (int j = 0; j < reader.FieldCount; j++)
+                    {
+                        SQLHelper.SetEntityProperty(entity, reader, j);
+                    }
+                }
+
+                if (sqlBuilder.Joins.Any())
+                {
+                    var tempList = new List<bool>();
+                    foreach (var join in sqlBuilder.Joins)
+                    {
+                        if (entity[join.LeftPropertyInfo.Name] != null
+                         && sqlBuilder.GeneratedQuery.Contains($"INNER JOIN [DBO].[{join.RightTableAttribute.TableName}]", StringComparison.InvariantCultureIgnoreCase)
+                         || sqlBuilder.GeneratedQuery.Contains($"LEFT JOIN [DBO].[{join.RightTableAttribute.TableName}]", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            tempList.Add(true);
+                        }
+                        else
+                        {
+                            tempList.Add(false);
+                        }
+                    }
+
+                    if (!tempList.Contains(false))
+                    {
+                        collection.Add(entity);
+                    }
+                }
+                else
+                {
+                    collection.Add(entity);
+                }
 
                 enumerator.MoveNext();
             }
 
-            if (sqlBuilder.Joins.Any())
-            {
-                int i = 1;
+            return collection;
+        }
 
-                foreach (var join in sqlBuilder.Joins)
-                {
-                    var relationName = $"{join.LeftTableAttribute.TableName}_Relation_{join.RightTableAttribute.TableName}";
-                    var left = dataSet.Tables[join.LeftTableAttribute.TableName].Columns["Organisation"];
-                    var right = dataSet.Tables[join.RightTableAttribute.TableName].Columns["Id"];
-                    dataSet.Relations.Add(relationName, left, right);
-                    dataSet.AcceptChanges();
-                    i++;
-                }
-            }
-
-            return dataSet.Tables[0];
+        private IDataReader CreateDataTable<EntityType>(ORMCollection<EntityType> values)
+             where EntityType : ORMEntity
+        {
+            throw new NotImplementedException();
         }
 
         private int GetTopCount(string query)

@@ -237,7 +237,7 @@ namespace ORM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetEntityProperty(ORMEntity entity, IDataReader reader, int iteration, int tableIndex = 0)
+        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, int iteration, int tableIndex = 0)
         {
             var propertyName = reader.GetName(iteration + tableIndex);
             var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
