@@ -302,7 +302,7 @@ namespace ORM
         {
             PrimaryKey.Keys[0].Value = primaryKey;
 
-            return FetchDynamicEntity(PrimaryKey);
+            return FetchEntity(PrimaryKey);
         }
 
         /// <summary>
@@ -317,7 +317,7 @@ namespace ORM
                 PrimaryKey.Keys[i].Value = primaryKeys[i];
             }
 
-            return FetchDynamicEntity(PrimaryKey);
+            return FetchEntity(PrimaryKey);
         }
 
         /// <summary>
@@ -391,7 +391,7 @@ namespace ORM
             return propertyInfo;
         }
 
-        private ORMEntity FetchDynamicEntity(ORMPrimaryKey primaryKey)
+        private ORMEntity FetchEntity(ORMPrimaryKey primaryKey)
         {
             BinaryExpression whereExpression = null;
 
