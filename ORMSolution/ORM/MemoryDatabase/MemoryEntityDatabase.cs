@@ -8,50 +8,17 @@ using System.Xml;
 namespace ORM
 {
     /// <summary>
-    /// An internal memory database for the ORMEntityTests.
+    /// <para>
+    /// An internal memory database which represents a set of <see cref="ORMEntity"/> objects for the unit tests.
+    /// </para>
+    /// <para>
+    /// The <see cref="MemoryEntityDatabase"/> simulates the database through pre-defined xml table records.
+    /// The <see cref="SQLBuilder"/> generates the query which can simply be tested via a simple assert:
+    /// "ExpectedQuery equals SqlBuilder.GeneratedQuery.".
+    /// </para>
     /// </summary>
-    internal class MemoryEntityDatabase
+    internal class MemoryEntityDatabase : MemoryDatabase
     {
-        private const string MemoryDatabase = "DATABASE";
-
-        private const string RootMemoryTable = "DATA";
-
-        private const string BasePath = "//" + MemoryDatabase + "/" + RootMemoryTable + "/";
-
-        public XmlDocument MemoryTables { get; set; } = new XmlDocument();
-
-        public MemoryEntityDatabase()
-        {
-            MemoryTables.AppendChild(MemoryTables.CreateElement(MemoryDatabase));
-        }
-
-        public void LoadMemoryTables(List<string> xmlFilePaths)
-        {
-            foreach (var xmlFilePath in xmlFilePaths)
-            {
-                ImportXml(xmlFilePath);
-            }
-        }
-
-        private void ImportXml(string xmlFilePath)
-        {
-            var xmlDocument = new XmlDocument();
-            xmlDocument.Load(xmlFilePath);
-            ImportMemoryTable(xmlDocument);
-        }
-
-        private void ImportMemoryTable(XmlDocument xmlDocument)
-        {
-            var tableRows = xmlDocument.SelectSingleNode($"//{ RootMemoryTable }");
-
-            foreach (XmlNode tableRow in tableRows.ChildNodes)
-            {
-                XmlNode node = MemoryTables.CreateNode(XmlNodeType.Element, RootMemoryTable, null);
-                node.AppendChild(MemoryTables.ImportNode(tableRow, true));
-                MemoryTables.DocumentElement.AppendChild(node);
-            }
-        }
-
         public IDataReader FetchEntityById(string tableName, ORMPrimaryKey primaryKey, object id)
         {
             if (string.IsNullOrEmpty(tableName))

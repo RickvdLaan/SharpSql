@@ -1,57 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.IO;
-using System.Linq;
 using System.Xml;
 
 namespace ORM
 {
     /// <summary>
-    /// An internal memory database for the ORMCollectionTests.
+    /// <para>
+    /// An internal memory database which represents an <see cref="ORMCollection{EntityType}"/> dataset for the unit tests.
+    /// </para>
+    /// /// <para>
+    /// The <see cref="MemoryCollectionDatabase"/> simulates the datatable through pre-defined xml datasets.
+    /// This way mapping the POCO's can be unit tested, since we know what dataset should be returned based on a query.
+    /// The <see cref="SQLBuilder"/> generates the query which can simply be tested via a simple assert: 
+    /// "ExpectedQuery equals SqlBuilder.GeneratedQuery.".
+    /// </para>
     /// </summary>
-    internal class MemoryCollectionDatabase
+    internal class MemoryCollectionDatabase : MemoryDatabase
     {
-        private const string MemoryDatabase = "DATABASE";
-
-        private const string RootMemoryTable = "DATA";
-
-        private const string BasePath = "//" + MemoryDatabase + "/" + RootMemoryTable + "/";
-
-        public XmlDocument MemoryTables { get; set; } = new XmlDocument();
-
-        public MemoryCollectionDatabase()
-        {
-            MemoryTables.AppendChild(MemoryTables.CreateElement(MemoryDatabase));
-        }
-
-        public void LoadMemoryTables(List<string> xmlFilePaths)
-        {
-            foreach (var xmlFilePath in xmlFilePaths)
-            {
-                ImportXml(xmlFilePath);
-            }
-        }
-
-        private void ImportXml(string xmlFilePath)
-        {
-            var xmlDocument = new XmlDocument();
-            xmlDocument.Load(xmlFilePath);
-            ImportMemoryTable(xmlDocument);
-        }
-
-        private void ImportMemoryTable(XmlDocument xmlDocument)
-        {
-            var tableRows = xmlDocument.SelectSingleNode($"//{ RootMemoryTable }");
-
-            foreach (XmlNode tableRow in tableRows.ChildNodes)
-            {
-                XmlNode node = MemoryTables.CreateNode(XmlNodeType.Element, RootMemoryTable, null);
-                node.AppendChild(MemoryTables.ImportNode(tableRow, true));
-                MemoryTables.DocumentElement.AppendChild(node);
-            }
-        }
-
         public DataTable Fetch(string memoryTableName)
         {
             var path = BasePath + memoryTableName.ToUpperInvariant();
