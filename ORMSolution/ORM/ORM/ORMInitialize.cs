@@ -13,10 +13,13 @@ namespace ORM
 {
     public sealed class ORMInitialize
     {
-        internal ORMInitialize(params string[] xmlFilePaths)
+        internal ORMInitialize(List<string> xmlEntityFilePaths, List<string> xmlCollectionFilePaths)
         {
-            ORMUtilities.MemoryDatabase = new ORMMemoryDatabase();
-            ORMUtilities.MemoryDatabase.LoadMemoryTables(xmlFilePaths);
+            ORMUtilities.MemoryEntityDatabase = new MemoryEntityDatabase();
+            ORMUtilities.MemoryEntityDatabase.LoadMemoryTables(xmlEntityFilePaths);
+
+            ORMUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase();
+            ORMUtilities.MemoryCollectionDatabase.LoadMemoryTables(xmlCollectionFilePaths);
 
             new ORMInitialize(configuration: null, loadAllReferencedAssemblies: true);
         }
@@ -112,7 +115,7 @@ namespace ORM
                         }
                         else
                         {
-                            var columns = ORMUtilities.MemoryDatabase.FetchTableColumns(tableAttribute.TableName);
+                            var columns = ORMUtilities.MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
 
                             if (columns != null)
                             {

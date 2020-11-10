@@ -19,10 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="MemoryTables\ORGANISATIONS.xml">
+    <None Update="MemoryCollectionTables\BasicFetchUsers.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="MemoryTables\USERS.xml">
+    <None Update="MemoryEntityTables\ORGANISATIONS.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="MemoryEntityTables\USERS.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

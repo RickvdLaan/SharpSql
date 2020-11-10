@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using ORM;
+using ORM.Attributes;
 using ORMFakeDAL;
 using System.Linq;
 
@@ -8,7 +9,7 @@ namespace ORMNUnit
     [TestFixture]
     public class ORMCollectionTests
     {
-        [Test]
+        [Test, ORMUnitTest("BasicFetchUsers")]
         public void BasicFetch()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U];";
@@ -218,11 +219,10 @@ namespace ORMNUnit
         {
             var expectedQuery = "SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;";
             var directQuery   = "SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;";
-            var collection    = ORMUtilities.ExecuteDirectQuery<Users, User>(directQuery, true, 1, 2);
+            //var collection    = ORMUtilities.ExecuteDirectQuery(directQuery, 1, 2);
 
-            Assert.IsTrue(collection.DisableChangeTracking);
-            Assert.IsTrue(collection.First().DisableChangeTracking);
-            Assert.AreEqual(expectedQuery, collection.ExecutedQuery);
+            Assert.AreEqual(true, false);
+            Assert.AreEqual(expectedQuery, directQuery);
         }
     }
 }

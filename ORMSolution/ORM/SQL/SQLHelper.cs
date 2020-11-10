@@ -306,7 +306,13 @@ namespace ORM
                     {
                         if (((ORMEntity)subEntity).PrimaryKey.Keys.Count == 1)
                         {
+                            if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+                            {
+                                break;
+                            }
+
                             var subEntityIdType = subEntity.GetType().GetProperty(((ORMEntity)subEntity).PrimaryKey.Keys[0].ColumnName).PropertyType;
+
                             var id = Convert.ChangeType(reader.GetValue(iteration + tableIndex), subEntityIdType);
 
                             if (entity.DisableChangeTracking)
@@ -333,7 +339,7 @@ namespace ORM
             if (ORMUtilities.IsUnitTesting)
             {
                 // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
-                if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null)
+                if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null && value != DBNull.Value)
                 {
                     value = Convert.ChangeType(value, Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType));
                 }

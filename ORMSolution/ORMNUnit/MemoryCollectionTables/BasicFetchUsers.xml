@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DATA>
+  <BASICFETCHUSERS Id="1" Username="Imaani"   Password="qwerty"   Organisation="1"  DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" />
+  <BASICFETCHUSERS Id="2" Username="Clarence" Password="password" Organisation="1"  DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" />
+  <BASICFETCHUSERS Id="3" Username="Beverley" Password="abc123"   Organisation="2"  DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" />
+  <BASICFETCHUSERS Id="4" Username="Adyan"    Password="123456"                     DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" />
+  <BASICFETCHUSERS Id="5" Username="Chloe"    Password="dragon"   Organisation="2"  DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" />
+</DATA>

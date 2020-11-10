@@ -6,6 +6,10 @@ namespace ORM.Exceptions
     [Serializable]
     public class ORMInvalidJoinException : Exception
     {
+        public ORMInvalidJoinException(string customMessage)
+            : base(customMessage)
+        { }
+
         public ORMInvalidJoinException(PropertyInfo propertyInfo)
            : base($"Cannot join field [{propertyInfo.Name}] of type [{propertyInfo.PropertyType}], since it's not of type [{typeof(ORMEntity).FullName}].")
         { }

@@ -85,9 +85,13 @@ namespace ORMConsole
 
             #endregion
 
+            // We doen nu auto join op alles, maar dat is niet de bedoeling? Wordt teveel data dan opgehaald,
+            // ook wanneer dit niet nodig is?
+
             var users = new Users();
-            users.Join(x => x.Organisation.Inner());
             users.Fetch();
+
+            var user = new User(1);
 
             Console.Read();
         }
