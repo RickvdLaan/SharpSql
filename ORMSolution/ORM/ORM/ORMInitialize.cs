@@ -45,6 +45,7 @@ namespace ORM
                     // https://github.com/dotnet/runtime/issues/15033
                     // https://github.com/dotnet/runtime/issues/31200
                     // Because of this bug we can't only load what we know we actually need.
+                    // -Rick, 25 September 2020
                     var assemblyBytes = File.ReadAllBytes(referencedPath);
 
                     // .NET Core only: This member is not supported.
@@ -58,6 +59,7 @@ namespace ORM
                 else
                 {
                     // Currently the only way, untill we find another way to do this through meta-data.
+                    // -Rick, 25 September 2020
                     AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(referencedPath));
                 }
             }

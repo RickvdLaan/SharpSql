@@ -137,7 +137,8 @@ namespace ORM
 
             stringBuilder.Append(")");
             stringBuilder.Append(Semicolon());
-            // @ToDo: Make this optinal? Or only do it has to be done?
+            // @ToDo: Make this optinal? Or only do it when it has to be done?
+            // -Rick, 16 September 2020
             stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
 
             return stringBuilder.ToString();
@@ -307,6 +308,7 @@ namespace ORM
                     {
                         // @ToDo: @Investigate: @FixMe: I think this is no longer being used. The code,
                         // including the else can be removed later if it's indeed no longer being used.
+                        // -Rick, 16 September 2020
                         throw new NotImplementedException();
 
                         //AddQueryTableName(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entityColumnJoin.GetType()], entityColumnJoin.GetType()));
@@ -383,6 +385,7 @@ namespace ORM
         private string Delete(ORMEntity entity)
         {
             // We won't add support for drop table, this can be done through a direct query.
+            // -Rick, 19 July 2020
 
             throw new NotImplementedException();
         }
@@ -490,6 +493,7 @@ namespace ORM
                 case NewExpression newExpression:
                     {
                         // @Todo: this crashes: "users.Join(x => new { x.Organisation });".
+                        // -Rick, 6 October 2020
                         throw new NotImplementedException();
                     }
                 default:

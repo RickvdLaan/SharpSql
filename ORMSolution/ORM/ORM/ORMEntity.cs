@@ -23,7 +23,7 @@ namespace ORM
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
         /// </summary>
-        public bool IsAutoIncrement { get; internal set; } = true; // @ToDo: @Important: still needs to be implemented.
+        public bool IsAutoIncrement { get; internal set; } = true; // @ToDo: @Important: still needs to be implemented. -Rick, 25 September 2020
 
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> is new or not.
@@ -289,6 +289,7 @@ namespace ORM
                 // Do we need a ORMEntityState enum?
                 // We need to mark the object as deleted, or it has to be marked as new again.
                 // Something has to be done here, has to be thought out.
+                // -Rick, 25 September 2020
             }
         }
 
