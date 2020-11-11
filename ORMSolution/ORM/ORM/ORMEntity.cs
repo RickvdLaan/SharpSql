@@ -163,7 +163,7 @@ namespace ORM
 
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
-                hashCode.Add(this[MutableTableScheme[i]].GetHashCode());
+                hashCode.Add(this[MutableTableScheme[i]]?.GetHashCode());
             }
 
             hashCode.Add(IsDirty.GetHashCode());

@@ -18,10 +18,17 @@ namespace ORMNUnit
             users.Fetch();
 
             Assert.AreEqual(5, users.Count);
+
+            Assert.IsFalse(users.Any(x => x.IsNew == true));
+            Assert.IsFalse(users.Any(x => x.IsDirty == true));
+            Assert.IsFalse(users.Any(x => x.IsAutoIncrement == false));
+            Assert.IsFalse(users.Any(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.Any(x => x.DisableChangeTracking == true));
+
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test]
+        [Test, ORMUnitTest("BasicSelectUsers")]
         public void Basic_Select()
         {
             var expectedQuery = "SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];";
@@ -32,11 +39,11 @@ namespace ORMNUnit
 
             Assert.AreEqual(5, users.Count);
 
-            Assert.IsFalse(users.Any(x => x.IsNew != true));
-            Assert.IsFalse(users.Any(x => x.IsDirty != true));
-            Assert.IsFalse(users.Any(x => x.IsAutoIncrement != true));
-            Assert.IsFalse(users.Any(x => x.IsMarkAsDeleted != false));
-            Assert.IsFalse(users.Any(x => x.DisableChangeTracking != false));
+            Assert.IsFalse(users.Any(x => x.IsNew == true));
+            Assert.IsFalse(users.Any(x => x.IsDirty == true));
+            Assert.IsFalse(users.Any(x => x.IsAutoIncrement == false));
+            Assert.IsFalse(users.Any(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.Any(x => x.DisableChangeTracking == true));
 
             Assert.IsTrue(users.All(x => (x as User).Id == -1));
             Assert.IsTrue(users.All(x => (x as User).Username != string.Empty));
@@ -45,10 +52,12 @@ namespace ORMNUnit
             Assert.IsTrue(users.All(x => (x as User).DateCreated == null));
             Assert.IsTrue(users.All(x => (x as User).DateLastModified == null));
 
+            Assert.AreEqual(users.FirstOrDefault(), users.FirstOrDefault().OriginalFetchedValue);
+
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test]
+        [Test, ORMUnitTest("BasicFetchTopUsers")]
         public void BasicFetch_Top()
         {
             var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U];";
@@ -57,6 +66,22 @@ namespace ORMNUnit
             users.Fetch(1);
 
             Assert.AreEqual(1, users.Count);
+
+            Assert.IsFalse(users.Any(x => x.IsNew == true));
+            Assert.IsFalse(users.Any(x => x.IsDirty == true));
+            Assert.IsFalse(users.Any(x => x.IsAutoIncrement == false));
+            Assert.IsFalse(users.Any(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.Any(x => x.DisableChangeTracking == true));
+
+            Assert.IsTrue(users.All(x => (x as User).Id == 1));
+            Assert.IsTrue(users.All(x => (x as User).Username != string.Empty));
+            Assert.IsTrue(users.All(x => (x as User).Password != string.Empty));
+            Assert.IsTrue(users.All(x => (x as User).Organisation != null));
+            Assert.IsTrue(users.All(x => (x as User).DateCreated != null));
+            Assert.IsTrue(users.All(x => (x as User).DateLastModified != null));
+
+            Assert.AreEqual(users.FirstOrDefault(), users.FirstOrDefault().OriginalFetchedValue);
+
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
@@ -73,7 +98,7 @@ namespace ORMNUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test]
+        [Test, ORMUnitTest("BasicJoinInner")]
         public void Basic_Join_Inner()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] INNER JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];";
@@ -83,6 +108,10 @@ namespace ORMNUnit
             users.Fetch();
 
             Assert.AreEqual(4, users.Count);
+
+            // Todo: Continue here... BasicJoinInner.xml has been added.
+            Assert.AreEqual(true, false);
+
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 

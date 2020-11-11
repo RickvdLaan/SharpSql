@@ -57,7 +57,7 @@ namespace ORM
                 }
             }
 
-            entity.IsNew = entity.PrimaryKey.Keys.Any(x => (int)entity[x.ColumnName] <= 0);
+            entity.IsNew = false;
 
             if (!entity.DisableChangeTracking)
             {
@@ -243,7 +243,7 @@ namespace ORM
 
             if (ORMUtilities.IsUnitTesting)
             {
-                propertyName = propertyName.Split('|').Last();
+                propertyName = propertyName.Split('_').Last();
             }
 
             var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)

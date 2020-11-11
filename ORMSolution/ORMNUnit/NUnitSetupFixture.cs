@@ -19,7 +19,10 @@ namespace ORMNUnit
 
             var memoryCollectionTables = new List<string>()
             {
-                "MemoryCollectionTables/BasicFetchUsers.xml"
+                "MemoryCollectionTables/BasicFetchUsers.xml",
+                "MemoryCollectionTables/BasicFetchTopUsers.xml",
+                "MemoryCollectionTables/BasicJoinInner.xml",
+                "MemoryCollectionTables/BasicSelectUsers.xml"
             };
 
             new ORMInitialize(memoryEntityTables, memoryCollectionTables);
