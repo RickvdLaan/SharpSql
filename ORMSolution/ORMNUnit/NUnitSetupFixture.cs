@@ -22,7 +22,9 @@ namespace ORMNUnit
                 "MemoryCollectionTables/BasicFetchUsers.xml",
                 "MemoryCollectionTables/BasicFetchTopUsers.xml",
                 "MemoryCollectionTables/BasicJoinInner.xml",
-                "MemoryCollectionTables/BasicSelectUsers.xml"
+                "MemoryCollectionTables/BasicSelectUsers.xml",
+                "MemoryCollectionTables/BasicJoinLeft.xml",
+                "MemoryCollectionTables/BasicOrderBy.xml"
             };
 
             new ORMInitialize(memoryEntityTables, memoryCollectionTables);

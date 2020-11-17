@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DATA>
+  <BASICJOINLEFT Id="1" Username="Imaani"   Password="qwerty"   Organisation="1"  DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" Organisation_Id="1" Name="The Boring Company" />
+  <BASICJOINLEFT Id="5" Username="Chloe"    Password="dragon"   Organisation="2"  DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" Organisation_Id="2" Name="SpaceX" />
+</DATA>

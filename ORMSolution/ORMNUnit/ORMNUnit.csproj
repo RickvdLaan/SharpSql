@@ -22,6 +22,12 @@
     <None Update="MemoryCollectionTables\BasicFetchTopUsers.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="MemoryCollectionTables\BasicOrderBy.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="MemoryCollectionTables\BasicJoinLeft.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="MemoryCollectionTables\BasicJoinInner.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
