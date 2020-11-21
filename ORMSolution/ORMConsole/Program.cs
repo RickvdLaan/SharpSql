@@ -88,10 +88,10 @@ namespace ORMConsole
             // We doen nu auto join op alles, maar dat is niet de bedoeling? Wordt teveel data dan opgehaald,
             // ook wanneer dit niet nodig is?
 
-            var users = new Users();
-            users.Fetch();
+            //var users = new Users();
+            //users.Fetch();
 
-            var user = new User(1);
+            //var user = new User(1);
 
             Console.Read();
         }

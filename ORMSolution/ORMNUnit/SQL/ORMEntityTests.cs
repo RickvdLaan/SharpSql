@@ -2,6 +2,11 @@
 using ORMFakeDAL;
 using System.Linq;
 
+/*
+    Important note: When creating memory entity tables, make sure legitamate data is being used from
+    a SQL Server to correctly simulate what happens. The entity objects will actually fetch the data
+    from the xml files.
+ */
 namespace ORMNUnit
 {
     [TestFixture]

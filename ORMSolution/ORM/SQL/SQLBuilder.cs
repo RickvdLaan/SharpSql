@@ -73,7 +73,7 @@ namespace ORM
 
             stringBuilder.Append(Semicolon());
 
-            GeneratedQuery = stringBuilder.ToString().ToUpperInvariant();
+            GeneratedQuery = stringBuilder.ToString();
         }
 
         public void BuildNonQuery(ORMEntity entity, NonQueryType nonQueryType)
@@ -93,7 +93,7 @@ namespace ORM
 
             var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
 
-            stringBuilder.Append($"INSERT INTO [dbo].[{tableName}] (".ToUpperInvariant());
+            stringBuilder.Append($"INSERT INTO [dbo].[{tableName}] (");
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
@@ -101,7 +101,7 @@ namespace ORM
                     continue;
 
                 var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
-                stringBuilder.Append($"[dbo].[{tableName}].[{entity.TableScheme[i]}]{addon}".ToUpperInvariant());
+                stringBuilder.Append($"[dbo].[{tableName}].[{entity.TableScheme[i]}]{addon}");
             }
 
             stringBuilder.Append(") VALUES(");
@@ -280,7 +280,7 @@ namespace ORM
             if (entity.IsDirtyList.Any(x => x.IsDirty == true)
             || !entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName)))
             {
-                stringBuilder.Append($"UPDATE [{tableAlias}] SET ".ToUpperInvariant());
+                stringBuilder.Append($"UPDATE [{tableAlias}] SET ");
             }
 
             int entityFieldUpdateCount = 0;
@@ -325,7 +325,7 @@ namespace ORM
                         //    {
                         //        var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.IsDirty == true).Count() <= j) ? string.Empty : ", ");
 
-                        //        stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + AddSqlParameter(entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                        //        stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = " + AddSqlParameter(entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                         //    }
                         //}
                     }
@@ -366,7 +366,7 @@ namespace ORM
                 {
                     var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
 
-                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = ".ToUpperInvariant() + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + (string.IsNullOrEmpty(addon) ? " " : addon));
+                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + (string.IsNullOrEmpty(addon) ? " " : addon));
                 }
                 else
                 {
@@ -378,7 +378,7 @@ namespace ORM
             {
                 var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
 
-                stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = ".ToUpperInvariant() + AddSqlParameter(entity.SqlValue(entity.TableScheme[currentTableSchemeIndex])) + (string.IsNullOrEmpty(addon) ? " " : addon));
+                stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter(entity.SqlValue(entity.TableScheme[currentTableSchemeIndex])) + (string.IsNullOrEmpty(addon) ? " " : addon));
             }
         }
 
@@ -392,7 +392,7 @@ namespace ORM
 
         public string Count(ORMTableAttribute tableAttribute)
         {
-            return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;".ToUpperInvariant();
+            return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;";
         }
 
         private char Semicolon()

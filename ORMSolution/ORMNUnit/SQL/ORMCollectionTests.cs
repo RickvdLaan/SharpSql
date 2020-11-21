@@ -5,6 +5,14 @@ using ORMFakeDAL;
 using System;
 using System.Linq;
 
+/*
+    Important note: You're only allowed to create memory collection tables based on existing data within
+    the memory entity tables. Creating new data within memory collection tables can cause unexpected
+    behaviour, resulting in unrealistic datasets and/or results.
+
+    The memory collection tables simulate what a SQL Server would have returned if the SQL Server
+    contained the memory entity tables.
+ */
 namespace ORMNUnit
 {
     [TestFixture]
@@ -193,7 +201,7 @@ namespace ORMNUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test]
+        [Test, ORMUnitTest("BasicWhereAnd")]
         public void Basic_Where_And()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE (([U].[ID] = @PARAM1) AND ([U].[ID] = @PARAM2));";
@@ -201,6 +209,8 @@ namespace ORMNUnit
             var users = new Users();
             users.Where(x => x.Id == 19 && x.Id == 12);
             users.Fetch();
+
+            // Continue here..
 
             Assert.AreEqual(true, false);
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
