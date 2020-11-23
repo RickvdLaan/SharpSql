@@ -93,7 +93,7 @@ namespace ORM
 
             var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
 
-            stringBuilder.Append($"INSERT INTO [dbo].[{tableName}] (");
+            stringBuilder.Append($"INSERT INTO [DBO].[{tableName}] (");
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
@@ -101,7 +101,7 @@ namespace ORM
                     continue;
 
                 var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
-                stringBuilder.Append($"[dbo].[{tableName}].[{entity.TableScheme[i]}]{addon}");
+                stringBuilder.Append($"[DBO].[{tableName}].[{entity.TableScheme[i]}]{addon}");
             }
 
             stringBuilder.Append(") VALUES(");
@@ -173,12 +173,12 @@ namespace ORM
 
         private string From()
         {
-            return $"FROM [dbo].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
+            return $"FROM [DBO].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
         }
 
         private string From(ORMTableAttribute tableAttribute)
         {
-            return $"FROM [dbo].[{tableAttribute.TableName}] AS [{_queryTableNames[tableAttribute.TableName]}]";
+            return $"FROM [DBO].[{tableAttribute.TableName}] AS [{_queryTableNames[tableAttribute.TableName]}]";
         }
 
         private string Join(Expression expression)

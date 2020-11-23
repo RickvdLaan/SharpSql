@@ -15,10 +15,15 @@ namespace ORM
 {
     public class ORMEntity : ORMObject, IEquatable<ORMEntity>, IORMEntity
     {
+        private string _executedQuery = string.Empty;
         /// <summary>
         /// Gets the executed query or <see cref="string.Empty"/>.
         /// </summary>
-        public string ExecutedQuery { get; internal set; } = string.Empty;
+        public string ExecutedQuery
+        {
+            get { return _executedQuery.ToUpperInvariant(); }
+            internal set { _executedQuery = value; }
+        }
 
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
