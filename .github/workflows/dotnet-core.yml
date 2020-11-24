@@ -1,4 +1,4 @@
-name: .NET Core - ORM Unit Tests
+name: ORM Unit Tests
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.101
+        dotnet-version: 5.0
     - name: Test
       working-directory: ORMSolution/ORMNUnit
       run: dotnet test --no-restore --verbosity normal
