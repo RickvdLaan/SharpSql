@@ -57,7 +57,7 @@ namespace ORM
                 }
             }
 
-            entity.IsNew = entity.PrimaryKey.Keys.Any(x => (int)entity[x.ColumnName] <= 0);
+            entity.IsNew = false;
 
             if (!entity.DisableChangeTracking)
             {
@@ -237,9 +237,15 @@ namespace ORM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetEntityProperty(ORMEntity entity, IDataReader reader, int iteration, int tableIndex = 0)
+        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, int iteration, int tableIndex = 0)
         {
             var propertyName = reader.GetName(iteration + tableIndex);
+
+            if (ORMUtilities.IsUnitTesting)
+            {
+                propertyName = propertyName.Split('_').Last();
+            }
+
             var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
                                   ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(ORMColumnAttribute), true).FirstOrDefault() as ORMColumnAttribute)?.ColumnName == propertyName);
 
@@ -298,29 +304,28 @@ namespace ORM
                     }
                     else
                     {
-                        if (string.IsNullOrEmpty(reader.GetValue(iteration + tableIndex).ToString()))
+                        if (((ORMEntity)subEntity).PrimaryKey.Keys.Count == 1)
                         {
-                            break;
+                            if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+                            {
+                                break;
+                            }
+
+                            var subEntityIdType = subEntity.GetType().GetProperty(((ORMEntity)subEntity).PrimaryKey.Keys[0].ColumnName).PropertyType;
+
+                            var id = Convert.ChangeType(reader.GetValue(iteration + tableIndex), subEntityIdType);
+
+                            if (entity.DisableChangeTracking)
+                            {
+                                (subEntity as ORMEntity).DisableChangeTracking = entity.DisableChangeTracking;
+                            }
+
+                            value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { id });
                         }
                         else
                         {
-                            if (((ORMEntity)subEntity).PrimaryKey.Keys.Count == 1)
-                            {
-                                var subEntityIdType = subEntity.GetType().GetProperty(((ORMEntity)subEntity).PrimaryKey.Keys[0].ColumnName).PropertyType;
-                                var id = Convert.ChangeType(reader.GetValue(iteration + tableIndex), subEntityIdType);
-
-                                if (entity.DisableChangeTracking)
-                                {
-                                    (subEntity as ORMEntity).DisableChangeTracking = entity.DisableChangeTracking;
-                                }
-
-                                value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { id });
-                            }
-                            else
-                            {
-                                // Combined primary key.
-                                throw new NotImplementedException();
-                            }
+                            // Combined primary key.
+                            throw new NotImplementedException();
                         }
                     }
 
@@ -334,12 +339,12 @@ namespace ORM
             if (ORMUtilities.IsUnitTesting)
             {
                 // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
-                if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null)
+                if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null && value != DBNull.Value)
                 {
                     value = Convert.ChangeType(value, Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType));
                 }
-                else
-                {
+                else if(!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)) && value != DBNull.Value)
+                { 
                     value = Convert.ChangeType(value, entityPropertyInfo.PropertyType);
                 }
             }

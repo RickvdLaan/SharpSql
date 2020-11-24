@@ -1,7 +1,9 @@
 ﻿using Microsoft.Data.SqlClient;
+using ORM.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -43,8 +45,8 @@ namespace ORM
             }
             else
             {
-                // Todo
-
+                // The SQL server returns the unique id of the just inserted row, but during a unit test
+                // nothing is actually inserted, thus returning 1.
                 return 1;
             }
         }
@@ -83,12 +85,12 @@ namespace ORM
                     var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
                     var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == entity.PrimaryKey.Keys[0].ColumnName).FirstOrDefault().Value;
 
-                    var dataTable = ORMUtilities.MemoryDatabase.FetchEntityById(tableName, entity.PrimaryKey, id);
+                    var reader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(tableName, entity.PrimaryKey, id);
 
-                    if (dataTable == null)
+                    if (reader == null)
                         throw new ArgumentException($"No record found for {entity.PrimaryKey.Keys[0].ColumnName}: {id}.");
 
-                    SQLHelper.DataReader(entity, dataTable.CreateDataReader(), sqlBuilder);
+                    SQLHelper.DataReader(entity, reader, sqlBuilder);
                 }
                 else
                 {
@@ -127,9 +129,12 @@ namespace ORM
             }
             else
             {
-                var dataTable = ORMUtilities.MemoryDatabase.Fetch(sqlBuilder);
+                var unitTestAttribute = new StackTrace().GetFrames().Select(x => x.GetMethod().GetCustomAttributes(typeof(ORMUnitTestAttribute), false)).Where(x => x.Any()).First().First() as ORMUnitTestAttribute;
+                var table = ORMUtilities.MemoryCollectionDatabase.Fetch(unitTestAttribute.MemoryTableName);
 
-                SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, dataTable.CreateDataReader(), sqlBuilder);
+                using var reader = table.CreateDataReader();
+
+                SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
             }
         }
     }

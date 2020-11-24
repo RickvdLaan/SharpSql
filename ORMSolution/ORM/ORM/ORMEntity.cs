@@ -15,15 +15,20 @@ namespace ORM
 {
     public class ORMEntity : ORMObject, IEquatable<ORMEntity>, IORMEntity
     {
+        private string _executedQuery = string.Empty;
         /// <summary>
         /// Gets the executed query or <see cref="string.Empty"/>.
         /// </summary>
-        public string ExecutedQuery { get; internal set; } = string.Empty;
+        public string ExecutedQuery
+        {
+            get { return _executedQuery.ToUpperInvariant(); }
+            internal set { _executedQuery = value; }
+        }
 
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
         /// </summary>
-        public bool IsAutoIncrement { get; internal set; } = true; // @ToDo: @Important: still needs to be implemented.
+        public bool IsAutoIncrement { get; internal set; } = true; // @ToDo: @Important: still needs to be implemented. -Rick, 25 September 2020
 
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> is new or not.
@@ -163,7 +168,7 @@ namespace ORM
 
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
-                hashCode.Add(this[MutableTableScheme[i]].GetHashCode());
+                hashCode.Add(this[MutableTableScheme[i]]?.GetHashCode());
             }
 
             hashCode.Add(IsDirty.GetHashCode());
@@ -289,6 +294,7 @@ namespace ORM
                 // Do we need a ORMEntityState enum?
                 // We need to mark the object as deleted, or it has to be marked as new again.
                 // Something has to be done here, has to be thought out.
+                // -Rick, 25 September 2020
             }
         }
 
@@ -301,7 +307,7 @@ namespace ORM
         {
             PrimaryKey.Keys[0].Value = primaryKey;
 
-            return FetchDynamicEntity(PrimaryKey);
+            return FetchEntity(PrimaryKey);
         }
 
         /// <summary>
@@ -316,7 +322,7 @@ namespace ORM
                 PrimaryKey.Keys[i].Value = primaryKeys[i];
             }
 
-            return FetchDynamicEntity(PrimaryKey);
+            return FetchEntity(PrimaryKey);
         }
 
         /// <summary>
@@ -390,7 +396,7 @@ namespace ORM
             return propertyInfo;
         }
 
-        private ORMEntity FetchDynamicEntity(ORMPrimaryKey primaryKey)
+        private ORMEntity FetchEntity(ORMPrimaryKey primaryKey)
         {
             BinaryExpression whereExpression = null;
 

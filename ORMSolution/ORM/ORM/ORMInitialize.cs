@@ -13,12 +13,15 @@ namespace ORM
 {
     public sealed class ORMInitialize
     {
-        internal ORMInitialize(params string[] xmlFilePaths)
+        internal ORMInitialize(List<string> xmlEntityFilePaths, List<string> xmlCollectionFilePaths)
         {
-            ORMUtilities.MemoryDatabase = new ORMMemoryDatabase();
-            ORMUtilities.MemoryDatabase.LoadMemoryTables(xmlFilePaths);
+            ORMUtilities.MemoryEntityDatabase = new MemoryEntityDatabase();
+            ORMUtilities.MemoryEntityDatabase.LoadMemoryTables(xmlEntityFilePaths);
 
-            new ORMInitialize(null, true);
+            ORMUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase();
+            ORMUtilities.MemoryCollectionDatabase.LoadMemoryTables(xmlCollectionFilePaths);
+
+            new ORMInitialize(configuration: null, loadAllReferencedAssemblies: true);
         }
         
         private void LoadAllReferencedAssemblies()
@@ -42,6 +45,7 @@ namespace ORM
                     // https://github.com/dotnet/runtime/issues/15033
                     // https://github.com/dotnet/runtime/issues/31200
                     // Because of this bug we can't only load what we know we actually need.
+                    // -Rick, 25 September 2020
                     var assemblyBytes = File.ReadAllBytes(referencedPath);
 
                     // .NET Core only: This member is not supported.
@@ -55,6 +59,7 @@ namespace ORM
                 else
                 {
                     // Currently the only way, untill we find another way to do this through meta-data.
+                    // -Rick, 25 September 2020
                     AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(referencedPath));
                 }
             }
@@ -112,7 +117,7 @@ namespace ORM
                         }
                         else
                         {
-                            var columns = ORMUtilities.MemoryDatabase.FetchTableColumns(tableAttribute.TableName);
+                            var columns = ORMUtilities.MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
 
                             if (columns != null)
                             {

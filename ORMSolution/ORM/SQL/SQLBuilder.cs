@@ -73,7 +73,7 @@ namespace ORM
 
             stringBuilder.Append(Semicolon());
 
-            GeneratedQuery = stringBuilder.ToString().ToUpperInvariant();
+            GeneratedQuery = stringBuilder.ToString();
         }
 
         public void BuildNonQuery(ORMEntity entity, NonQueryType nonQueryType)
@@ -93,7 +93,7 @@ namespace ORM
 
             var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
 
-            stringBuilder.Append($"INSERT INTO [dbo].[{tableName}] (".ToUpperInvariant());
+            stringBuilder.Append($"INSERT INTO [DBO].[{tableName}] (");
 
             for (int i = 0; i < entity.TableScheme.Count; i++)
             {
@@ -101,7 +101,7 @@ namespace ORM
                     continue;
 
                 var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
-                stringBuilder.Append($"[dbo].[{tableName}].[{entity.TableScheme[i]}]{addon}".ToUpperInvariant());
+                stringBuilder.Append($"[DBO].[{tableName}].[{entity.TableScheme[i]}]{addon}");
             }
 
             stringBuilder.Append(") VALUES(");
@@ -137,7 +137,8 @@ namespace ORM
 
             stringBuilder.Append(")");
             stringBuilder.Append(Semicolon());
-            // @ToDo: Make this optinal? Or only do it has to be done?
+            // @ToDo: Make this optinal? Or only do it when it has to be done?
+            // -Rick, 16 September 2020
             stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
 
             return stringBuilder.ToString();
@@ -172,12 +173,12 @@ namespace ORM
 
         private string From()
         {
-            return $"FROM [dbo].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
+            return $"FROM [DBO].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
         }
 
         private string From(ORMTableAttribute tableAttribute)
         {
-            return $"FROM [dbo].[{tableAttribute.TableName}] AS [{_queryTableNames[tableAttribute.TableName]}]";
+            return $"FROM [DBO].[{tableAttribute.TableName}] AS [{_queryTableNames[tableAttribute.TableName]}]";
         }
 
         private string Join(Expression expression)
@@ -279,7 +280,7 @@ namespace ORM
             if (entity.IsDirtyList.Any(x => x.IsDirty == true)
             || !entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName)))
             {
-                stringBuilder.Append($"UPDATE [{tableAlias}] SET ".ToUpperInvariant());
+                stringBuilder.Append($"UPDATE [{tableAlias}] SET ");
             }
 
             int entityFieldUpdateCount = 0;
@@ -307,6 +308,7 @@ namespace ORM
                     {
                         // @ToDo: @Investigate: @FixMe: I think this is no longer being used. The code,
                         // including the else can be removed later if it's indeed no longer being used.
+                        // -Rick, 16 September 2020
                         throw new NotImplementedException();
 
                         //AddQueryTableName(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entityColumnJoin.GetType()], entityColumnJoin.GetType()));
@@ -323,7 +325,7 @@ namespace ORM
                         //    {
                         //        var addon = ((entityColumnJoin.IsDirtyList.Where(x => x.IsDirty == true).Count() <= j) ? string.Empty : ", ");
 
-                        //        stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = ".ToUpperInvariant() + AddSqlParameter(entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
+                        //        stringBuilder.Append($"[{tableJoinAlias}].[{entityColumnJoin.TableScheme[j]}] = " + AddSqlParameter(entityColumnJoin.SqlValue(entityColumnJoin.TableScheme[j])) + (string.IsNullOrEmpty(addon) ? " " : string.Empty));
                         //    }
                         //}
                     }
@@ -364,7 +366,7 @@ namespace ORM
                 {
                     var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
 
-                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = ".ToUpperInvariant() + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + (string.IsNullOrEmpty(addon) ? " " : addon));
+                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + (string.IsNullOrEmpty(addon) ? " " : addon));
                 }
                 else
                 {
@@ -376,20 +378,21 @@ namespace ORM
             {
                 var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
 
-                stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = ".ToUpperInvariant() + AddSqlParameter(entity.SqlValue(entity.TableScheme[currentTableSchemeIndex])) + (string.IsNullOrEmpty(addon) ? " " : addon));
+                stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter(entity.SqlValue(entity.TableScheme[currentTableSchemeIndex])) + (string.IsNullOrEmpty(addon) ? " " : addon));
             }
         }
 
         private string Delete(ORMEntity entity)
         {
             // We won't add support for drop table, this can be done through a direct query.
+            // -Rick, 19 July 2020
 
             throw new NotImplementedException();
         }
 
         public string Count(ORMTableAttribute tableAttribute)
         {
-            return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;".ToUpperInvariant();
+            return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;";
         }
 
         private char Semicolon()
@@ -486,6 +489,12 @@ namespace ORM
                         }
 
                         return query;
+                    }
+                case NewExpression newExpression:
+                    {
+                        // @Todo: this crashes: "users.Join(x => new { x.Organisation });".
+                        // -Rick, 6 October 2020
+                        throw new NotImplementedException();
                     }
                 default:
                     throw new NotImplementedException(body.NodeType.ToString());

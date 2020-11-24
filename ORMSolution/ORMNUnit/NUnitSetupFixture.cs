@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using ORM;
 using ORM.Attributes;
+using System.Collections.Generic;
 
 namespace ORMNUnit
 {
@@ -10,8 +11,28 @@ namespace ORMNUnit
         [OneTimeSetUp]
         public void Initialize()
         {
-            new ORMInitialize("MemoryTables/USERS.xml",
-                              "MemoryTables/ORGANISATIONS.xml");
+            var memoryEntityTables = new List<string>()
+            {
+                "MemoryEntityTables/USERS.xml",
+                "MemoryEntityTables/ORGANISATIONS.xml"
+            };
+
+            var memoryCollectionTables = new List<string>()
+            {
+                "MemoryCollectionTables/BasicFetchUsers.xml",
+                "MemoryCollectionTables/BasicFetchTopUsers.xml",
+                "MemoryCollectionTables/BasicJoinInner.xml",
+                "MemoryCollectionTables/BasicSelectUsers.xml",
+                "MemoryCollectionTables/BasicJoinLeft.xml",
+                "MemoryCollectionTables/BasicOrderBy.xml",
+                "MemoryCollectionTables/BasicWhereAnd.xml",
+                "MemoryCollectionTables/BasicWhereLessThanOrEqual.xml",
+                "MemoryCollectionTables/BasicWhereGreaterThanOrEqual.xml",
+                "MemoryCollectionTables/ComplexJoin.xml",
+                "MemoryCollectionTables/ComplexWhereLike.xml"
+            };
+
+            new ORMInitialize(memoryEntityTables, memoryCollectionTables);
         }
     }
 }

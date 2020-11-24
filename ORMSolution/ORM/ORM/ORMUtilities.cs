@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using ORM.Attributes;
+using ORM.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -17,7 +18,9 @@ namespace ORM
 
         internal static bool IsUnitTesting { get; private set; }
 
-        internal static ORMMemoryDatabase MemoryDatabase { get; set; }
+        internal static MemoryEntityDatabase MemoryEntityDatabase { get; set; }
+
+        internal static MemoryCollectionDatabase MemoryCollectionDatabase { get; set; }
 
         internal static Dictionary<Type, Type> CollectionEntityRelations { get; private set; }
 
@@ -101,6 +104,14 @@ namespace ORM
             where CollectionType : ORMCollection<EntityType>, new()
             where EntityType : ORMEntity
         {
+            if (query.Contains("INNER JOIN")
+             || query.Contains("LEFT JOIN")
+             || query.Contains("RIGHT JOIN")
+             || query.Contains("FULL OUTER JOIN"))
+            {
+                throw new ORMInvalidJoinException("Joins are not supported on POCO's when using direct queries.");
+            }
+
             var collection = ConvertTo<CollectionType, EntityType>(ExecuteDirectQuery(query, parameters), disableChangeTracking);
 
             collection.ExecutedQuery = query;
@@ -145,8 +156,10 @@ namespace ORM
 
                 return dataTable;
             }
-
-            return new DataTable();
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private static int ExecuteWriter(SqlCommand command)

@@ -2,6 +2,11 @@
 using ORMFakeDAL;
 using System.Linq;
 
+/*
+    Important note: When creating memory entity tables, make sure legitamate data is being used from
+    a SQL Server to correctly simulate what happens. The entity objects will actually fetch the data
+    from the xml files.
+ */
 namespace ORMNUnit
 {
     [TestFixture]
@@ -122,7 +127,7 @@ namespace ORMNUnit
         public void Fetch_Join_New()
         {
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM3);";
+            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
             var expectedOrganisationQuery = "INSERT INTO [DBO].[ORGANISATIONS] ([DBO].[ORGANISATIONS].[NAME]) VALUES(@PARAM1); SELECT CAST(SCOPE_IDENTITY() AS INT);";
@@ -272,7 +277,7 @@ namespace ORMNUnit
         public void Update()
         {
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedUserQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM3);";
+            var expectedUserQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
             var expectedOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
@@ -321,7 +326,7 @@ namespace ORMNUnit
         public void Update_Join()
         {
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM3);";
+            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
             var expectedOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
@@ -371,7 +376,7 @@ namespace ORMNUnit
         public void Update_JoinInsert()
         {
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM3);";
+            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
             var expectedOrganisationQuery = "INSERT INTO [DBO].[ORGANISATIONS] ([DBO].[ORGANISATIONS].[NAME]) VALUES(@PARAM1); SELECT CAST(SCOPE_IDENTITY() AS INT);";
@@ -428,10 +433,10 @@ namespace ORMNUnit
         public void Update_DirtyJoin()
         {
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM3);";
+            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
-            var expectedOrganisationQuery = "UPDATE [O] SET [O].[NAME] = @PARAM1 FROM [dbo].[Organisations] AS [O] WHERE ([O].[Id] = @PARAM2);";
+            var expectedOrganisationQuery = "UPDATE [O] SET [O].[NAME] = @PARAM1 FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM2);";
 
             // The original Organisation object for User 2.
             var expectedOriginalUserOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
@@ -487,7 +492,7 @@ namespace ORMNUnit
         [Test]
         public void Update_JoinInsert_DisableChangeTracking()
         {
-            var expectedUserQuery = "UPDATE [U] SET [U].[USERNAME] = @PARAM1, [U].[PASSWORD] = @PARAM2, [U].[ORGANISATION] = @PARAM3, [U].[DATECREATED] = @PARAM4, [U].[DATELASTMODIFIED] = @PARAM5 FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM6);";
+            var expectedUserQuery = "UPDATE [U] SET [U].[USERNAME] = @PARAM1, [U].[PASSWORD] = @PARAM2, [U].[ORGANISATION] = @PARAM3, [U].[DATECREATED] = @PARAM4, [U].[DATELASTMODIFIED] = @PARAM5 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM6);";
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
             var expectedOrganisationQuery = "INSERT INTO [DBO].[ORGANISATIONS] ([DBO].[ORGANISATIONS].[NAME]) VALUES(@PARAM1); SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -528,10 +533,10 @@ namespace ORMNUnit
         public void Update_DirtyJoin_DisableChangeTracking()
         {
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [dbo].[Users] AS [U] WHERE ([U].[Id] = @PARAM3);";
+            var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
-            var expectedOrganisationQuery = "UPDATE [O] SET [O].[NAME] = @PARAM1 FROM [dbo].[Organisations] AS [O] WHERE ([O].[Id] = @PARAM2);";
+            var expectedOrganisationQuery = "UPDATE [O] SET [O].[NAME] = @PARAM1 FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM2);";
             var expectedOriginalOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
 
             var user = new User(2)
