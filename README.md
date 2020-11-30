@@ -2,7 +2,7 @@
 
 **Summary**
 
-A simple pre-ahlpha ORM Framework written in .NET Standard 2.1. Currently closed source, but open for viewing with the default copyright laws in place.
+A pre-alpha O/R mapping framework for .NET Standard 2.1, licensed under the MIT license. 
 
 ## Table of contents
 
@@ -53,7 +53,7 @@ Initialize the ORM Framework somewhere as follows:
 ```cs
 
 IConfiguration configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.json")
     .Build();
 
 new ORMInitialize(configuration);
@@ -176,7 +176,7 @@ Next initialize the ORM Framework somewhere once as follows:
 ```cs
 
 IConfiguration configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.json")
     .Build();
 
 new ORMInitialize(configuration);
@@ -518,10 +518,28 @@ internal class NUnitSetupFixture
     [OneTimeSetUp]
     public void Initialize()
     {
-        // Loading the ORMFakeDAL assembly by calling it so it's accessable during initialization.
-        new Users();
+        var memoryEntityTables = new List<string>()
+        {
+            "MemoryEntityTables/USERS.xml",
+            "MemoryEntityTables/ORGANISATIONS.xml"
+        };
 
-        new ORMInitialize();
+        var memoryCollectionTables = new List<string>()
+        {
+            "MemoryCollectionTables/BasicFetchUsers.xml",
+            "MemoryCollectionTables/BasicFetchTopUsers.xml",
+            "MemoryCollectionTables/BasicJoinInner.xml",
+            "MemoryCollectionTables/BasicSelectUsers.xml",
+            "MemoryCollectionTables/BasicJoinLeft.xml",
+            "MemoryCollectionTables/BasicOrderBy.xml",
+            "MemoryCollectionTables/BasicWhereAnd.xml",
+            "MemoryCollectionTables/BasicWhereLessThanOrEqual.xml",
+            "MemoryCollectionTables/BasicWhereGreaterThanOrEqual.xml",
+            "MemoryCollectionTables/ComplexJoin.xml",
+            "MemoryCollectionTables/ComplexWhereLike.xml"
+        };
+
+        _ = new ORMInitialize(memoryEntityTables, memoryCollectionTables);
     }
 }
 ```
@@ -534,7 +552,7 @@ All of the specifications of the ORM framework.
 
 ### 7.1 Version information
 
-The latest version of this framework is version 1.0, released on (the date of going open source).
+The latest version of this framework is version alpha-0.1, released on 2020-11-30.
 
 ### 7.2 Supported databases
 
@@ -542,6 +560,6 @@ SQL Server 2005 or higher
 
 ### 7.3 Supported .NET versions
 
-NET Standard 2.1., .NET Core 3.0, .NET Core 3.1.
+NET Standard 2.1., .NET Core 3.1.
 
 *[ Back to top](#table-of-contents)*
