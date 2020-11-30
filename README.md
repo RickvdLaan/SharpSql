@@ -372,9 +372,7 @@ Todo
 
 ### 3.3. Update
 
-```cs
-Todo
-```
+Currently the ```Delete()``` method throws a ```NotImplementedException()```. In alpha 0.2 the delete method will be available, but drop tables will never be implemented (but can still be achieved through a direct query).
 
 *[ Back to top](#table-of-contents)*
 
