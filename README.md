@@ -286,8 +286,18 @@ SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];
 
 #### 3.2.3 Join
 
+The collection ```Left()``` or ```Inner()``` methods can be used to retrieve the information of subobjects and fill them. The other operators (Where and OrderBy can also be applied to the joined object.
+
 ```cs
-Todo
+var users = new Users();
+users.Join(x => x.Organisation.Left());
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];
 ```
 
 *[ Back to top](#table-of-contents)*
