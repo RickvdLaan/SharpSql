@@ -286,11 +286,11 @@ SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];
 
 #### 3.2.3 Join
 
-The collection ```Left()``` or ```Inner()``` methods can be used to retrieve the information of subobjects and fill them. The other operators (Where and OrderBy can also be applied to the joined object.
+The collection ```Join()``` method can be used to retrieve the information of subobjects and fill them. The type of join can be specified by using the ```Left()``` or ```Inner()``` methods on the entity, the left join will be used if none is specified. The other operators (Where and OrderBy can also be applied to the joined object.
 
 ```cs
 var users = new Users();
-users.Join(x => x.Organisation.Left());
+users.Join(x => x.Organisation);
 users.Fetch();
 ```
 
