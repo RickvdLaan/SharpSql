@@ -304,8 +304,28 @@ SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U]
 
 #### 3.2.4 Where
 
+When you want to filter records, you can use the ```Where()``` method and use the comparison operators (*see SQL Comparison Operators.*) on any of the entities fields. In the example below we filter on the Users Id with the equals operator.
+
 ```cs
-Todo
+var users = new Users();
+users.Where(x => x.Id == 1);
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);
+```
+
+SQL Comparison Operators:
+```sql
+= 	-- Equal to 	
+> 	-- Greater than 	
+< 	-- Less than 	
+>= 	-- Greater than or equal to 	
+<= 	-- Less than or equal to 	
+<> 	-- Not equal to
 ```
 
 *[ Back to top](#table-of-contents)*
