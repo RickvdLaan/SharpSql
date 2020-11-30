@@ -376,15 +376,15 @@ Todo
 
 ### 3.3. Update
 
-Currently the ```Delete()``` method throws a ```NotImplementedException()```. In alpha 0.2 the delete method will be available, but drop tables will never be implemented (but can still be achieved through a direct query).
+```cs
+Todo
+```
 
 *[ Back to top](#table-of-contents)*
 
 ### 3.4. Delete
 
-```cs
-Todo
-```
+Currently the ```Delete()``` method throws a ```NotImplementedException()```. In alpha 0.2 the delete method will be available, but drop tables will never be implemented (but can still be achieved through a direct query).
 
 *[ Back to top](#table-of-contents)*
 
