@@ -1,4 +1,4 @@
-![.NET Core - ORM Unit Tests](https://github.com/Albileon/ORM/workflows/.NET%20Core%20-%20ORM%20Unit%20Tests/badge.svg?branch=master)
+![.NET Core - ORM Unit Tests](https://github.com/RickvdLaan/ORM/workflows/ORM%20Unit%20Tests/badge.svg?branch=master)
 
 **Summary**
 
