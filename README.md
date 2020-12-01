@@ -1,4 +1,8 @@
-![.NET Core - ORM Unit Tests](https://github.com/RickvdLaan/ORM/workflows/ORM%20Unit%20Tests/badge.svg?branch=master)
+![ORM Unit Tests](https://img.shields.io/github/workflow/status/RickvdLaan/ORM/ORM%20Unit%20Tests?label=unit%20tests&logo=GitHub)
+[![License](https://img.shields.io/github/license/RickvdLaan/ORM?color=dark-green)](LICENSE)
+![Top Language](https://img.shields.io/github/languages/top/RickvdLaan/ORM)
+![Code Size](https://img.shields.io/github/languages/code-size/RickvdLaan/ORM)
+![Repo Size](https://img.shields.io/github/repo-size/RickvdLaan/ORM)
 
 **Summary**
 
