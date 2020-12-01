@@ -308,7 +308,7 @@ Todo - advanced cases
 
 #### 3.2.4 Where
 
-When you want to filter records, you can use the ```Where()``` method and use the comparison operators (*see SQL Comparison Operators.*) on any of the entities fields. In the example below we filter on the Users Id with the equals operator.
+When you want to filter records, you can use the ```Where()``` method and use the comparison operators (see *[ SQL Comparison Operators](#sql-comparison-operators)*) on any of the entities fields. In the example below we filter on the Users Id with the equals operator.
 
 ```cs
 var users = new Users();
@@ -322,7 +322,7 @@ This will result in the following query:
 SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);
 ```
 
-SQL Comparison Operators:
+##### SQL Comparison Operators
 ```sql
 = 	-- Equal to 	
 > 	-- Greater than 	
