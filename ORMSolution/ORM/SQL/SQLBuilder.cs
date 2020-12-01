@@ -412,6 +412,8 @@ namespace ORM
                     {
                         case ExpressionType.Equal:
                             return $"({ParseExpression(left)} = {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
+                        case ExpressionType.NotEqual:
+                            return $"({ParseExpression(left)} <> {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.LessThan:
                             return $"({ParseExpression(left)} < {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
                         case ExpressionType.GreaterThan:

@@ -253,6 +253,62 @@ namespace ORMNUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
+        [Test, ORMUnitTest("BasicWhereEqualTo")]
+        public void Basic_Where_EqualTo()
+        {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+
+            var users = new Users();
+            users.Where(x => x.Id == 1);
+            users.Fetch();
+
+            var user = users.FirstOrDefault() as User;
+            Assert.AreEqual(1, user.Id);
+            Assert.AreEqual("Imaani", user.Username);
+            Assert.AreEqual("qwerty", user.Password);
+
+            // @TODO: Fix bug
+            // Known bug, will be fixed before 0.2 release
+            // Assert.IsNull(user1.Organisation);
+
+            Assert.IsNotNull(user.DateCreated);
+            Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateCreated);
+            Assert.IsNotNull(user.DateLastModified);
+            Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test, ORMUnitTest("BasicWhereNotEqualTo")]
+        public void Basic_Where_NotEqualTo()
+        {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] <> @PARAM1);";
+
+            var users = new Users();
+            users.Where(x => x.Id != 1);
+            users.Fetch();
+
+            var user = users.FirstOrDefault() as User;
+
+            Assert.AreEqual(4, users.Count);
+
+            Assert.AreEqual(user.Id, 2);
+            Assert.AreEqual("Clarence", user.Username);
+            Assert.AreEqual("password", user.Password);
+
+            Assert.IsNotNull(user.Organisation);
+            Assert.AreEqual(user.Organisation.Id, 1);
+            Assert.AreEqual(user.Organisation.Name, "The Boring Company");
+
+            Assert.IsNotNull(user.DateCreated);
+            Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateCreated);
+
+            Assert.IsNotNull(user.DateLastModified);
+            Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
         [Test, ORMUnitTest("BasicWhereGreaterThanOrEqual")]
         public void Basic_Where_GreaterThan()
         {

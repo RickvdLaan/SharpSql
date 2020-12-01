@@ -16,10 +16,10 @@ namespace ORMBenchmarks
         public void Init()
         {
             IConfiguration configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.json")
                 .Build();
 
-            new ORMInitialize(configuration, loadAllReferencedAssemblies: true);
+            _ = new ORMInitialize(configuration, loadAllReferencedAssemblies: true);
         }
 
         [Benchmark(Baseline = true)]
@@ -28,7 +28,7 @@ namespace ORMBenchmarks
             return new User(UserId);
         }
 
-        //[Benchmark(Baseline = true)]
+        [Benchmark(Baseline = false)]
         public Users GetAllUsers()
         {
             var users = new Users();

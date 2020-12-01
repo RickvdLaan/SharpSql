@@ -26,13 +26,15 @@ namespace ORMNUnit
                 "MemoryCollectionTables/BasicJoinLeft.xml",
                 "MemoryCollectionTables/BasicOrderBy.xml",
                 "MemoryCollectionTables/BasicWhereAnd.xml",
+                "MemoryCollectionTables/BasicWhereEqualTo.xml",
+                "MemoryCollectionTables/BasicWhereNotEqualTo.xml",
                 "MemoryCollectionTables/BasicWhereLessThanOrEqual.xml",
                 "MemoryCollectionTables/BasicWhereGreaterThanOrEqual.xml",
                 "MemoryCollectionTables/ComplexJoin.xml",
                 "MemoryCollectionTables/ComplexWhereLike.xml"
             };
 
-            new ORMInitialize(memoryEntityTables, memoryCollectionTables);
+            _ = new ORMInitialize(memoryEntityTables, memoryCollectionTables);
         }
     }
 }

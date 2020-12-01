@@ -14,7 +14,7 @@ namespace ORMConsole
                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                    .Build();
 
-            new ORMInitialize(configuration);
+            _ = new ORMInitialize(configuration);
             #endregion
 
             #region ToDo Unit Tests

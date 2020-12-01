@@ -1,12 +1,15 @@
 ﻿using ORM;
 using ORM.Attributes;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("ORMBenchmarks")]
 
 namespace ORMFakeDAL
 {
     public class Organisation : ORMEntity
     {
         [ORMPrimaryKey]
-        public int Id { get; private set; } = -1;
+        public int Id { get; internal set; } = -1;
 
         public string Name { get; set; }
 

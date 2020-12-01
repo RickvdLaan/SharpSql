@@ -22,6 +22,12 @@
     <None Update="MemoryCollectionTables\BasicFetchTopUsers.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="MemoryCollectionTables\BasicWhereNotEqualTo.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="MemoryCollectionTables\BasicWhereEqualTo.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

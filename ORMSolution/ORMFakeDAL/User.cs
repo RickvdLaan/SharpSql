@@ -1,13 +1,16 @@
 ﻿using ORM;
 using ORM.Attributes;
 using System;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("ORMBenchmarks")]
 
 namespace ORMFakeDAL
 {
     public class User : ORMEntity
     {
         [ORMPrimaryKey]
-        public int Id { get; private set; } = -1;
+        public int Id { get; internal set; } = -1;
 
         public string Username { get; set; }
 
@@ -15,9 +18,9 @@ namespace ORMFakeDAL
 
         public Organisation Organisation { get; set; }
 
-        public DateTime? DateCreated { get; private set; }
+        public DateTime? DateCreated { get; internal set; }
 
-        public DateTime? DateLastModified { get; private set; }
+        public DateTime? DateLastModified { get; internal set; }
 
         public Roles Roles { get; set; }
 
