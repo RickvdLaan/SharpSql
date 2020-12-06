@@ -97,23 +97,20 @@ namespace ORM
             {
                 foreach (ORMPrimaryKeyAttribute attribute in property.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true))
                 {
-                    attribute.Name = property.Name;
+                    attribute.PropertyName = property.Name;
+                    attribute.ColumnName = (property.GetCustomAttributes(typeof(ORMColumnAttribute), true).FirstOrDefault() as ORMColumnAttribute)?.ColumnName ?? property.Name;
                     attributes.Add(attribute);
                 }
             }
 
             PrimaryKey = new ORMPrimaryKey(attributes.Count);
 
-            if (attributes.Count > 1)
+            if (attributes.Count > 0)
             {
                 foreach (var attribute in attributes)
                 {
-                    PrimaryKey.Add(attribute.Name, null);
+                    PrimaryKey.Add(attribute.PropertyName, attribute.ColumnName, null);
                 }
-            }
-            else if (attributes.Count == 1)
-            {
-                PrimaryKey.Add(attributes[0].Name, null);
             }
             else
             {
@@ -144,8 +141,48 @@ namespace ORM
         /// <returns>Returns the provided column value.</returns>
         public object this[string columnName]
         {
-            get { return GetType().GetProperty(columnName, PublicIgnoreCaseFlags | NonPublicFlags).GetValue(this); }
-            set  { GetType().GetProperty(columnName).SetValue(this, value); }
+            get
+            {
+                var propertyInfo = GetType().GetProperty(columnName, PublicIgnoreCaseFlags | NonPublicFlags);
+
+                if (propertyInfo == null)
+                {
+                    foreach (var property in GetType().GetProperties())
+                    {
+                        var columnAttribute = property.GetCustomAttributes(typeof(ORMColumnAttribute), false).FirstOrDefault() as ORMColumnAttribute;
+
+                        if (columnAttribute?.ColumnName == columnName)
+                        {
+                            return GetType().GetProperty(property.Name, PublicIgnoreCaseFlags | NonPublicFlags).GetValue(this);
+                        }
+                    }
+                }
+
+                return propertyInfo.GetValue(this);
+            }
+            set
+            {
+                var propertyInfo = GetType().GetProperty(columnName);
+
+                if (propertyInfo == null)
+                {
+                    foreach (var property in GetType().GetProperties())
+                    {
+                        var columnAttribute = property.GetCustomAttributes(typeof(ORMColumnAttribute), false).FirstOrDefault() as ORMColumnAttribute;
+
+                        if (columnAttribute?.ColumnName == columnName)
+                        {
+                            GetType().GetProperty(property.Name, PublicIgnoreCaseFlags | NonPublicFlags).SetValue(this, value);
+
+                            return;
+                        }
+                    }
+
+                    throw new NotImplementedException($"The property [{columnName}] was not found in entity [{GetType().Name}].");
+                }
+
+                propertyInfo.SetValue(this, value);
+            }
         }
 
         /// <summary>
@@ -385,7 +422,7 @@ namespace ORM
 
             for (int i = 0; i < PrimaryKey.Count; i++)
             {
-                propertyInfo[i] = GetType().GetProperty(PrimaryKey.Keys[i].ColumnName);
+                propertyInfo[i] = GetType().GetProperty(PrimaryKey.Keys[i].PropertyName);
 
                 if (propertyInfo[i] == null)
                 {

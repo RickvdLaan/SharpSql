@@ -1,5 +1,4 @@
 ﻿using NUnit.Framework;
-using ORM;
 using ORM.Attributes;
 using ORMFakeDAL;
 using System;
@@ -119,8 +118,13 @@ namespace ORMNUnit
         [Test, ORMUnitTest("BasicJoinLeft")]
         public void Basic_Join_Left()
         {
+            // A left join has two cases, either .Left() is provided or no join type is provided.
+            // When no join is provided, it'll automatically use the left join. For this reason this
+            // case is tested twice - once with, and without.
+
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];";
 
+            // First case:
             var users = new Users();
             users.Join(x => x.Organisation.Left());
             users.Fetch();
@@ -149,6 +153,51 @@ namespace ORMNUnit
             Assert.IsFalse(ReferenceEquals(user1, user1.OriginalFetchedValue));
 
             var user2 = users.LastOrDefault() as User;
+            Assert.AreEqual(5, user2.Id);
+            Assert.AreEqual(user2.Username, "Chloe");
+            Assert.AreEqual(user2.Password, "dragon");
+            Assert.IsNotNull(user2.Organisation);
+            Assert.AreEqual(user2.Organisation.Id, 2);
+            Assert.AreEqual(user2.Organisation.Name, "SpaceX");
+            Assert.IsNotNull(user2.DateCreated);
+            Assert.AreEqual(user2.DateCreated, DateTime.Parse("2020-07-23T16:50:38.213"));
+            Assert.IsNotNull(user2.DateLastModified);
+            Assert.AreEqual(user2.DateLastModified, DateTime.Parse("2020-07-23T16:50:38.213"));
+
+            Assert.AreEqual(user2, user2.OriginalFetchedValue);
+            Assert.IsFalse(ReferenceEquals(user2, user2.OriginalFetchedValue));
+
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+
+            // Second case:
+            users = new Users();
+            users.Join(x => x.Organisation);
+            users.Fetch();
+
+            Assert.AreEqual(2, users.Count);
+
+            Assert.IsFalse(users.Any(x => x.IsNew == true));
+            Assert.IsFalse(users.Any(x => x.IsDirty == true));
+            Assert.IsFalse(users.Any(x => x.IsAutoIncrement == false));
+            Assert.IsFalse(users.Any(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.Any(x => x.DisableChangeTracking == true));
+
+            user1 = users.FirstOrDefault() as User;
+            Assert.AreEqual(1, user1.Id);
+            Assert.AreEqual(user1.Username, "Imaani");
+            Assert.AreEqual(user1.Password, "qwerty");
+            Assert.IsNotNull(user1.Organisation);
+            Assert.AreEqual(user1.Organisation.Id, 1);
+            Assert.AreEqual(user1.Organisation.Name, "The Boring Company");
+            Assert.IsNotNull(user1.DateCreated);
+            Assert.AreEqual(user1.DateCreated, DateTime.Parse("2020-07-23T16:50:38.213"));
+            Assert.IsNotNull(user1.DateLastModified);
+            Assert.AreEqual(user1.DateLastModified, DateTime.Parse("2020-07-23T16:50:38.213"));
+
+            Assert.AreEqual(user1, user1.OriginalFetchedValue);
+            Assert.IsFalse(ReferenceEquals(user1, user1.OriginalFetchedValue));
+
+            user2 = users.LastOrDefault() as User;
             Assert.AreEqual(5, user2.Id);
             Assert.AreEqual(user2.Username, "Chloe");
             Assert.AreEqual(user2.Password, "dragon");
@@ -476,6 +525,20 @@ namespace ORMNUnit
             Assert.AreEqual(users.EntityCollection[4]["Id"], 1);
 
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test, ORMUnitTest("BasicManyToMany")]
+        public void Basic_ManyToMany()
+        {
+            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[UserRoles] AS [U] WHERE (([U].[UserId] = @PARAM1) AND ([U].[RoleId] = @PARAM2));";
+
+            var userRole = new UserRole(1, 1);
+
+            Assert.AreEqual(1, userRole.Column_UserId);
+            Assert.AreEqual(1, userRole.Column_RoleId);
+            Assert.IsTrue(userRole.User.GetType().GetCustomAttributes(typeof(ORMColumnAttribute), false).Length > 0);
+
+            Assert.AreEqual(expectedQuery, userRole.ExecutedQuery);
         }
 
         // @TODO: Fix before 0.2 release

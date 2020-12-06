@@ -5,19 +5,22 @@ namespace ORM
 {
     internal struct PrimaryKey : IORMPrimaryKey
     {
+        public string PropertyName { get; set; }
+
         public string ColumnName { get; set; }
 
         public object Value { get; set; }
 
-        public PrimaryKey(string columnName, object id)
+        public PrimaryKey(string propertyName, string columnName, object id)
         {
+            PropertyName = propertyName;
             ColumnName = columnName;
             Value = id;
         }
 
         public override string ToString()
         {
-            return $"{ColumnName}: {Value}";
+            return $"{ColumnName}: {Value} in {PropertyName}";
         }
 
         public override bool Equals(object obj)
@@ -38,14 +41,14 @@ namespace ORM
             id = Value;
         }
 
-        public static implicit operator (string ColumnName, object Id)(PrimaryKey value)
+        public static implicit operator (string propertyName, string ColumnName, object Id)(PrimaryKey value)
         {
-            return (value.ColumnName, value.Value);
+            return (value.PropertyName, value.ColumnName, value.Value);
         }
 
-        public static implicit operator PrimaryKey((string ColumnName, object Id) value)
+        public static implicit operator PrimaryKey((string propertyName, string ColumnName, object Id) value)
         {
-            return new PrimaryKey(value.ColumnName, value.Id);
+            return new PrimaryKey(value.propertyName, value.ColumnName, value.Id);
         }
     }
 }

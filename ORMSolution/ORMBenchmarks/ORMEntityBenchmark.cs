@@ -1,4 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using ORM;
 using ORMFakeDAL;
@@ -23,17 +24,47 @@ namespace ORMBenchmarks
         }
 
         [Benchmark(Baseline = true)]
-        public User GetUserById()
+        public User GetUserByIdDefault()
         {
             return new User(UserId);
         }
 
         [Benchmark(Baseline = false)]
-        public Users GetAllUsers()
+        public User GetUserByIdManual()
         {
-            var users = new Users();
-            users.Fetch();
-            return users;
+            var user = new User();
+
+            using (SqlConnection sqlConnection = new SqlConnection("Server=localhost; Database=ORM; Trusted_Connection=True; MultipleActiveResultSets=true"))
+            {
+                using var command = new SqlCommand($"SELECT TOP (1) * FROM USERS AS U LEFT JOIN ORGANISATIONS AS O ON O.Id = U.Organisation WHERE U.ID = { UserId }", sqlConnection);
+                command.Connection.Open();
+
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    for (int i = 0; i < reader.VisibleFieldCount; i++)
+                    {
+                        if (i == 6)
+                            break;
+
+                        var propertyName = reader.GetName(i);
+                        var propertyValue = reader.GetValue(i);
+
+                        if (propertyName == nameof(user.Organisation))
+                        {
+                            user.Organisation = new Organisation();
+                            user.Organisation[reader.GetName(6)] = reader.GetValue(6);
+                            user.Organisation[reader.GetName(7)] = reader.GetValue(7);
+                        }
+                        else
+                        {
+                            user[propertyName] = propertyValue;
+                        }
+                    }
+                }
+            }
+
+            return user;
         }
     }
 }

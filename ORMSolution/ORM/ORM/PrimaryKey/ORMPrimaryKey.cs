@@ -32,7 +32,7 @@ namespace ORM
             var hashCode = new HashCode();
             for (int i = 0; i < primaryKeyIndexes.Length; i++)
             {
-                Add(reader.GetName(i), reader.GetValue(i));
+                Add(string.Empty, reader.GetName(i), reader.GetValue(i));
                 hashCode.Add(reader.GetValue(i));
             }
 
@@ -43,9 +43,9 @@ namespace ORM
 
         public bool Equals(ORMPrimaryKey x, ORMPrimaryKey y) => x.HashCode == y.HashCode && Enumerable.SequenceEqual(x.Keys, y.Keys);
 
-        public void Add(string columnName, object value)
+        public void Add(string propertyName, string columnName, object value)
         {
-            Keys.Add(new PrimaryKey(columnName, value));
+            Keys.Add(new PrimaryKey(propertyName, columnName, value));
         }
 
         internal static int[] DeterminePrimaryKeyIndexes(IDataReader reader, ORMEntity entity)

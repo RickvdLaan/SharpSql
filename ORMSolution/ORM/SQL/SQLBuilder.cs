@@ -14,7 +14,6 @@ namespace ORM
 {
     internal class SQLBuilder
     {
-        private const string Param = "@PARAM";
         internal const string MANY_TO_MANY_JOIN = "MM_Join_";
         internal const string MANY_TO_MANY_JOIN_COUPLER = MANY_TO_MANY_JOIN + "Conn.";
         internal const string MANY_TO_MANY_JOIN_DATA = MANY_TO_MANY_JOIN + "Data.";
@@ -436,7 +435,14 @@ namespace ORM
                         var entityType = memberExpression.Member.ReflectedType;
                         var collectionType = ORMUtilities.CollectionEntityRelations[entityType];
 
-                        return $"[{_queryTableNames[collectionType.Name]}].[{memberExpression.Member.Name}]";
+                        if (memberExpression.Member.GetCustomAttributes(typeof(ORMColumnAttribute), true).FirstOrDefault() is ORMColumnAttribute columnAttribute)
+                        {
+                            return $"[{_queryTableNames[collectionType.Name]}].[{columnAttribute.ColumnName}]";
+                        }
+                        else
+                        {
+                            return $"[{_queryTableNames[collectionType.Name]}].[{memberExpression.Member.Name}]";
+                        }
                     }
                 case ConstantExpression constantExpression:
                     {
@@ -451,11 +457,11 @@ namespace ORM
                         return methodCallExpression.Method.Name switch
                         {
                             // ORMEntityExtensions.Contains
-                            nameof(string.Contains) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + SqlParameters.Count} + '%')",
+                            nameof(string.Contains) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {DataDictionary.SqlParam + SqlParameters.Count} + '%')",
                             // ORMEntityExtensions.StartsWith
-                            nameof(string.StartsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE {Param + SqlParameters.Count} + '%')",
+                            nameof(string.StartsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE {DataDictionary.SqlParam + SqlParameters.Count} + '%')",
                             // ORMEntityExtensions.EndsWith
-                            nameof(string.EndsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {Param + SqlParameters.Count})",
+                            nameof(string.EndsWith) => $"({ParseExpression(methodCallExpression?.Object ?? methodCallExpression.Arguments.OfType<MemberExpression>().FirstOrDefault())} LIKE '%' + {DataDictionary.SqlParam + SqlParameters.Count})",
                             nameof(string.ToString) => ParseExpression(methodCallExpression.Object),
                             nameof(ORMEntityExtensions.Ascending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} {DataDictionary.OrderByAsc}",
                             nameof(ORMEntityExtensions.Descending) => $"{ParseExpression(methodCallExpression.Arguments.FirstOrDefault() ?? throw new InvalidOperationException($"No field for lambda expression [{(methodCallExpression.Object as ParameterExpression).Name}]."))} {DataDictionary.OrderByDesc}",
@@ -507,7 +513,7 @@ namespace ORM
 
         private string AddSqlParameter((object value, string sourceColumn) mappedValue)
         {
-            SqlParameters.Add(new SqlParameter(Param + (SqlParameters.Count + 1), mappedValue.value)
+            SqlParameters.Add(new SqlParameter(DataDictionary.SqlParam + (SqlParameters.Count + 1), mappedValue.value)
             {
                 SourceColumn = mappedValue.sourceColumn
             });

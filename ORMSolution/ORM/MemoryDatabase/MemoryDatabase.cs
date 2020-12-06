@@ -1,10 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Xml;
 
 namespace ORM
 {
     internal class MemoryDatabase
     {
+        public Assembly ExternalAssembly = null;
+
         protected const string RootMemoryDatabase = "DATABASE";
 
         protected const string RootMemoryTable = "DATA";
@@ -29,7 +33,12 @@ namespace ORM
         protected void ImportXml(string xmlFilePath)
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.Load(xmlFilePath);
+
+            using (var streamReader = new StreamReader(ExternalAssembly.GetManifestResourceStream(xmlFilePath)))
+            {
+                xmlDocument.LoadXml(streamReader.ReadToEnd());
+            }
+
             ImportMemoryTable(xmlDocument);
         }
 
