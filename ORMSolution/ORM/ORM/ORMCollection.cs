@@ -81,8 +81,10 @@ namespace ORM
         /// </summary>
         public void SaveChanges()
         {
+            // @Todo:
             // A naive approach - but it works for now. We probably want to create some kind of state
             // for objects and add batch execution.
+            // -Rick, 25 September 2020
             foreach (var entity in MutableEntityCollection)
             {
                 if (entity.IsMarkAsDeleted)
@@ -194,11 +196,11 @@ namespace ORM
             return this;
         }
 
-        internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn)
+        internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn, Expression internalEntityJoinExpression = null)
         {
             var sqlBuilder = new SQLBuilder();
 
-            sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+            sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression ?? internalEntityJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
             if (ExecutedQuery == sqlBuilder.GeneratedQuery)
                 return;

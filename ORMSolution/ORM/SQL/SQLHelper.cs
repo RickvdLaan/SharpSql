@@ -45,16 +45,19 @@ namespace ORM
         internal static void PopulateEntity<EntityType>(EntityType entity, IDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
-            if (sqlBuilder?.TableNameResolvePaths.Count > 0)
+            //if (sqlBuilder?.TableNameResolvePaths.Count > 0)
+            //{
+            //    BuildMultiLayeredEntity(entity, reader, sqlBuilder);
+            //}
+            //else
+            //{
+            //}
+
+            // @Todo: once lazy loading is implemented we want to re-create the BuildMultiLayeredEntity.
+
+            for (int i = 0; i < reader.FieldCount; i++)
             {
-                BuildMultiLayeredEntity(entity, reader, sqlBuilder);
-            }
-            else
-            {
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    SetEntityProperty(entity, reader, i);
-                }
+                SetEntityProperty(entity, reader, sqlBuilder.Joins, i);
             }
 
             entity.IsNew = false;
@@ -94,7 +97,7 @@ namespace ORM
 
                     for (int i = 0; i < tableColumnCount; i++)
                     {
-                        SetEntityProperty(objectToFill, reader, i, tableIndex);
+                        SetEntityProperty(objectToFill, reader, sqlBuilder.Joins, i, tableIndex);
                     }
                 }
 
@@ -148,7 +151,7 @@ namespace ORM
                     var instance = (ORMEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
                     foreach (var index in indexes)
                     {
-                        SetEntityProperty(instance, _reader, index);
+                        SetEntityProperty(instance, _reader, sqlBuilder.Joins, index);
                     }
 
                     if (relations.ContainsKey(fieldName))
@@ -237,7 +240,7 @@ namespace ORM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, int iteration, int tableIndex = 0)
+        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, List<SQLJoin> joins, int iteration, int tableIndex = 0)
         {
             var propertyName = reader.GetName(iteration + tableIndex);
 
@@ -279,6 +282,20 @@ namespace ORM
                     value = reader.GetValue(iteration + tableIndex);
                     break;
                 case Type type when type.IsSubclassOf(typeof(ORMEntity)):
+                    // If there are no joins provided or none matched the current type we don't want
+                    // to fetch the child-object.
+                    if (joins.Count == 0 || !joins.Any(x => x.LeftPropertyInfo.PropertyType == type))
+                    {
+                        value = null;
+                        break;
+                    }
+
+                    // @Todo: Also if we get past this point, we do the following statement:
+                    // fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { id });
+                    // But the SqlBuilder with the current reader already got the data in this case.
+                    // Therefore a lot of the code below can be refactored and the data hase to be
+                    // gotten from the reader itself, rather than executing a new query.
+
                     var subEntity = Activator.CreateInstance(type.UnderlyingSystemType);
 
                     var fetchEntityByPrimaryKey = subEntity.GetType().BaseType

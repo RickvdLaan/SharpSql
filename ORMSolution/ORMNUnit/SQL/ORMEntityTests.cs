@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using ORMFakeDAL;
+using System;
 using System.Linq;
 
 /*
@@ -17,7 +18,7 @@ namespace ORMNUnit
         {
             var expectedUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
-            var user = new User(4);
+            var user = new User(1);
 
             // User object
             Assert.AreEqual(false, user.IsDirty);
@@ -29,7 +30,7 @@ namespace ORMNUnit
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
 
-            // Organisation object - null for User with Id 4.
+            // Organisation is not null, but no join is provided so should be null.
             Assert.IsNull(user.Organisation);
             Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
         }
@@ -62,10 +63,9 @@ namespace ORMNUnit
         [Test]
         public void Fetch_Join()
         {
-            var expectedUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
+            var expectedUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
 
-            var user = new User(1);
+            var user = new User(1, x => x.Organisation.Left());
 
             // User object
             Assert.AreEqual(false, user.IsDirty);
@@ -280,9 +280,6 @@ namespace ORMNUnit
             var expectedUserQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
-            var expectedOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
-            var expectedOriginalOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
-
             var user = new User(2)
             {
                 Password = "UnitTest"
@@ -299,27 +296,17 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
             Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
 
             // Organisation object
-            Assert.AreEqual(false, user.Organisation.IsDirty);
-            Assert.AreEqual(false, user.Organisation.IsNew);
-            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
-            Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
-            Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
+            Assert.IsNull(user.Organisation);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation == null);
 
-            // Organisation query
-            Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
-            Assert.AreEqual(expectedOriginalOrganisationQuery, user.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
+            Assert.IsTrue(user.EntityRelations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
         }
 
         [Test]
@@ -328,9 +315,6 @@ namespace ORMNUnit
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
             var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-
-            var expectedOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
-            var expectedOriginalOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
 
             var user = new User(2)
             {
@@ -348,28 +332,17 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
             Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
 
             // Organisation object
-            Assert.AreEqual(false, user.Organisation.IsDirty);
-            Assert.AreEqual(false, user.Organisation.IsNew);
-            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
-            Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
-            Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
-            Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
+            Assert.IsNotNull(user.Organisation);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation == null);
 
-            // Organisation query
-            Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
-            Assert.AreEqual(expectedOriginalOrganisationQuery, user.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
+            Assert.IsTrue(user.EntityRelations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
         }
 
         [Test]
@@ -593,30 +566,26 @@ namespace ORMNUnit
         public void DisableChangeTracking()
         {
             var expectedUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-            var expectedOrganisationQuery = "SELECT TOP (1) * FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM1);";
 
-            var user = new User(2, true);
+            var user = new User(2, x => x.Organisation, true);
 
             // User object
             Assert.AreEqual(true, user.IsDirty);
             Assert.AreEqual(false, user.IsNew);
-
-            Assert.IsNull(user.OriginalFetchedValue);
-            Assert.IsNull(user.Organisation.OriginalFetchedValue);
-
             Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsNull(user.OriginalFetchedValue);
+
+            Assert.AreEqual(2, user.Id);
+            Assert.AreEqual("Clarence", user.Username);
+            Assert.AreEqual("password", user.Password);
+            Assert.IsNotNull(user.Organisation);
+            Assert.IsNotNull(user.DateCreated);
+            Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateCreated);
+            Assert.IsNotNull(user.DateLastModified);
+            Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
-
-            // Organisation object
-            Assert.AreEqual(true, user.Organisation.IsDirty);
-            Assert.AreEqual(false, user.Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-
-            // Organisation query
-            Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
         }
     }
 }

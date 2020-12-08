@@ -327,7 +327,7 @@ namespace ORM
                 sqlBuilder.BuildNonQuery(this, NonQueryType.Delete);
                 SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Delete);
 
-                // @Important.
+                // @Important:
                 // Do we need a ORMEntityState enum?
                 // We need to mark the object as deleted, or it has to be marked as new again.
                 // Something has to be done here, has to be thought out.
@@ -348,6 +348,21 @@ namespace ORM
         }
 
         /// <summary>
+        /// Fetches an <see cref="ORMEntity"/> based on the provided primary key.
+        /// </summary>
+        /// <param name="primaryKey">The primary key.</param>
+        /// <returns>Returns the fetched <see cref="ORMEntity"/> or <see langword="null"/>.</returns>
+        public ORMEntity FetchEntityByPrimaryKey<EntityType>(object primaryKey, Expression<Func<EntityType, object>> joins)
+            where EntityType : ORMEntity
+        {
+            // @Todo: update method documentation.
+
+            PrimaryKey.Keys[0].Value = primaryKey;
+
+            return FetchEntity(PrimaryKey, joins);
+        }
+
+        /// <summary>
         /// Fetches an <see cref="ORMEntity"/> based on the provided combined primary key.
         /// </summary>
         /// <param name="primaryKeys">The combined primary key.</param>
@@ -360,6 +375,24 @@ namespace ORM
             }
 
             return FetchEntity(PrimaryKey);
+        }
+
+        /// <summary>
+        /// Fetches an <see cref="ORMEntity"/> based on the provided combined primary key.
+        /// </summary>
+        /// <param name="primaryKeys">The combined primary key.</param>
+        /// <returns>Returns the fetched <see cref="ORMEntity"/> or <see langword="null"/>.</returns>
+        public ORMEntity FetchEntityByPrimaryKey<EntityType>(Expression<Func<EntityType, object>> joins, params object[] primaryKeys)
+            where EntityType : ORMEntity
+        {
+            // @Todo: update method documentation.
+
+            for (int i = 0; i < primaryKeys.Length; i++)
+            {
+                PrimaryKey.Keys[i].Value = primaryKeys[i];
+            }
+
+            return FetchEntity(PrimaryKey, joins);
         }
 
         /// <summary>
@@ -433,7 +466,7 @@ namespace ORM
             return propertyInfo;
         }
 
-        private ORMEntity FetchEntity(ORMPrimaryKey primaryKey)
+        private ORMEntity FetchEntity(ORMPrimaryKey primaryKey, Expression joinExpression = null)
         {
             BinaryExpression whereExpression = null;
 
@@ -460,8 +493,12 @@ namespace ORM
 
             // Instantiates and fetches the run-time collection.
             var collection = Activator.CreateInstance(ORMUtilities.CollectionEntityRelations[GetType()]);
+
+            // Sets the InternalWhere with the WhereExpression.
             collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.InternalWhere), NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(collection, new object[] { whereExpression });
-            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long) }, null).Invoke(collection, new object[] { this, 1 });
+            
+            // Fetches the data.
+            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, 1, joinExpression });
 
             if (!ORMUtilities.IsUnitTesting && IsNew)
                 throw new Exception($"No [{GetType().Name}] found for {string.Join(", ", PrimaryKey.Keys.Select(x => x.ToString()).ToArray())}.");
