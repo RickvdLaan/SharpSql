@@ -78,7 +78,7 @@ namespace ORM
 
         internal bool IsMarkAsDeleted { get; set; } = false;
 
-        internal List<ORMEntity> EntityRelations { get; } = new List<ORMEntity>();
+        internal List<ORMEntity> EntityRelations { get; private set; } = new List<ORMEntity>();
 
         internal (string ColumnName, bool IsDirty)[] IsDirtyList { get; set; } = null;
 
@@ -257,19 +257,27 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                if (IsNew && EntityRelations.Count == 0)
+                // @Perfomance: it fixes some issues, but this is terrible for the performance.
+                // Needs to be looked at! -Rick, 12 December 2020
+                foreach (var column in TableScheme)
                 {
-                    // With a new object BuildMultiLayeredEntity is not called, therefore EntityRelations is not filled.
-                    foreach (var column in TableScheme)
+                    // When a subEntity is not filled through the parent the PopulateChildEntity method
+                    // isn't called and therefore the subEntity is not added to the EntityRelations.
+                    if (this[column] != null && this[column].GetType().IsSubclassOf(typeof(ORMEntity)))
                     {
-                        var subEntity = this[column];
+                        var subEntity = Activator.CreateInstance(this[column].GetType().UnderlyingSystemType) as ORMEntity;
 
-                        if (subEntity != null && subEntity.GetType().IsSubclassOf(typeof(ORMEntity)))
+                        if (!EntityRelations.Any(x => x.GetType() == subEntity.GetType()))
                         {
-                            EntityRelations.Add(subEntity as ORMEntity);
+                            if ((this[column] as ORMEntity).IsDirty 
+                             || (OriginalFetchedValue?[column] == null && !(this[column] as ORMEntity).IsDirty))
+                            {
+                                EntityRelations.Add(subEntity);
+                            }
                         }
                     }
                 }
+
                 foreach (var relation in EntityRelations)
                 {
                     if (this[relation.GetType().Name] == null && OriginalFetchedValue[relation.GetType().Name] != null)
@@ -446,7 +454,11 @@ namespace ORM
 
         internal ORMEntity ShallowCopy()
         {
-            return MemberwiseClone() as ORMEntity;
+            var copy = MemberwiseClone() as ORMEntity;
+
+            copy.EntityRelations = new List<ORMEntity>(EntityRelations);
+
+            return copy;
         }
 
         internal PropertyInfo[] GetPrimaryKeyPropertyInfo()

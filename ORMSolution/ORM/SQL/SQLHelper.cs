@@ -45,21 +45,88 @@ namespace ORM
         internal static void PopulateEntity<EntityType>(EntityType entity, IDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
-            //if (sqlBuilder?.TableNameResolvePaths.Count > 0)
-            //{
-            //    BuildMultiLayeredEntity(entity, reader, sqlBuilder);
-            //}
-            //else
-            //{
-            //}
-
-            // @Todo: once lazy loading is implemented we want to re-create the BuildMultiLayeredEntity.
-
             for (int i = 0; i < reader.FieldCount; i++)
             {
-                SetEntityProperty(entity, reader, sqlBuilder.Joins, i);
+                SetEntityProperty(entity, reader, sqlBuilder, i);
             }
 
+            FinaliaseEntity(entity);
+        }
+
+        internal static void PopulateChildEntity(ORMEntity parentEntity, ORMEntity childEntity, IDataReader reader, SQLBuilder sqlBuilder)
+        {
+            var (ReaderStartIndex, ReaderEndIndex) = CalculateJoinIndexes(parentEntity, childEntity, sqlBuilder);
+
+            for (int i = 0; i < (ReaderEndIndex - ReaderStartIndex); i++)
+            {
+                var value = reader.GetValue(ReaderStartIndex + i);
+
+                var propertyName = reader.GetName(ReaderStartIndex + i);
+
+#if DEBUG
+                if (ORMUtilities.IsUnitTesting)
+                {
+                    propertyName = propertyName.Split('_').Last();
+
+                    var childPropertyType = childEntity.GetType().GetProperty(propertyName).PropertyType;
+
+                    // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
+                    if (Nullable.GetUnderlyingType(childPropertyType) != null && value != DBNull.Value)
+                    {
+                        value = Convert.ChangeType(value, Nullable.GetUnderlyingType(childPropertyType));
+                    }
+                    else if (!childPropertyType.IsSubclassOf(typeof(ORMEntity)) && value != DBNull.Value)
+                    {
+                        value = Convert.ChangeType(value, childPropertyType);
+                    }
+                }
+#endif
+
+                childEntity[propertyName] = value;
+            }
+
+            childEntity.ExecutedQuery = "Initialised through parent";
+
+            FinaliaseEntity(childEntity);
+        }
+
+        private static (int ReaderStartIndex, int ReaderEndIndex) CalculateJoinIndexes(ORMEntity parentEntity, ORMEntity childEntity, SQLBuilder sqlBuilder)
+        {
+            var startIndex = 0;
+
+            foreach (var (name, type) in sqlBuilder.TableOrder)
+            {
+                // The TableOrder (as the name suggests) provides the order from the SqlReader
+                // with all the involved tables. Therefore the parent will always be set first
+                // and we can break once the current join has been found.
+                if (type == parentEntity.GetType())
+                {
+                    startIndex = sqlBuilder.TableNameColumnCount[name];
+                }
+                // If there are multiple joins, we want to continue adding up the total tally
+                // untill our current join type is found so we know the current index.
+                else if (type != parentEntity.GetType()
+                      && type != childEntity.GetType())
+                {
+                    startIndex += sqlBuilder.TableNameColumnCount[name];
+                }
+                else if (type == childEntity.GetType())
+                {
+                    // We found the indexes based on the parent entity fields and the previous
+                    // joins within the sqlBuilder.
+                    var endIndex = startIndex + sqlBuilder.TableNameColumnCount[name];
+
+                    return (startIndex, endIndex);
+                }
+            }
+
+            // This shouldn't happen, but leaving an exception for now to make sure all cases work as expected.
+            // -Rick, 11 December 2020
+            throw new NotImplementedException();
+        }
+
+        internal static void FinaliaseEntity(ORMEntity entity)
+        {
             entity.IsNew = false;
 
             if (!entity.DisableChangeTracking)
@@ -72,36 +139,6 @@ namespace ORM
                 {
                     entity.OriginalFetchedValue[relation.GetType().Name] = (entity[relation.GetType().Name] as ORMEntity).OriginalFetchedValue;
                 }
-            }
-        }
-
-        private static void BuildMultiLayeredEntity<EntityType>(EntityType entity, IDataReader reader, SQLBuilder sqlBuilder)
-            where EntityType : ORMEntity
-        {
-            var tableIndex = 0;
-
-            foreach (var (name, _) in sqlBuilder.TableOrder)
-            {
-                var tableColumnCount = sqlBuilder.TableNameColumnCount[name];
-
-                if (!sqlBuilder.TableNameColumnCount.ContainsKey(name)
-                  || tableColumnCount == 0)
-                {
-                    continue;
-                }
-
-                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : string.Empty;
-                if (!objectPath.StartsWith(SQLBuilder.MANY_TO_MANY_JOIN, StringComparison.Ordinal))
-                {
-                    var objectToFill = GetObjectAtPath(entity, objectPath);
-
-                    for (int i = 0; i < tableColumnCount; i++)
-                    {
-                        SetEntityProperty(objectToFill, reader, sqlBuilder.Joins, i, tableIndex);
-                    }
-                }
-
-                tableIndex += tableColumnCount;
             }
         }
 
@@ -151,7 +188,7 @@ namespace ORM
                     var instance = (ORMEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
                     foreach (var index in indexes)
                     {
-                        SetEntityProperty(instance, _reader, sqlBuilder.Joins, index);
+                        SetEntityProperty(instance, _reader, sqlBuilder, index);
                     }
 
                     if (relations.ContainsKey(fieldName))
@@ -240,14 +277,24 @@ namespace ORM
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, List<SQLJoin> joins, int iteration, int tableIndex = 0)
+        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, SQLBuilder sqlBuilder, int iteration, int tableIndex = 0)
         {
+            // All joins (child-entities) are filled through PopulateChildEntity, therefore we can
+            // skip anything past the current entity (parent) within the reader.
+            if ((iteration + tableIndex) >= sqlBuilder.TableNameColumnCount.First().Value)
+            {
+                // Skipping.
+                return;
+            }
+
             var propertyName = reader.GetName(iteration + tableIndex);
 
+#if DEBUG
             if (ORMUtilities.IsUnitTesting)
             {
                 propertyName = propertyName.Split('_').Last();
             }
+#endif
 
             var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
                                   ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(ORMColumnAttribute), true).FirstOrDefault() as ORMColumnAttribute)?.ColumnName == propertyName);
@@ -282,77 +329,46 @@ namespace ORM
                     value = reader.GetValue(iteration + tableIndex);
                     break;
                 case Type type when type.IsSubclassOf(typeof(ORMEntity)):
+                    if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+                    {
+                        break;
+                    }
                     // If there are no joins provided or none matched the current type we don't want
                     // to fetch the child-object.
-                    if (joins.Count == 0 || !joins.Any(x => x.LeftPropertyInfo.PropertyType == type))
+                    if (sqlBuilder.Joins.Count == 0 || !sqlBuilder.Joins.Any(x => x.LeftPropertyInfo.PropertyType == type))
                     {
                         value = null;
                         break;
                     }
 
-                    // @Todo: Also if we get past this point, we do the following statement:
-                    // fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { id });
-                    // But the SqlBuilder with the current reader already got the data in this case.
-                    // Therefore a lot of the code below can be refactored and the data hase to be
-                    // gotten from the reader itself, rather than executing a new query.
-
-                    var subEntity = Activator.CreateInstance(type.UnderlyingSystemType);
-
-                    var fetchEntityByPrimaryKey = subEntity.GetType().BaseType
-                        .GetMethod(nameof(ORMEntity.FetchEntityByPrimaryKey),
-                        entity.PublicFlags,
-                        Type.DefaultBinder,
-                        new Type[] { typeof(object) },
-                        null);
-
-                    if (!ORMUtilities.IsUnitTesting)
+                    foreach (var join in sqlBuilder.Joins)
                     {
-                        if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+                        if (join.LeftPropertyInfo.PropertyType == type)
                         {
+                            var subEntity = Activator.CreateInstance(type.UnderlyingSystemType) as ORMEntity;
+
+                            PopulateChildEntity(entity, subEntity, reader, sqlBuilder);
+
+                            value = subEntity;
+
+                            entity.EntityRelations.Add(value as ORMEntity);
+
+                            if (entityPropertyInfo == null)
+                            {
+                                entityPropertyInfo = entity.GetType().GetProperty("Organisation", entity.PublicIgnoreCaseFlags);
+                            }
+
                             break;
                         }
-
-                        if (entity.DisableChangeTracking)
-                        {
-                            (subEntity as ORMEntity).DisableChangeTracking = entity.DisableChangeTracking;
-                        }
-
-                        value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { reader.GetValue(iteration + tableIndex) });
-                    }
-                    else
-                    {
-                        if (((ORMEntity)subEntity).PrimaryKey.Keys.Count == 1)
-                        {
-                            if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
-                            {
-                                break;
-                            }
-
-                            var subEntityIdType = subEntity.GetType().GetProperty(((ORMEntity)subEntity).PrimaryKey.Keys[0].ColumnName).PropertyType;
-
-                            var id = Convert.ChangeType(reader.GetValue(iteration + tableIndex), subEntityIdType);
-
-                            if (entity.DisableChangeTracking)
-                            {
-                                (subEntity as ORMEntity).DisableChangeTracking = entity.DisableChangeTracking;
-                            }
-
-                            value = fetchEntityByPrimaryKey.Invoke(subEntity, new object[] { id });
-                        }
-                        else
-                        {
-                            // Combined primary key.
-                            throw new NotImplementedException();
-                        }
                     }
 
-                    entity.EntityRelations.Add(value as ORMEntity);
                     break;
                 default:
                     value = reader.GetValue(iteration + tableIndex);
                     break;
             }
 
+#if DEBUG
             if (ORMUtilities.IsUnitTesting)
             {
                 // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
@@ -360,11 +376,12 @@ namespace ORM
                 {
                     value = Convert.ChangeType(value, Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType));
                 }
-                else if(!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)) && value != DBNull.Value)
-                { 
+                else if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)) && value != DBNull.Value)
+                {
                     value = Convert.ChangeType(value, entityPropertyInfo.PropertyType);
                 }
             }
+#endif
 
             if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
             {
@@ -374,29 +391,6 @@ namespace ORM
             {
                 entityPropertyInfo.SetValue(entity, value);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ORMEntity GetObjectAtPath(ORMEntity entity, string path)
-        {
-            if (!string.IsNullOrEmpty(path))
-            {
-                foreach (var step in path.Split('.'))
-                {
-                    var property = entity.GetType().GetProperty(step, entity.PublicIgnoreCaseFlags);
-
-                    var value = property.GetValue(entity);
-                    if (value == null)
-                    {
-                        value = Activator.CreateInstance(property.PropertyType);
-                        property.SetValue(entity, value);
-                    }
-
-                    entity = (ORMEntity)value;
-                }
-            }
-
-            return entity;
         }
     }
 }

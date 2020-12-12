@@ -19,7 +19,11 @@
     <None Remove="MemoryCollectionTables\BasicWhereGreaterThanOrEqual.xml" />
     <None Remove="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml" />
     <None Remove="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
-    <None Remove="MemoryCollectionTables\ComplexJoin.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinA.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinB.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinC.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinD.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinE.xml" />
     <None Remove="MemoryCollectionTables\ComplexWhereLike.xml" />
     <None Remove="MemoryEntityTables\ORGANISATIONS.xml" />
     <None Remove="MemoryEntityTables\ROLES.xml" />
@@ -40,7 +44,11 @@
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereGreaterThanOrEqual.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
-    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoin.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinB.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinE.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinD.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinC.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinA.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexWhereLike.xml" />
     <EmbeddedResource Include="MemoryEntityTables\ORGANISATIONS.xml" />
     <EmbeddedResource Include="MemoryEntityTables\ROLES.xml" />

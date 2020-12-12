@@ -22,6 +22,9 @@ namespace ORM
             var path = BasePath + memoryTableName.ToUpperInvariant();
             var tableRecords = ORMUtilities.MemoryCollectionDatabase.MemoryTables.DocumentElement.SelectNodes(path);
 
+            if (tableRecords.Count == 0)
+                throw new System.Exception($"Could not find any records (nodes) for { memoryTableName } in { memoryTableName }.xml.");
+
             var dataSet = new DataSet();
 
             foreach (XmlElement record in tableRecords)

@@ -90,6 +90,51 @@ namespace ORM
                     if (reader == null)
                         throw new ArgumentException($"No record found for {entity.PrimaryKey.Keys[0].ColumnName}: {id}.");
 
+                    foreach (var join in sqlBuilder.Joins)
+                    {
+                        foreach (var field in entity.TableScheme)
+                        {
+                            if (join.LeftPropertyInfo.PropertyType == entity.GetType().GetProperty(field).PropertyType)
+                            {
+                                var parentDataTable = new DataTable();
+                                parentDataTable.Load(reader);
+
+                                var childTableName = ORMUtilities.CollectionEntityRelations[join.LeftPropertyInfo.PropertyType].Name;
+                                var childEntity = Activator.CreateInstance(join.LeftPropertyInfo.PropertyType);
+                                var childId = parentDataTable.Rows[0][entity.TableScheme.IndexOf(field)];
+
+                                var childReader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(childTableName, entity.PrimaryKey, childId);
+
+                                var childDataTable = new DataTable();
+                                childDataTable.Load(childReader);
+
+                                foreach (DataColumn column in childDataTable.Columns)
+                                {
+                                    if (parentDataTable.Columns.Contains(column.ColumnName))
+                                    {
+                                        childDataTable.Columns[column.ColumnName].ColumnName = $"{ childDataTable.TableName }_{ column.ColumnName }";
+                                    }
+                                }
+
+                                parentDataTable.Merge(childDataTable);
+
+                                var left = parentDataTable.Rows[0];
+                                var right = parentDataTable.Rows[1];
+
+                                foreach (DataColumn column in left.Table.Columns)
+                                {
+                                    if (left[column] == DBNull.Value)
+                                        left[column] = right[column];
+                                }
+
+                                parentDataTable.Rows.Remove(right);
+
+                                reader = parentDataTable.CreateDataReader();
+                                break;
+                            }
+                        }
+                    }
+
                     SQLHelper.DataReader(entity, reader, sqlBuilder);
                 }
                 else
