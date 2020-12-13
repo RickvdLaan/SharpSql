@@ -757,13 +757,15 @@ namespace ORMNUnit
         [Test, ORMUnitTest("BasicManyToMany")]
         public void Basic_ManyToMany()
         {
-            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[UserRoles] AS [U] WHERE (([U].[UserId] = @PARAM1) AND ([U].[RoleId] = @PARAM2));";
+            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERROLES] AS [U] WHERE (([U].[USERID] = @PARAM1) AND ([U].[ROLEID] = @PARAM2));";
 
             var userRole = new UserRole(1, 1);
 
             Assert.AreEqual(1, userRole.Column_UserId);
             Assert.AreEqual(1, userRole.Column_RoleId);
-            Assert.IsTrue(userRole.User.GetType().GetCustomAttributes(typeof(ORMColumnAttribute), false).Length > 0);
+
+            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_UserId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
+            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_RoleId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
 
             Assert.AreEqual(expectedQuery, userRole.ExecutedQuery);
         }

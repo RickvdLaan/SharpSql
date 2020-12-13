@@ -356,15 +356,15 @@ namespace ORM
         }
 
         /// <summary>
-        /// Fetches an <see cref="ORMEntity"/> based on the provided primary key.
+        /// Fetches an <see cref="ORMEntity"/> based on the provided primary key and join(s).
         /// </summary>
+        /// <typeparam name="EntityType"></typeparam>
         /// <param name="primaryKey">The primary key.</param>
+        /// <param name="joins">The fields you want to join.</param>
         /// <returns>Returns the fetched <see cref="ORMEntity"/> or <see langword="null"/>.</returns>
         public ORMEntity FetchEntityByPrimaryKey<EntityType>(object primaryKey, Expression<Func<EntityType, object>> joins)
             where EntityType : ORMEntity
         {
-            // @Todo: update method documentation.
-
             PrimaryKey.Keys[0].Value = primaryKey;
 
             return FetchEntity(PrimaryKey, joins);
@@ -386,15 +386,15 @@ namespace ORM
         }
 
         /// <summary>
-        /// Fetches an <see cref="ORMEntity"/> based on the provided combined primary key.
+        /// Fetches an <see cref="ORMEntity"/> based on the provided combined primary key and join(s).
         /// </summary>
+        /// <typeparam name="EntityType"></typeparam>
+        /// <param name="joins">The fields you want to join.</param>
         /// <param name="primaryKeys">The combined primary key.</param>
         /// <returns>Returns the fetched <see cref="ORMEntity"/> or <see langword="null"/>.</returns>
         public ORMEntity FetchEntityByPrimaryKey<EntityType>(Expression<Func<EntityType, object>> joins, params object[] primaryKeys)
             where EntityType : ORMEntity
         {
-            // @Todo: update method documentation.
-
             for (int i = 0; i < primaryKeys.Length; i++)
             {
                 PrimaryKey.Keys[i].Value = primaryKeys[i];
