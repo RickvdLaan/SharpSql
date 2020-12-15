@@ -1,8 +1,12 @@
-![.NET Core - ORM Unit Tests](https://github.com/Albileon/ORM/workflows/.NET%20Core%20-%20ORM%20Unit%20Tests/badge.svg?branch=master)
+![ORM Unit Tests](https://img.shields.io/github/workflow/status/RickvdLaan/ORM/ORM%20Unit%20Tests?label=unit%20tests&logo=GitHub)
+[![License](https://img.shields.io/github/license/RickvdLaan/ORM?color=dark-green)](LICENSE)
+![Top Language](https://img.shields.io/github/languages/top/RickvdLaan/ORM)
+![Code Size](https://img.shields.io/github/languages/code-size/RickvdLaan/ORM)
+![Repo Size](https://img.shields.io/github/repo-size/RickvdLaan/ORM)
 
 **Summary**
 
-A simple pre-ahlpha ORM Framework written in .NET Standard 2.1. Currently closed source, but open for viewing with the default copyright laws in place.
+A pre-alpha O/R mapping framework for .NET Standard 2.1, licensed under the MIT license. 
 
 ## Table of contents
 
@@ -53,7 +57,7 @@ Initialize the ORM Framework somewhere as follows:
 ```cs
 
 IConfiguration configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.json")
     .Build();
 
 new ORMInitialize(configuration);
@@ -176,7 +180,7 @@ Next initialize the ORM Framework somewhere once as follows:
 ```cs
 
 IConfiguration configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.json")
     .Build();
 
 new ORMInitialize(configuration);
@@ -286,16 +290,50 @@ SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];
 
 #### 3.2.3 Join
 
+When you want to join between two tables you can use the ```Join()``` method on your collection class to retrieve the information of your sub-object(s), when no join is provided the sub-object will remain ```null```. The type of join can be specified by using either the ```Left()``` or ```Inner()``` method on the user entity (lambda expression). The left join will be used by default if none are specified.
+
 ```cs
-Todo
+var users = new Users();
+users.Join(user => user.Organisation.Left());
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];
+```
+
+```
+Todo - advanced cases
 ```
 
 *[ Back to top](#table-of-contents)*
 
 #### 3.2.4 Where
 
+When you want to filter records, you can use the ```Where()``` method and use the comparison operators (see *[ SQL Comparison Operators](#sql-comparison-operators)*) on any of the entities fields. In the example below we filter on the Users Id with the equals operator.
+
 ```cs
-Todo
+var users = new Users();
+users.Where(x => x.Id == 1);
+users.Fetch();
+```
+
+This will result in the following query:
+
+```sql
+SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);
+```
+
+##### SQL Comparison Operators
+```sql
+= 	-- Equal to 	
+> 	-- Greater than 	
+< 	-- Less than 	
+>= 	-- Greater than or equal to 	
+<= 	-- Less than or equal to 	
+<> 	-- Not equal to
 ```
 
 *[ Back to top](#table-of-contents)*
@@ -350,9 +388,7 @@ Todo
 
 ### 3.4. Delete
 
-```cs
-Todo
-```
+Currently the ```Delete()``` method throws a ```NotImplementedException()```. In alpha 0.2 the delete method will be available, but drop tables will never be implemented (but can still be achieved through a direct query).
 
 *[ Back to top](#table-of-contents)*
 
@@ -518,10 +554,28 @@ internal class NUnitSetupFixture
     [OneTimeSetUp]
     public void Initialize()
     {
-        // Loading the ORMFakeDAL assembly by calling it so it's accessable during initialization.
-        new Users();
+        var memoryEntityTables = new List<string>()
+        {
+            "MemoryEntityTables/USERS.xml",
+            "MemoryEntityTables/ORGANISATIONS.xml"
+        };
 
-        new ORMInitialize();
+        var memoryCollectionTables = new List<string>()
+        {
+            "MemoryCollectionTables/BasicFetchUsers.xml",
+            "MemoryCollectionTables/BasicFetchTopUsers.xml",
+            "MemoryCollectionTables/BasicJoinInner.xml",
+            "MemoryCollectionTables/BasicSelectUsers.xml",
+            "MemoryCollectionTables/BasicJoinLeft.xml",
+            "MemoryCollectionTables/BasicOrderBy.xml",
+            "MemoryCollectionTables/BasicWhereAnd.xml",
+            "MemoryCollectionTables/BasicWhereLessThanOrEqual.xml",
+            "MemoryCollectionTables/BasicWhereGreaterThanOrEqual.xml",
+            "MemoryCollectionTables/ComplexJoin.xml",
+            "MemoryCollectionTables/ComplexWhereLike.xml"
+        };
+
+        _ = new ORMInitialize(memoryEntityTables, memoryCollectionTables);
     }
 }
 ```
@@ -534,7 +588,7 @@ All of the specifications of the ORM framework.
 
 ### 7.1 Version information
 
-The latest version of this framework is version 1.0, released on (the date of going open source).
+The latest version of this framework is version alpha-0.1, released on 2020-11-30.
 
 ### 7.2 Supported databases
 
@@ -542,6 +596,6 @@ SQL Server 2005 or higher
 
 ### 7.3 Supported .NET versions
 
-NET Standard 2.1., .NET Core 3.0, .NET Core 3.1.
+NET Standard 2.1., .NET Core 3.1.
 
 *[ Back to top](#table-of-contents)*
