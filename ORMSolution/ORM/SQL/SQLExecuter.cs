@@ -82,13 +82,14 @@ namespace ORM
             {
                 if (entity.PrimaryKey.Keys.Count == 1)
                 {
+                    var primaryKey = entity.PrimaryKey.Keys[0];
                     var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
-                    var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == entity.PrimaryKey.Keys[0].PropertyName).FirstOrDefault().Value;
+                    var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == primaryKey.PropertyName).FirstOrDefault().Value;
 
-                    var reader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(tableName, entity.PrimaryKey.Keys[0], id);
+                    var reader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(tableName, primaryKey, id);
 
                     if (reader == null)
-                        throw new ArgumentException($"No record found for {entity.PrimaryKey.Keys[0].PropertyName}: {id}.");
+                        throw new ArgumentException($"No record found for { primaryKey.PropertyName }: {id}.");
 
                     reader = ApplyJoinsToReader(entity, reader, sqlBuilder);
 
@@ -203,6 +204,12 @@ namespace ORM
             }
 
             return reader;
+        }
+
+        internal static DataTable GetDataTableScheme()
+        {
+            using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+            return connection.GetSchema();
         }
     }
 }

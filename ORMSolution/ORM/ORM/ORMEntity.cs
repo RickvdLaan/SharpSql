@@ -568,13 +568,13 @@ namespace ORM
             }
         }
 
-        private void UpdateSinglePrimaryKey(int id)
+        private void UpdateSinglePrimaryKey(object id)
         {
             this[PrimaryKey.Keys[0].ColumnName] = id;
             PrimaryKey.Keys[0].Value = id;
         }
 
-        private void UpdateCombinedPrimaryKey()
+        private void UpdateCombinedPrimaryKey(params object[] ids)
         {
             throw new NotImplementedException();
         }
