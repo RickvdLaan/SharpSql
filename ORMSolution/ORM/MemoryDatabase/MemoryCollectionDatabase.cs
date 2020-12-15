@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.IO;
+using System.Reflection;
 using System.Xml;
 
 namespace ORM
@@ -17,6 +18,8 @@ namespace ORM
     /// </summary>
     internal class MemoryCollectionDatabase : MemoryDatabase
     {
+        public MemoryCollectionDatabase(Assembly externalAssembly) : base(externalAssembly) { }
+
         public DataTable Fetch(string memoryTableName)
         {
             var path = BasePath + memoryTableName.ToUpperInvariant();

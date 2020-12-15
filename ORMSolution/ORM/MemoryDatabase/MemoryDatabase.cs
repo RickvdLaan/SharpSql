@@ -17,8 +17,10 @@ namespace ORM
 
         public XmlDocument MemoryTables { get; set; } = new XmlDocument();
 
-        public MemoryDatabase()
+        public MemoryDatabase(Assembly externalAssembly)
         {
+            ExternalAssembly = externalAssembly;
+
             MemoryTables.AppendChild(MemoryTables.CreateElement(RootMemoryDatabase));
         }
 

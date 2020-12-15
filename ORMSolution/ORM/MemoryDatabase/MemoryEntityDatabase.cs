@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Xml;
 
 namespace ORM
@@ -20,6 +21,8 @@ namespace ORM
     /// </summary>
     internal class MemoryEntityDatabase : MemoryDatabase
     {
+        public MemoryEntityDatabase(Assembly externalAssembly) : base(externalAssembly) { }
+
         public IDataReader FetchEntityById(string tableName, IORMPrimaryKey primaryKey, object id)
         {
             if (string.IsNullOrEmpty(tableName))

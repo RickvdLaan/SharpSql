@@ -13,18 +13,12 @@ namespace ORM
 {
     public sealed class ORMInitialize
     {
-        internal ORMInitialize(Assembly assembly, List<string> xmlEntityFilePaths, List<string> xmlCollectionFilePaths)
+        internal ORMInitialize(Assembly externalAssembly, List<string> xmlEntityFilePaths, List<string> xmlCollectionFilePaths)
         {
-            ORMUtilities.MemoryEntityDatabase = new MemoryEntityDatabase
-            {
-                ExternalAssembly = assembly
-            };
+            ORMUtilities.MemoryEntityDatabase = new MemoryEntityDatabase(externalAssembly);
             ORMUtilities.MemoryEntityDatabase.LoadMemoryTables(xmlEntityFilePaths);
 
-            ORMUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase
-            {
-                ExternalAssembly = assembly
-            };
+            ORMUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase(externalAssembly);
             ORMUtilities.MemoryCollectionDatabase.LoadMemoryTables(xmlCollectionFilePaths);
 
             new ORMInitialize(configuration: null, loadAllReferencedAssemblies: true);
