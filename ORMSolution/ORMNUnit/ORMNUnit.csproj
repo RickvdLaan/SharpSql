@@ -11,7 +11,7 @@
     <None Remove="MemoryCollectionTables\BasicFetchUsers.xml" />
     <None Remove="MemoryCollectionTables\BasicJoinInner.xml" />
     <None Remove="MemoryCollectionTables\BasicJoinLeft.xml" />
-    <None Remove="MemoryCollectionTables\BasicManyToMany.xml" />
+    <None Remove="MemoryCollectionTables\BasicMultiplePrimaryKeys.xml" />
     <None Remove="MemoryCollectionTables\BasicOrderBy.xml" />
     <None Remove="MemoryCollectionTables\BasicSelectUsers.xml" />
     <None Remove="MemoryCollectionTables\BasicWhereAnd.xml" />
@@ -36,7 +36,7 @@
     <EmbeddedResource Include="MemoryCollectionTables\BasicFetchUsers.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicJoinInner.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicJoinLeft.xml" />
-    <EmbeddedResource Include="MemoryCollectionTables\BasicManyToMany.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicMultiplePrimaryKeys.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicOrderBy.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicSelectUsers.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereAnd.xml" />

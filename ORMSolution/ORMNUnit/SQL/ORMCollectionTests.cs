@@ -755,7 +755,7 @@ namespace ORMNUnit
         }
 
         [Test, ORMUnitTest("BasicManyToMany")]
-        public void Basic_ManyToMany()
+        public void Basic_MultiplePrimaryKeys()
         {
             var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERROLES] AS [U] WHERE (([U].[USERID] = @PARAM1) AND ([U].[ROLEID] = @PARAM2));";
 

@@ -1,4 +1,4 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <DATA>
-  <BasicManyToMany UserId="1" RoleId="1" />
+  <MULTIPLEPRIMARYKEYS UserId="1" RoleId="1" />
 </DATA>
