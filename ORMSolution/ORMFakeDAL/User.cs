@@ -1,6 +1,7 @@
 ﻿using ORM;
 using ORM.Attributes;
 using System;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("ORMBenchmarks")]
@@ -16,6 +17,7 @@ namespace ORMFakeDAL
 
         public string Password { get; set; }
 
+        [ORMForeignKey(typeof(Organisation))]
         public Organisation Organisation { get; set; }
 
         public DateTime? DateCreated { get; internal set; }
@@ -29,6 +31,11 @@ namespace ORMFakeDAL
         public User(int fetchByUserId, bool disableChangeTracking = default) : base(disableChangeTracking)
         {
             base.FetchEntityByPrimaryKey(fetchByUserId);
+        }
+
+        public User(int fetchByUserId, Expression<Func<User, object>> joins, bool disableChangeTracking = default) : base(disableChangeTracking)
+        {
+            base.FetchEntityByPrimaryKey<User>(fetchByUserId, joins);
         }
 
         public override void Save()

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ORM.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -19,7 +20,7 @@ namespace ORM
     /// </summary>
     internal class MemoryEntityDatabase : MemoryDatabase
     {
-        public IDataReader FetchEntityById(string tableName, ORMPrimaryKey primaryKey, object id)
+        public IDataReader FetchEntityById(string tableName, IORMPrimaryKey primaryKey, object id)
         {
             if (string.IsNullOrEmpty(tableName))
                 throw new ArgumentNullException();
@@ -33,46 +34,61 @@ namespace ORM
 
             foreach (XmlElement record in tableRecords)
             {
-                if (primaryKey.Keys.Count == 1)
+                var xmlAttribute = record.GetAttributeNode(primaryKey.ColumnName);
+                if (xmlAttribute != null && xmlAttribute.Value.Equals(id.ToString(), StringComparison.InvariantCultureIgnoreCase))
                 {
-                    var xmlAttribute = record.GetAttributeNode(primaryKey.Keys[0].ColumnName);
-                    if (xmlAttribute != null && xmlAttribute.Value.Equals(id.ToString(), StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        var reader = new StringReader(record.OuterXml);
-                        var dataSet = new DataSet();
-                        dataSet.ReadXml(reader);
-
-                        var columns = FetchTableColumns(record.Name);
-
-                        if (dataSet.Tables[0].Columns.Count < columns.Count)
-                        {
-                            for (int i = 0; i < columns.Count; i++)
-                            {
-                                if (string.Equals(dataSet.Tables[0].Columns[i].ColumnName, columns[i], StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    continue;
-                                }
-
-                                // When nullable field is null in the xml we need to insert at i.
-                                DataColumn missingColumn = new DataColumn(columns[i]);
-                                dataSet.Tables[0].Columns.Add(missingColumn);
-                                missingColumn.SetOrdinal(i);
-                            }
-                        }
-
-                        return dataSet.Tables[0].CreateDataReader();
-                    }
-                }
-                else
-                {
-                    throw new NotImplementedException();
+                    return ParseDataTableFromXmlRecord(record);
                 }
             }
 
             return null;
         }
 
-        public List<string> FetchTableColumns(string tableName)
+        public IDataReader FetchEntityByCombinedId(string tableName, ORMPrimaryKey primaryKey, List<object> ids)
+        {
+            if (string.IsNullOrEmpty(tableName))
+                throw new ArgumentNullException();
+            if (primaryKey == null)
+                throw new ArgumentNullException();
+            if (primaryKey.Keys.Count <= 1)
+                throw new ArgumentException();
+            if (ids == null)
+                throw new ArgumentNullException();
+            if (ids.Count() != primaryKey.Keys.Count)
+                throw new ArgumentNullException();
+
+            var path = BasePath + tableName.ToUpperInvariant();
+            var tableRecords = ORMUtilities.MemoryEntityDatabase.MemoryTables.DocumentElement.SelectNodes(path);
+
+            foreach (XmlElement record in tableRecords)
+            {
+                var attributes = new List<XmlAttribute>(primaryKey.Keys.Count);
+
+                foreach (var key in primaryKey.Keys)
+                {
+                    attributes.Add(record.GetAttributeNode(key.ColumnName));
+                }
+
+                for (int i = 0; i < attributes.Count; i++)
+                {
+                    if (attributes[i] != null && attributes[i].Value.Equals(ids[i].ToString(), StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        if (i == attributes.Count - 1)
+                        {
+                            return ParseDataTableFromXmlRecord(record);
+                        }
+
+                        continue;
+                    }
+
+                    break;
+                }
+            }
+
+            return null;
+        }
+
+        internal List<string> FetchTableColumns(string tableName)
         {
             if (string.IsNullOrEmpty(tableName))
                 throw new ArgumentNullException();
@@ -106,6 +122,33 @@ namespace ORM
             }
 
             return columns;
+        }
+
+        private IDataReader ParseDataTableFromXmlRecord(XmlElement record)
+        {
+            var reader = new StringReader(record.OuterXml);
+            var dataSet = new DataSet();
+            dataSet.ReadXml(reader);
+
+            var columns = FetchTableColumns(record.Name);
+
+            if (dataSet.Tables[0].Columns.Count < columns.Count)
+            {
+                for (int i = 0; i < columns.Count; i++)
+                {
+                    if (string.Equals(dataSet.Tables[0].Columns[i].ColumnName, columns[i], StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    // When nullable field is null in the xml we need to insert at i.
+                    DataColumn missingColumn = new DataColumn(columns[i]);
+                    dataSet.Tables[0].Columns.Add(missingColumn);
+                    missingColumn.SetOrdinal(i);
+                }
+            }
+
+            return dataSet.Tables[0].CreateDataReader();
         }
     }
 }

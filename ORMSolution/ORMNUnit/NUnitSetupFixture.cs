@@ -33,7 +33,11 @@ namespace ORMNUnit
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.BasicWhereNotEqualTo.xml",
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.BasicWhereLessThanOrEqual.xml",
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.BasicWhereGreaterThanOrEqual.xml",
-                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoin.xml",
+                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoinA.xml",
+                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoinB.xml",
+                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoinC.xml",
+                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoinD.xml",
+                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoinE.xml",
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexWhereLike.xml",
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.BasicManyToMany.xml"
             };

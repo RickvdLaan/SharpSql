@@ -78,7 +78,7 @@ namespace ORM
 
         internal bool IsMarkAsDeleted { get; set; } = false;
 
-        internal List<ORMEntity> EntityRelations { get; } = new List<ORMEntity>();
+        internal List<ORMEntity> EntityRelations { get; private set; } = new List<ORMEntity>();
 
         internal (string ColumnName, bool IsDirty)[] IsDirtyList { get; set; } = null;
 
@@ -257,19 +257,27 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
 
-                if (IsNew && EntityRelations.Count == 0)
+                // @Perfomance: it fixes some issues, but this is terrible for the performance.
+                // Needs to be looked at! -Rick, 12 December 2020
+                foreach (var column in TableScheme)
                 {
-                    // With a new object BuildMultiLayeredEntity is not called, therefore EntityRelations is not filled.
-                    foreach (var column in TableScheme)
+                    // When a subEntity is not filled through the parent the PopulateChildEntity method
+                    // isn't called and therefore the subEntity is not added to the EntityRelations.
+                    if (this[column] != null && this[column].GetType().IsSubclassOf(typeof(ORMEntity)))
                     {
-                        var subEntity = this[column];
+                        var subEntity = Activator.CreateInstance(this[column].GetType().UnderlyingSystemType) as ORMEntity;
 
-                        if (subEntity != null && subEntity.GetType().IsSubclassOf(typeof(ORMEntity)))
+                        if (!EntityRelations.Any(x => x.GetType() == subEntity.GetType()))
                         {
-                            EntityRelations.Add(subEntity as ORMEntity);
+                            if ((this[column] as ORMEntity).IsDirty 
+                             || (OriginalFetchedValue?[column] == null && !(this[column] as ORMEntity).IsDirty))
+                            {
+                                EntityRelations.Add(subEntity);
+                            }
                         }
                     }
                 }
+
                 foreach (var relation in EntityRelations)
                 {
                     if (this[relation.GetType().Name] == null && OriginalFetchedValue[relation.GetType().Name] != null)
@@ -327,7 +335,7 @@ namespace ORM
                 sqlBuilder.BuildNonQuery(this, NonQueryType.Delete);
                 SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Delete);
 
-                // @Important.
+                // @Important:
                 // Do we need a ORMEntityState enum?
                 // We need to mark the object as deleted, or it has to be marked as new again.
                 // Something has to be done here, has to be thought out.
@@ -348,6 +356,21 @@ namespace ORM
         }
 
         /// <summary>
+        /// Fetches an <see cref="ORMEntity"/> based on the provided primary key and join(s).
+        /// </summary>
+        /// <typeparam name="EntityType"></typeparam>
+        /// <param name="primaryKey">The primary key.</param>
+        /// <param name="joins">The fields you want to join.</param>
+        /// <returns>Returns the fetched <see cref="ORMEntity"/> or <see langword="null"/>.</returns>
+        public ORMEntity FetchEntityByPrimaryKey<EntityType>(object primaryKey, Expression<Func<EntityType, object>> joins)
+            where EntityType : ORMEntity
+        {
+            PrimaryKey.Keys[0].Value = primaryKey;
+
+            return FetchEntity(PrimaryKey, joins);
+        }
+
+        /// <summary>
         /// Fetches an <see cref="ORMEntity"/> based on the provided combined primary key.
         /// </summary>
         /// <param name="primaryKeys">The combined primary key.</param>
@@ -360,6 +383,24 @@ namespace ORM
             }
 
             return FetchEntity(PrimaryKey);
+        }
+
+        /// <summary>
+        /// Fetches an <see cref="ORMEntity"/> based on the provided combined primary key and join(s).
+        /// </summary>
+        /// <typeparam name="EntityType"></typeparam>
+        /// <param name="joins">The fields you want to join.</param>
+        /// <param name="primaryKeys">The combined primary key.</param>
+        /// <returns>Returns the fetched <see cref="ORMEntity"/> or <see langword="null"/>.</returns>
+        public ORMEntity FetchEntityByPrimaryKey<EntityType>(Expression<Func<EntityType, object>> joins, params object[] primaryKeys)
+            where EntityType : ORMEntity
+        {
+            for (int i = 0; i < primaryKeys.Length; i++)
+            {
+                PrimaryKey.Keys[i].Value = primaryKeys[i];
+            }
+
+            return FetchEntity(PrimaryKey, joins);
         }
 
         /// <summary>
@@ -413,7 +454,11 @@ namespace ORM
 
         internal ORMEntity ShallowCopy()
         {
-            return MemberwiseClone() as ORMEntity;
+            var copy = MemberwiseClone() as ORMEntity;
+
+            copy.EntityRelations = new List<ORMEntity>(EntityRelations);
+
+            return copy;
         }
 
         internal PropertyInfo[] GetPrimaryKeyPropertyInfo()
@@ -433,7 +478,7 @@ namespace ORM
             return propertyInfo;
         }
 
-        private ORMEntity FetchEntity(ORMPrimaryKey primaryKey)
+        private ORMEntity FetchEntity(ORMPrimaryKey primaryKey, Expression joinExpression = null)
         {
             BinaryExpression whereExpression = null;
 
@@ -460,8 +505,12 @@ namespace ORM
 
             // Instantiates and fetches the run-time collection.
             var collection = Activator.CreateInstance(ORMUtilities.CollectionEntityRelations[GetType()]);
+
+            // Sets the InternalWhere with the WhereExpression.
             collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.InternalWhere), NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(collection, new object[] { whereExpression });
-            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long) }, null).Invoke(collection, new object[] { this, 1 });
+            
+            // Fetches the data.
+            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, 1, joinExpression });
 
             if (!ORMUtilities.IsUnitTesting && IsNew)
                 throw new Exception($"No [{GetType().Name}] found for {string.Join(", ", PrimaryKey.Keys.Select(x => x.ToString()).ToArray())}.");
@@ -519,13 +568,13 @@ namespace ORM
             }
         }
 
-        private void UpdateSinglePrimaryKey(int id)
+        private void UpdateSinglePrimaryKey(object id)
         {
             this[PrimaryKey.Keys[0].ColumnName] = id;
             PrimaryKey.Keys[0].Value = id;
         }
 
-        private void UpdateCombinedPrimaryKey()
+        private void UpdateCombinedPrimaryKey(params object[] ids)
         {
             throw new NotImplementedException();
         }
