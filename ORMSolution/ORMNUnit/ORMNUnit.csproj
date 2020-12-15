@@ -7,6 +7,56 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="MemoryCollectionTables\BasicFetchTopUsers.xml" />
+    <None Remove="MemoryCollectionTables\BasicFetchUsers.xml" />
+    <None Remove="MemoryCollectionTables\BasicJoinInner.xml" />
+    <None Remove="MemoryCollectionTables\BasicJoinLeft.xml" />
+    <None Remove="MemoryCollectionTables\BasicMultiplePrimaryKeys.xml" />
+    <None Remove="MemoryCollectionTables\BasicOrderBy.xml" />
+    <None Remove="MemoryCollectionTables\BasicSelectUsers.xml" />
+    <None Remove="MemoryCollectionTables\BasicWhereAnd.xml" />
+    <None Remove="MemoryCollectionTables\BasicWhereEqualTo.xml" />
+    <None Remove="MemoryCollectionTables\BasicWhereGreaterThanOrEqual.xml" />
+    <None Remove="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml" />
+    <None Remove="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinA.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinB.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinC.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinD.xml" />
+    <None Remove="MemoryCollectionTables\ComplexJoinE.xml" />
+    <None Remove="MemoryCollectionTables\ComplexWhereLike.xml" />
+    <None Remove="MemoryEntityTables\ORGANISATIONS.xml" />
+    <None Remove="MemoryEntityTables\ROLES.xml" />
+    <None Remove="MemoryEntityTables\USERROLES.xml" />
+    <None Remove="MemoryEntityTables\USERS.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="MemoryCollectionTables\BasicFetchTopUsers.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicFetchUsers.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicJoinInner.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicJoinLeft.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicMultiplePrimaryKeys.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicOrderBy.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicSelectUsers.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicWhereAnd.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicWhereEqualTo.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicWhereGreaterThanOrEqual.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinB.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinE.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinD.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinC.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinA.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ComplexWhereLike.xml" />
+    <EmbeddedResource Include="MemoryEntityTables\ORGANISATIONS.xml" />
+    <EmbeddedResource Include="MemoryEntityTables\ROLES.xml" />
+    <EmbeddedResource Include="MemoryEntityTables\USERROLES.xml" />
+    <EmbeddedResource Include="MemoryEntityTables\USERS.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Moq" Version="4.14.4" />
     <PackageReference Include="nunit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
@@ -16,54 +66,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ORMFakeDAL\ORMFakeDAL.csproj" />
     <ProjectReference Include="..\ORM\ORM.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="MemoryCollectionTables\BasicFetchTopUsers.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicWhereNotEqualTo.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicWhereEqualTo.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicWhereAnd.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\ComplexWhereLike.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicOrderBy.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicJoinLeft.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicJoinInner.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\ComplexJoin.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicSelectUsers.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicFetchUsers.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryEntityTables\ORGANISATIONS.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryCollectionTables\BasicWhereGreaterThanOrEqual.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MemoryEntityTables\USERS.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

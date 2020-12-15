@@ -82,20 +82,38 @@ namespace ORM
             {
                 if (entity.PrimaryKey.Keys.Count == 1)
                 {
+                    var primaryKey = entity.PrimaryKey.Keys[0];
                     var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
-                    var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == entity.PrimaryKey.Keys[0].ColumnName).FirstOrDefault().Value;
+                    var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == primaryKey.PropertyName).FirstOrDefault().Value;
 
-                    var reader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(tableName, entity.PrimaryKey, id);
+                    var reader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(tableName, primaryKey, id);
 
                     if (reader == null)
-                        throw new ArgumentException($"No record found for {entity.PrimaryKey.Keys[0].ColumnName}: {id}.");
+                        throw new ArgumentException($"No record found for { primaryKey.PropertyName }: {id}.");
+
+                    reader = ApplyJoinsToReader(entity, reader, sqlBuilder);
 
                     SQLHelper.DataReader(entity, reader, sqlBuilder);
                 }
                 else
                 {
-                    // Combined primary key.
-                    throw new NotImplementedException();
+                    var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
+
+                    var ids = new List<object>(entity.PrimaryKey.Keys.Count);
+
+                    foreach (var key in entity.PrimaryKey.Keys)
+                    {
+                        ids.Add(sqlBuilder.SqlParameters.Where(x => x.SourceColumn == key.PropertyName).FirstOrDefault().Value);
+                    }
+
+                    var reader = ORMUtilities.MemoryEntityDatabase.FetchEntityByCombinedId(tableName, entity.PrimaryKey, ids);
+
+                    if (reader == null)
+                        throw new ArgumentException($"No record found.");
+
+                    reader = ApplyJoinsToReader(entity, reader, sqlBuilder);
+
+                    SQLHelper.DataReader(entity, reader, sqlBuilder);
                 }
             }
         }
@@ -136,6 +154,62 @@ namespace ORM
 
                 SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
             }
+        }
+
+        private static IDataReader ApplyJoinsToReader(ORMEntity entity, IDataReader reader, SQLBuilder sqlBuilder)
+        {
+            foreach (var join in sqlBuilder.Joins)
+            {
+                foreach (var field in entity.TableScheme)
+                {
+                    if (join.LeftPropertyInfo.PropertyType == entity.GetType().GetProperty(field).PropertyType)
+                    {
+                        var parentDataTable = new DataTable();
+                        parentDataTable.Load(reader);
+
+                        var childTableName = ORMUtilities.CollectionEntityRelations[join.LeftPropertyInfo.PropertyType].Name;
+                        var childEntity = Activator.CreateInstance(join.LeftPropertyInfo.PropertyType);
+                        var childId = parentDataTable.Rows[0][entity.TableScheme.IndexOf(field)];
+
+                        var childReader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(childTableName, entity.PrimaryKey.Keys[0], childId);
+
+                        var childDataTable = new DataTable();
+                        childDataTable.Load(childReader);
+
+                        foreach (DataColumn column in childDataTable.Columns)
+                        {
+                            if (parentDataTable.Columns.Contains(column.ColumnName))
+                            {
+                                childDataTable.Columns[column.ColumnName].ColumnName = $"{ childDataTable.TableName }_{ column.ColumnName }";
+                            }
+                        }
+
+                        parentDataTable.Merge(childDataTable);
+
+                        var left = parentDataTable.Rows[0];
+                        var right = parentDataTable.Rows[1];
+
+                        foreach (DataColumn column in left.Table.Columns)
+                        {
+                            if (left[column] == DBNull.Value)
+                                left[column] = right[column];
+                        }
+
+                        parentDataTable.Rows.Remove(right);
+
+                        reader = parentDataTable.CreateDataReader();
+                        break;
+                    }
+                }
+            }
+
+            return reader;
+        }
+
+        internal static DataTable GetDataTableScheme()
+        {
+            using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+            return connection.GetSchema();
         }
     }
 }

@@ -6,9 +6,6 @@
 using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityBenchmark.Init")]
-[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityBenchmark.GetUserById~ORMFakeDAL.User")]
-[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityMappingBenchmark.Init")]
-[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityBenchmark.GetAllUsers~ORMFakeDAL.Users")]
-[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityMappingBenchmark.DefaultMapping~ORMFakeDAL.User")]
-[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityMappingBenchmark.ManualMapping~ORMFakeDAL.User")]
 [assembly: SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.Program.Main(System.String[])")]
+[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityBenchmark.GetUserByIdDefault~ORMFakeDAL.User")]
+[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>", Scope = "member", Target = "~M:ORMBenchmarks.ORMEntityBenchmark.GetUserByIdManual~ORMFakeDAL.User")]

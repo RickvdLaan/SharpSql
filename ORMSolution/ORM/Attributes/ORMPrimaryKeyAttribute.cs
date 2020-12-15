@@ -4,7 +4,9 @@ namespace ORM.Attributes
 {
     public sealed class ORMPrimaryKeyAttribute : Attribute
     {
-        internal string Name { get; set; }
+        internal string PropertyName { get; set; }
+
+        internal string ColumnName { get; set; }
 
         internal bool IsAutoIncrement { get; set; }
 

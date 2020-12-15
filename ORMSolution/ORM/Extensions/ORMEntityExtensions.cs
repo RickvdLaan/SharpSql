@@ -1,7 +1,7 @@
 ﻿using ORM;
 using System;
 
-public static class ORMEntityExtensions
+public static class ORMExtensions
 {
     public static T Ascending<T>(this T _) => default;
 
