@@ -754,22 +754,6 @@ namespace ORMNUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicManyToMany")]
-        public void Basic_MultiplePrimaryKeys()
-        {
-            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERROLES] AS [U] WHERE (([U].[USERID] = @PARAM1) AND ([U].[ROLEID] = @PARAM2));";
-
-            var userRole = new UserRole(1, 1);
-
-            Assert.AreEqual(1, userRole.Column_UserId);
-            Assert.AreEqual(1, userRole.Column_RoleId);
-
-            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_UserId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
-            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_RoleId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
-
-            Assert.AreEqual(expectedQuery, userRole.ExecutedQuery);
-        }
-
         // @TODO: Fix before 0.2 release
         // Currently does not have an implementation to read from the memory database
         //[Test]

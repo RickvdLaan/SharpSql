@@ -16,8 +16,6 @@ namespace ORM
     {
         internal static string ConnectionString { get; private set; }
 
-        internal static bool IsUnitTesting { get; private set; }
-
         internal static MemoryEntityDatabase MemoryEntityDatabase { get; set; }
 
         internal static MemoryCollectionDatabase MemoryCollectionDatabase { get; set; }
@@ -41,7 +39,7 @@ namespace ORM
 
         public ORMUtilities()
         {
-            IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(ORMUnitTestAttribute), false).Any());
+            UnitTestUtilities.IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(ORMUnitTestAttribute), false).Any());
             CollectionEntityRelations = new Dictionary<Type, Type>();
             ManyToManyRelations = new Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), ORMTableAttribute>();
             CachedColumns = new Dictionary<Type, List<string>>();
@@ -148,18 +146,16 @@ namespace ORM
 
         private static DataTable ExecuteReader(SqlCommand command)
         {
-            if (!IsUnitTesting)
-            {
-                using var reader = command.ExecuteReader();
-                var dataTable = new DataTable();
-                dataTable.Load(reader);
-
-                return dataTable;
-            }
-            else
+            if (UnitTestUtilities.IsUnitTesting)
             {
                 throw new NotImplementedException();
             }
+
+            using var reader = command.ExecuteReader();
+            var dataTable = new DataTable();
+            dataTable.Load(reader);
+
+            return dataTable;
         }
 
         private static int ExecuteWriter(SqlCommand command)
@@ -178,7 +174,7 @@ namespace ORM
             SQLExecuter.CurrentConnection.Value = connection;
 
             using var command = new SqlCommand(query, connection);
-            if (!IsUnitTesting)
+            if (!UnitTestUtilities.IsUnitTesting)
             {
                 command.Connection.Open();
             }

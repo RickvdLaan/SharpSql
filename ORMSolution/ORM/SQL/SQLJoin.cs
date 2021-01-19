@@ -5,6 +5,8 @@ namespace ORM
 {
     internal class SQLJoin
     {
+        internal bool IsManyToMany { get; set; }
+
         internal ORMTableAttribute LeftTableAttribute { get; set; }
         internal PropertyInfo LeftPropertyInfo { get; set; }
 

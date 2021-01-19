@@ -39,7 +39,8 @@ namespace ORMNUnit
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoinD.xml",
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexJoinE.xml",
                 $"{nameof(ORMNUnit)}.MemoryCollectionTables.ComplexWhereLike.xml",
-                $"{nameof(ORMNUnit)}.MemoryCollectionTables.BasicMultiplePrimaryKeys.xml"
+                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ManyToManyUserRoles.xml",
+                $"{nameof(ORMNUnit)}.MemoryCollectionTables.ManyToManyRoles.xml"
             };
 
             _ = new ORMInitialize(Assembly.GetAssembly(GetType()), memoryEntityTables, memoryCollectionTables);

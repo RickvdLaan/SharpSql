@@ -80,6 +80,12 @@ namespace ORM
                 {
                     var tableAttribute = type.GetCustomAttribute(typeof(ORMTableAttribute), true) as ORMTableAttribute;
 
+                    var constructor = tableAttribute.EntityType.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+                    if (constructor == null)
+                    {
+                        throw new Exception($"Entity { tableAttribute.EntityType.Name } requires a (private) parameterless constructor.");
+                    }
+
                     if (tableAttribute.CollectionTypeLeft == null
                      && tableAttribute.CollectionTypeRight == null)
                     {
@@ -96,7 +102,7 @@ namespace ORM
                     if (!ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
                      && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
                     {
-                        if (!ORMUtilities.IsUnitTesting)
+                        if (!UnitTestUtilities.IsUnitTesting)
                         {
                             var sqlBuilder = new SQLBuilder();
                             sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);

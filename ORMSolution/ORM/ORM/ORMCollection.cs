@@ -43,7 +43,7 @@ namespace ORM
 
         internal ORMTableAttribute TableAttribute => (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
 
-        private List<ORMEntity> MutableEntityCollection { get; set; } = new List<ORMEntity>();
+        internal List<ORMEntity> MutableEntityCollection { get; set; } = new List<ORMEntity>();
 
         private Expression<Func<EntityType, object>> SelectExpression { get; set; }
 
@@ -58,6 +58,22 @@ namespace ORM
         private Expression<Func<EntityType, object>> SortExpression { get; set; }
 
         public ORMCollection() { }
+
+        /// <summary>
+        /// Returns a entity from the fetched collection based on the index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public EntityType this[int index]
+        {
+            get 
+            {
+                if (index < MutableEntityCollection.Count)
+                    return MutableEntityCollection[index] as EntityType;
+
+                return null;
+            }
+        }
 
         /// <summary>
         /// Fetches all the records from the database.
@@ -202,7 +218,7 @@ namespace ORM
 
             sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression ?? internalEntityJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
-            if (ExecutedQuery == sqlBuilder.GeneratedQuery)
+            if (ExecutedQuery.Equals(sqlBuilder.GeneratedQuery, StringComparison.InvariantCultureIgnoreCase))
                 return;
 
             if (entity == null)
@@ -226,5 +242,15 @@ namespace ORM
 
             return this;
         }
+
+        /// <summary>
+        /// The INNER JOIN keyword for many-to-many tables.
+        /// </summary>
+        public ORMCollection<EntityType> Inner() => default;
+
+        /// <summary>
+        /// The LEFT JOIN keyword for many-to-many tables.
+        /// </summary>
+        public ORMCollection<EntityType> Left() => default;
     }
 }

@@ -1,5 +1,8 @@
 ﻿using ORM;
+using ORM.Attributes;
 using System;
+using System.Linq;
+using System.Reflection;
 
 public static class ORMExtensions
 {
@@ -31,7 +34,7 @@ public static class ORMExtensions
     {
         object value;
 
-        switch (entity.GetType().GetProperty(columnName, entity.PublicFlags).PropertyType)
+        switch (entity.GetPropertyInfo(columnName).PropertyType)
         {
             case Type dateTime when dateTime == typeof(DateTime?):
                 if (((DateTime?)entity[columnName]).HasValue)
@@ -55,5 +58,20 @@ public static class ORMExtensions
         {
             return (value, columnName);
         }
+    }
+
+    public static PropertyInfo GetPropertyInfo(this ORMEntity entity, string propertyName)
+    {
+        return entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
+            ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(ORMColumnAttribute), false).FirstOrDefault() as ORMColumnAttribute)?.ColumnName == propertyName);
+    }
+
+    public static bool IsForeignKeyOfType(this ORMEntity entity, string propertyName, Type type)
+    {
+        var propertyInfo = entity.GetPropertyInfo(propertyName);
+
+        var fkAttribute = propertyInfo.GetCustomAttributes(typeof(ORMForeignKeyAttribute), false).FirstOrDefault() as ORMForeignKeyAttribute;
+
+        return type == fkAttribute.Relation;
     }
 }

@@ -24,6 +24,7 @@ namespace ORMFakeDAL
 
         public DateTime? DateLastModified { get; internal set; }
 
+        [ORMManyToMany]
         public Roles Roles { get; set; }
 
         public User() { }

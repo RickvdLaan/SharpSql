@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using ORM.Attributes;
 using ORMFakeDAL;
 using System;
 using System.Linq;
@@ -63,7 +64,7 @@ namespace ORMNUnit
         [Test]
         public void Fetch_Join()
         {
-            var expectedUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
 
             var user = new User(1, x => x.Organisation.Left());
 
@@ -90,7 +91,7 @@ namespace ORMNUnit
         [Test]
         public void Fetch_Join_Dirty()
         {
-            var expectedUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
 
             var user = new User(1, x => x.Organisation.Left());
             user.Organisation.Name = "Unit Test";
@@ -119,8 +120,11 @@ namespace ORMNUnit
         [Test]
         public void Fetch_Join_New()
         {
-            var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
-            var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            // @Todo, @Research: the TOP (1) has been removed for ManyTomany? We think?
+            // But shouldn't we only remove this if there is a ManyTomany?
+            // Doesn't this always cause a table scan?
+            var expectedInitialUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedOriginalUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
             var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
 
             var expectedOrganisationQuery = "INSERT INTO [DBO].[ORGANISATIONS] ([DBO].[ORGANISATIONS].[NAME]) VALUES(@PARAM1); SELECT CAST(SCOPE_IDENTITY() AS INT);";
@@ -341,8 +345,8 @@ namespace ORMNUnit
         [Test]
         public void Update_JoinInsert()
         {
-            var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
-            var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedOriginalUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedInitialUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
             var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
 
             var expectedOrganisationQuery = "INSERT INTO [DBO].[ORGANISATIONS] ([DBO].[ORGANISATIONS].[NAME]) VALUES(@PARAM1); SELECT CAST(SCOPE_IDENTITY() AS INT);";
@@ -398,8 +402,8 @@ namespace ORMNUnit
         [Test]
         public void Update_DirtyJoin()
         {
-            var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
-            var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedOriginalUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedInitialUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
             var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
 
             var expectedOrganisationQuery = "UPDATE [O] SET [O].[NAME] = @PARAM1 FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM2);";
@@ -492,8 +496,8 @@ namespace ORMNUnit
         [Test]
         public void Update_DirtyJoin_DisableChangeTracking()
         {
-            var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
-            var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedOriginalUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
+            var expectedInitialUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
             var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
 
             var expectedOrganisationQuery = "UPDATE [O] SET [O].[NAME] = @PARAM1 FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM2);";
@@ -570,6 +574,45 @@ namespace ORMNUnit
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
+        }
+
+        [Test]
+        public void MultiplePrimaryKeys()
+        {
+            var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERROLES] AS [U] WHERE (([U].[USERID] = @PARAM1) AND ([U].[ROLEID] = @PARAM2));";
+
+            var userRole = new UserRole(1, 1);
+
+            Assert.AreEqual(1, userRole.Column_UserId);
+            Assert.AreEqual(1, userRole.Column_RoleId);
+
+            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_UserId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
+            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_RoleId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
+
+            Assert.AreEqual(expectedQuery, userRole.ExecutedQuery);
+        }
+
+        [Test, ORMUnitTest("ManyToManyUserRoles", typeof(UserRole), "ManyToManyRoles", typeof(Role))]
+        public void ManyToMany()
+        {
+            var user = new User(1, x => x.Roles.Left());
+
+            // User object
+            Assert.AreEqual(false, user.IsDirty);
+            Assert.AreEqual(false, user.IsNew);
+            Assert.IsNotNull(user.OriginalFetchedValue);
+            Assert.IsTrue(user.EntityRelations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+
+            // Organisation object
+            Assert.IsNull(user.Organisation);
+            Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
+
+            // Roles (many-to-many)
+            Assert.IsNotNull(user.Roles);
+            Assert.IsTrue(user.Roles.Count == 2);
+            Assert.IsTrue(user.Roles[0].Description == "Admin");
+            Assert.IsTrue(user.Roles[1].Description == "Moderator");
         }
     }
 }

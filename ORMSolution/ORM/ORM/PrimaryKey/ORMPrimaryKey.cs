@@ -1,4 +1,5 @@
-﻿using ORM.Interfaces;
+﻿using ORM.Attributes;
+using ORM.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -57,7 +58,11 @@ namespace ORM
             for (int i = 0; i < reader.FieldCount && found < pks.Length; i++)
             {
                 var name = reader.GetName(i);
-                if (pks.Any(x => string.Compare(x.Name, name, true) == 0))
+
+                var columnAttribute = pks[i].GetCustomAttributes(typeof(ORMColumnAttribute), false).FirstOrDefault() as ORMColumnAttribute;
+
+                if ((columnAttribute != null && columnAttribute.ColumnName == name)
+                  || pks.Any(x => string.Compare(x.Name, name, true) == 0))
                 {
                     primaryKeyIndexes[found] = i;
                     found++;

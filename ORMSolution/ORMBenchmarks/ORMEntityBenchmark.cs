@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using ORM;
 using ORMFakeDAL;
+using System;
 
 namespace ORMBenchmarks
 {
@@ -39,32 +40,40 @@ namespace ORMBenchmarks
                 using var command = new SqlCommand($"SELECT TOP (1) * FROM USERS AS U LEFT JOIN ORGANISATIONS AS O ON O.Id = U.Organisation WHERE U.ID = { UserId }", sqlConnection);
                 command.Connection.Open();
 
-                using var reader = command.ExecuteReader();
-                while (reader.Read())
-                {
-                    for (int i = 0; i < reader.VisibleFieldCount; i++)
-                    {
-                        if (i == 6)
-                            break;
-
-                        var propertyName = reader.GetName(i);
-                        var propertyValue = reader.GetValue(i);
-
-                        if (propertyName == nameof(user.Organisation))
-                        {
-                            user.Organisation = new Organisation();
-                            user.Organisation[reader.GetName(6)] = reader.GetValue(6);
-                            user.Organisation[reader.GetName(7)] = reader.GetValue(7);
-                        }
-                        else
-                        {
-                            user[propertyName] = propertyValue;
-                        }
-                    }
-                }
+                FetchAndFillObject(command, user);
             }
 
             return user;
+        }
+
+        // Make into nice util function.
+
+        private void FetchAndFillObject(SqlCommand command, ORMEntity entity)
+        {
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                for (int i = 0; i < reader.VisibleFieldCount; i++)
+                {
+                    if (i == entity.TableScheme.Count) // 6? check if 6 for user and if this is a good generic option?
+                        // what if certain fields are not available? does it break?
+                        break;
+
+                    var propertyName = reader.GetName(i);
+                    var propertyValue = reader.GetValue(i);
+
+                    if (entity[propertyName].GetType().IsAssignableFrom(typeof(ORMEntity)))
+                    {
+                        entity[propertyName] = Activator.CreateInstance(entity[propertyName].GetType());
+                        (entity[propertyName] as ORMEntity)[reader.GetName(6)] = reader.GetValue(6);
+                        (entity[propertyName] as ORMEntity)[reader.GetName(7)] = reader.GetValue(7);
+                    }
+                    else
+                    {
+                        entity[propertyName] = propertyValue;
+                    }
+                }
+            }
         }
     }
 }

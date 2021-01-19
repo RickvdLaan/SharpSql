@@ -110,7 +110,7 @@ namespace ORM
                 if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]) && entity.IsAutoIncrement)
                     continue;
 
-                var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
+                var fieldPropertyInfo = entity.GetPropertyInfo(entity.TableScheme[i]);
                 var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
 
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
@@ -289,7 +289,7 @@ namespace ORM
                 || !entity.IsDirtyList[i - 1].IsDirty)
                     continue;
 
-                var fieldPropertyInfo = entity.GetType().GetProperty(entity.TableScheme[i], entity.PublicFlags);
+                var fieldPropertyInfo = entity.GetPropertyInfo(entity.TableScheme[i]);
 
                 // Checks if the current entity is a joined entity.
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
@@ -558,19 +558,39 @@ namespace ORM
 
                 SQLJoin firstJoin = new SQLJoin()
                 {
+                    IsManyToMany = true,
                     LeftTableAttribute = TableAttribute,
                     LeftPropertyInfo = TableAttribute.EntityType.GetProperties().Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null).First(),
                     RightTableAttribute = relations.CollectionType.GetCustomAttribute<ORMTableAttribute>(),
                     RightPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute)?.Relation == expression.Member.DeclaringType).ToArray()
                 };
 
+                if (firstJoin.RightPropertyInfo.Length == 0)
+                {
+                    var propertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null
+                                                  && (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute) == null)
+                                                       .FirstOrDefault();
+
+                    throw new ORMForeignKeyAttributeNotImplementedException(propertyInfo, firstJoin.RightTableAttribute.CollectionType);
+                }
+
                 SQLJoin secondJoin = new SQLJoin()
                 {
+                    IsManyToMany = true,
                     LeftTableAttribute = relations.CollectionType.GetCustomAttribute<ORMTableAttribute>(),
-                    LeftPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute)?.Relation == ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType]).First(),
+                    LeftPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute)?.Relation == ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType]).FirstOrDefault(),
                     RightTableAttribute = targetProperty.PropertyType.GetCustomAttribute<ORMTableAttribute>(),
                     RightPropertyInfo = ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties().Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null).ToArray()
                 };
+
+                if (secondJoin.LeftPropertyInfo == null)
+                {
+                    var propertyInfo = ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties().Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null
+                                                   && (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute) == null)
+                                                       .FirstOrDefault();
+
+                    throw new ORMForeignKeyAttributeNotImplementedException(propertyInfo, secondJoin.LeftTableAttribute.CollectionType);
+                }
 
                 AddQueryTableName(firstJoin.RightTableAttribute);
                 AddQueryTableName(secondJoin.RightTableAttribute);
@@ -602,7 +622,7 @@ namespace ORM
         {
             for (int i = 0; i < join.RightPropertyInfo.Length; i++)
             {
-                stringBuilder.Append($" {joinType} JOIN [dbo].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name()}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo[i].Name()}]");
+                stringBuilder.Append($" {joinType} JOIN [DBO].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name()}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo[i].Name()}]");
             }
         }
 

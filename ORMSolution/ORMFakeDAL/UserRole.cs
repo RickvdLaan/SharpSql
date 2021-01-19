@@ -11,6 +11,8 @@ namespace ORMFakeDAL
         [ORMPrimaryKey, ORMForeignKey(typeof(Role)), ORMColumn("RoleId")]
         public int Column_RoleId { get; private set; }
 
+        private UserRole() { }
+
         public UserRole(int userId, int roleId)
         {
             base.FetchEntityByPrimaryKey(userId, roleId);

@@ -5,8 +5,8 @@ namespace ORMFakeDAL
 {
     public class Role : ORMEntity
     {
-        [ORMPrimaryKey]
-        public int Id { get; private set; } = -1;
+        [ORMPrimaryKey, ORMColumn(RoleConstants.ColumnId)]
+        public int RoleId { get; private set; } = -1;
 
         [ORMColumn(RoleConstants.ColumnName)]
         public string Description { get; set; }

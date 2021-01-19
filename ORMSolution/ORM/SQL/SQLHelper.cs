@@ -1,5 +1,4 @@
-﻿using ORM.Attributes;
-using ORM.Exceptions;
+﻿using ORM.Exceptions;
 using ORM.Interfaces;
 using System;
 using System.Collections;
@@ -18,13 +17,13 @@ namespace ORM
         {
             if (sqlBuilder?.ContainsToManyJoins == true)
             {
-                PopulateCollection<CollectionType, EntityType>(collection, reader, sqlBuilder);
+                PopulateManyToManyCollection<CollectionType, EntityType>(collection, reader, sqlBuilder);
                 return;
             }
 
             while (reader.Read())
             {
-                var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
+                var entity = (EntityType)Activator.CreateInstance(typeof(EntityType), true);
                 entity.DisableChangeTracking = collection.DisableChangeTracking;
 
                 PopulateEntity(entity, reader, sqlBuilder);
@@ -33,12 +32,28 @@ namespace ORM
             }
         }
 
+        private static readonly Dictionary<ORMPrimaryKey, bool> PrimaryKeyCache = new Dictionary<ORMPrimaryKey, bool>(8);
+
         internal static void DataReader<EntityType>(EntityType entity, IDataReader reader, SQLBuilder sqlBuilder)
             where EntityType : ORMEntity
         {
             while (reader.Read())
             {
                 PopulateEntity(entity, reader, sqlBuilder);
+
+                if (!UnitTestUtilities.IsUnitTesting)
+                {
+                    PopulateManyToManyEntity(entity, reader, sqlBuilder);
+                }
+                if (!PrimaryKeyCache.ContainsKey(entity.PrimaryKey))
+                {
+                    PrimaryKeyCache.Add(entity.PrimaryKey, true);
+                }
+            }
+
+            if (PrimaryKeyCache.ContainsKey(entity.PrimaryKey))
+            {
+                PrimaryKeyCache.Remove(entity.PrimaryKey);
             }
         }
 
@@ -63,24 +78,10 @@ namespace ORM
 
                 var propertyName = reader.GetName(ReaderStartIndex + i);
 
-#if DEBUG
-                if (ORMUtilities.IsUnitTesting)
+                if (UnitTestUtilities.IsUnitTesting)
                 {
-                    propertyName = propertyName.Split('_').Last();
-
-                    var childPropertyType = childEntity.GetType().GetProperty(propertyName).PropertyType;
-
-                    // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
-                    if (Nullable.GetUnderlyingType(childPropertyType) != null && value != DBNull.Value)
-                    {
-                        value = Convert.ChangeType(value, Nullable.GetUnderlyingType(childPropertyType));
-                    }
-                    else if (!childPropertyType.IsSubclassOf(typeof(ORMEntity)) && value != DBNull.Value)
-                    {
-                        value = Convert.ChangeType(value, childPropertyType);
-                    }
+                    UnitTestUtilities.PopulateChildEntity(ref propertyName, ref value, childEntity);
                 }
-#endif
 
                 childEntity[propertyName] = value;
             }
@@ -140,9 +141,22 @@ namespace ORM
                     entity.OriginalFetchedValue[relation.GetType().Name] = (entity[relation.GetType().Name] as ORMEntity).OriginalFetchedValue;
                 }
             }
+
+            if (UnitTestUtilities.IsUnitTesting)
+            {
+                // With unit tests, the ORMPrimaryKey isn't always set - e.g:
+                // A (child) object is spawned from within the framework, therefore the private/internal
+                // constructor is called. In this case, the ORMPrimaryKey value will never be set.
+                // ~ Rick, 12/01/2021
+
+                foreach (var primaryKey in entity.PrimaryKey.Keys)
+                {
+                    primaryKey.Value = entity[primaryKey.PropertyName];
+                }
+            }
         }
 
-        private static void PopulateCollection<CollectionType, EntityType>(CollectionType collection, IDataReader reader, SQLBuilder sqlBuilder)
+        private static void PopulateManyToManyCollection<CollectionType, EntityType>(CollectionType collection, IDataReader reader, SQLBuilder sqlBuilder)
             where CollectionType : ORMCollection<EntityType>
             where EntityType : ORMEntity
         {
@@ -170,7 +184,7 @@ namespace ORM
                 tableIndex += tableColumnCount;
             }
 
-            void AddManyToManyObject(ORMPrimaryKey key, IDataReader _reader)
+            void AddManyToManyObject(ORMPrimaryKey key, IDataReader reader)
             {
                 Dictionary<string, List<ORMEntity>> relations;
                 if (manyToManyData.ContainsKey(key))
@@ -185,22 +199,48 @@ namespace ORM
 
                 foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
                 {
-                    var instance = (ORMEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
-                    foreach (var index in indexes)
+                    bool IsRowEmpty(List<(string, int[])> manyToManyJoinIndexes, IDataReader reader)
                     {
-                        SetEntityProperty(instance, _reader, sqlBuilder, index);
+                        foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
+                        {
+                            for (int i = 0; i < indexes.Length; i++)
+                            {
+                                if (reader.GetValue(indexes[i]) == DBNull.Value)
+                                {
+                                    if ((i + 1) == indexes.Length)
+                                    {
+                                        return true;
+                                    }
+                                }
+                                else
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+
+                        return true;
                     }
 
-                    if (relations.ContainsKey(fieldName))
+                    if (!IsRowEmpty(manyToManyJoinIndexes, reader))
                     {
-                        relations[fieldName].Add(instance);
-                    }
-                    else
-                    {
-                        relations[fieldName] = new List<ORMEntity>()
+                        var instance = (ORMEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
+                        foreach (var index in indexes)
+                        {
+                            SetEntityProperty(instance, reader, sqlBuilder, index, true);
+                        }
+
+                        if (relations.ContainsKey(fieldName))
+                        {
+                            relations[fieldName].Add(instance);
+                        }
+                        else
+                        {
+                            relations[fieldName] = new List<ORMEntity>()
                         {
                             instance
                         };
+                        }
                     }
                 }
             }
@@ -258,7 +298,7 @@ namespace ORM
                     if (typeof(IORMCollection).IsAssignableFrom(property.PropertyType))
                     {
                         var subcollection = Activator.CreateInstance(property.PropertyType);
-                        var collectionProperty = property.PropertyType.GetProperty(nameof(ORMCollection<ORMEntity>.EntityCollection), entity.PublicFlags);
+                        var collectionProperty = property.PropertyType.GetProperty(nameof(ORMCollection<ORMEntity>.MutableEntityCollection), entity.NonPublicFlags);
                         var list = collectionProperty.GetValue(subcollection) as IList;
                         foreach (var item in data.Value)
                         {
@@ -276,28 +316,165 @@ namespace ORM
             }
         }
 
+        private static void PopulateManyToManyEntity(ORMEntity entity, IDataReader reader, SQLBuilder sqlBuilder)
+        {
+            Dictionary<ORMPrimaryKey, Dictionary<string, List<ORMEntity>>> manyToManyData = new Dictionary<ORMPrimaryKey, Dictionary<string, List<ORMEntity>>>(new ORMPrimaryKey());
+
+            var manyToManyJoinIndexes = new List<(string, int[])>();
+            var manyToManyJoinTypes = new Dictionary<string, Type>();
+
+            var tableIndex = 0;
+            foreach (var (name, _) in sqlBuilder.TableOrder)
+            {
+                var objectPath = sqlBuilder.TableNameResolvePaths.ContainsKey(name) ? sqlBuilder.TableNameResolvePaths[name] : string.Empty;
+                var tableColumnCount = sqlBuilder.TableNameColumnCount[name];
+
+                if (objectPath.StartsWith(SQLBuilder.MANY_TO_MANY_JOIN_DATA, StringComparison.Ordinal))
+                {
+                    var indexes = new List<int>();
+                    for (int i = 0; i < tableColumnCount; i++)
+                    {
+                        indexes.Add(tableIndex + i);
+                    }
+                    manyToManyJoinIndexes.Add((objectPath.Split('.')[1], indexes.ToArray()));
+                }
+                tableIndex += tableColumnCount;
+            }
+
+            void AddManyToManyObject(ORMPrimaryKey key, IDataReader reader)
+            {
+                Dictionary<string, List<ORMEntity>> relations;
+                if (manyToManyData.ContainsKey(key))
+                {
+                    relations = manyToManyData[key];
+                }
+                else
+                {
+                    relations = new Dictionary<string, List<ORMEntity>>();
+                    manyToManyData[key] = relations;
+                }
+
+                foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
+                {
+                    bool IsRowEmpty(List<(string, int[])> manyToManyJoinIndexes, IDataReader reader)
+                    {
+                        foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
+                        {
+                            for (int i = 0; i < indexes.Length; i++)
+                            {
+                                if (reader.GetValue(indexes[i]) == DBNull.Value)
+                                {
+                                    if ((i + 1) == indexes.Length)
+                                    {
+                                        return true;
+                                    }
+                                }
+                                else
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+
+                        return true;
+                    }
+
+                    if (!IsRowEmpty(manyToManyJoinIndexes, reader))
+                    {
+                        var instance = (ORMEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
+                        foreach (var index in indexes)
+                        {
+                            SetEntityProperty(instance, reader, sqlBuilder, index, true);
+                        }
+
+                        if (relations.ContainsKey(fieldName))
+                        {
+                            relations[fieldName].Add(instance);
+                        }
+                        else
+                        {
+                            relations[fieldName] = new List<ORMEntity>()
+                        {
+                            instance
+                        };
+                        }
+                    }
+                }
+            }
+
+            int[] primaryKeyIndexes = ORMPrimaryKey.DeterminePrimaryKeyIndexes(reader, entity);
+
+            foreach (var (fieldName, _) in manyToManyJoinIndexes)
+            {
+                var type = entity.GetPropertyInfo(fieldName).PropertyType;
+                if (!typeof(ORMEntity).IsAssignableFrom(type.GetType()))
+                {
+                    type = ORMUtilities.CollectionEntityRelations[type];
+                }
+                manyToManyJoinTypes.Add(fieldName, type);
+            }
+
+            ORMPrimaryKey pk = new ORMPrimaryKey(reader, primaryKeyIndexes);
+
+            //PopulateEntity(entity, reader, sqlBuilder);
+            AddManyToManyObject(pk, reader);
+
+            foreach (var kvPair in manyToManyData)
+            {
+                foreach (var data in kvPair.Value)
+                {
+                    var property = entity.GetType().GetProperty(data.Key, entity.PublicFlags);
+                    if (typeof(IORMCollection).IsAssignableFrom(property.PropertyType))
+                    {
+                        var propertyValue = entity.GetType().GetProperty(data.Key, entity.PublicFlags).GetValue(entity);
+
+                        if (propertyValue == null)
+                        {
+                            var subcollection = Activator.CreateInstance(property.PropertyType);
+
+                            var collectionProperty = property.PropertyType.GetProperty(nameof(ORMCollection<ORMEntity>.MutableEntityCollection), entity.NonPublicFlags);
+                            var list = collectionProperty.GetValue(subcollection) as IList;
+                            foreach (var item in data.Value)
+                            {
+                                list.Add(item);
+                            }
+                            property.SetValue(entity, subcollection);
+                        }
+                        else
+                        {
+                            foreach (var item in data.Value)
+                            {
+                                propertyValue.GetType().GetMethod("Add", entity.PublicFlags).Invoke(propertyValue, new object[] { item });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Something went wrong trying to cast to a subcollection");
+                    }
+                }
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, SQLBuilder sqlBuilder, int iteration, int tableIndex = 0)
+        internal static void SetEntityProperty(ORMEntity entity, IDataReader reader, SQLBuilder sqlBuilder, int iteration, bool isEntityManyTomany = false)
         {
             // All joins (child-entities) are filled through PopulateChildEntity, therefore we can
             // skip anything past the current entity (parent) within the reader.
-            if ((iteration + tableIndex) >= sqlBuilder.TableNameColumnCount.First().Value)
+            if (iteration >= sqlBuilder.TableNameColumnCount.First().Value && !isEntityManyTomany)
             {
                 // Skipping.
                 return;
             }
 
-            var propertyName = reader.GetName(iteration + tableIndex);
+            var propertyName = reader.GetName(iteration);
 
-#if DEBUG
-            if (ORMUtilities.IsUnitTesting)
+            if (UnitTestUtilities.IsUnitTesting)
             {
                 propertyName = propertyName.Split('_').Last();
             }
-#endif
 
-            var entityPropertyInfo = entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
-                                  ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(ORMColumnAttribute), true).FirstOrDefault() as ORMColumnAttribute)?.ColumnName == propertyName);
+            var entityPropertyInfo = entity.GetPropertyInfo(propertyName);
 
             if (null == entityPropertyInfo)
             {
@@ -318,18 +495,18 @@ namespace ORM
             switch (entityPropertyInfo.PropertyType)
             {
                 case Type type when type == typeof(DateTime?):
-                    value = reader.GetValue(iteration + tableIndex);
+                    value = reader.GetValue(iteration);
                     break;
                 case Type type when type == typeof(DateTime):
-                    if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+                    if (reader.GetValue(iteration) == DBNull.Value)
                     {
                         throw new ORMPropertyNotNullableException($"Property [{propertyName}] is not nullable, but the database column equivelant is.");
                     }
 
-                    value = reader.GetValue(iteration + tableIndex);
+                    value = reader.GetValue(iteration);
                     break;
                 case Type type when type.IsSubclassOf(typeof(ORMEntity)):
-                    if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+                    if (reader.GetValue(iteration) == DBNull.Value)
                     {
                         break;
                     }
@@ -364,12 +541,11 @@ namespace ORM
 
                     break;
                 default:
-                    value = reader.GetValue(iteration + tableIndex);
+                    value = reader.GetValue(iteration);
                     break;
             }
 
-#if DEBUG
-            if (ORMUtilities.IsUnitTesting)
+            if (UnitTestUtilities.IsUnitTesting)
             {
                 // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
                 if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null && value != DBNull.Value)
@@ -381,9 +557,8 @@ namespace ORM
                     value = Convert.ChangeType(value, entityPropertyInfo.PropertyType);
                 }
             }
-#endif
 
-            if (reader.GetValue(iteration + tableIndex) == DBNull.Value)
+            if (reader.GetValue(iteration) == DBNull.Value)
             {
                 entityPropertyInfo.SetValue(entity, null);
             }

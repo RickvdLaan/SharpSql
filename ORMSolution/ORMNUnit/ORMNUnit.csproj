@@ -11,7 +11,6 @@
     <None Remove="MemoryCollectionTables\BasicFetchUsers.xml" />
     <None Remove="MemoryCollectionTables\BasicJoinInner.xml" />
     <None Remove="MemoryCollectionTables\BasicJoinLeft.xml" />
-    <None Remove="MemoryCollectionTables\BasicMultiplePrimaryKeys.xml" />
     <None Remove="MemoryCollectionTables\BasicOrderBy.xml" />
     <None Remove="MemoryCollectionTables\BasicSelectUsers.xml" />
     <None Remove="MemoryCollectionTables\BasicWhereAnd.xml" />
@@ -25,6 +24,8 @@
     <None Remove="MemoryCollectionTables\ComplexJoinD.xml" />
     <None Remove="MemoryCollectionTables\ComplexJoinE.xml" />
     <None Remove="MemoryCollectionTables\ComplexWhereLike.xml" />
+    <None Remove="MemoryCollectionTables\ManyToManyRoles.xml" />
+    <None Remove="MemoryCollectionTables\ManyToManyUserRoles.xml" />
     <None Remove="MemoryEntityTables\ORGANISATIONS.xml" />
     <None Remove="MemoryEntityTables\ROLES.xml" />
     <None Remove="MemoryEntityTables\USERROLES.xml" />
@@ -36,7 +37,6 @@
     <EmbeddedResource Include="MemoryCollectionTables\BasicFetchUsers.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicJoinInner.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicJoinLeft.xml" />
-    <EmbeddedResource Include="MemoryCollectionTables\BasicMultiplePrimaryKeys.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicOrderBy.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicSelectUsers.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereAnd.xml" />
@@ -45,6 +45,8 @@
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinB.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ManyToManyRoles.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ManyToManyUserRoles.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinE.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinD.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinC.xml" />
