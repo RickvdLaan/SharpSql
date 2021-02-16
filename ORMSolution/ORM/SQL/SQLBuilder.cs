@@ -408,6 +408,11 @@ namespace ORM
                     }
                 case MemberExpression memberExpression:
                     {
+                        if (RecompileConstantExpressionFromMemberExpression(memberExpression) is ConstantExpression constantExpression)
+                        {
+                            return ParseExpression(constantExpression);
+                        }
+                    
                         var entityType = memberExpression.Member.ReflectedType;
                         var collectionType = ORMUtilities.CollectionEntityRelations[entityType];
 
@@ -653,6 +658,32 @@ namespace ORM
             {
                 throw new NotImplementedException(expression.GetType().FullName);
             }
+        }
+
+        private ConstantExpression RecompileConstantExpressionFromMemberExpression(MemberExpression memberExpression)
+        {
+            if (memberExpression.Expression is ConstantExpression constantExpression)
+            {
+                var value = GetValue(memberExpression.Member, constantExpression.Value);
+
+                return Expression.Constant(value, value.GetType());
+            }
+
+            return null;
+        }
+
+        private object GetValue(MemberInfo member, object instance)
+        {
+            if (member is PropertyInfo pi)
+            {
+                return pi.GetValue(instance, null);
+            }
+            if (member is FieldInfo fi)
+            {
+                return fi.GetValue(instance);
+            }
+
+            throw new InvalidOperationException();
         }
     }
 }

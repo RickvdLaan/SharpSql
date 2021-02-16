@@ -350,8 +350,9 @@ namespace ORMNUnit
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
+            var userId = 1;
             var users = new Users();
-            users.Where(x => x.Id == 1);
+            users.Where(x => x.Id == userId);
             users.Fetch();
 
             Assert.AreEqual(1, users.Count);
