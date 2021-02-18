@@ -370,6 +370,11 @@ namespace ORM
             return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;";
         }
 
+        public string ServerDatabaseList()
+        {
+            return "SELECT D.NAME FROM SYS.DATABASES AS D;";
+        }
+
         private char Semicolon()
         {
             return ';';
@@ -408,11 +413,11 @@ namespace ORM
                     }
                 case MemberExpression memberExpression:
                     {
-                        if (RecompileConstantExpressionFromMemberExpression(memberExpression) is ConstantExpression constantExpression)
+                        if (ReconstructConstantExpressionFromMemberExpression(memberExpression) is ConstantExpression constantExpression)
                         {
                             return ParseExpression(constantExpression);
                         }
-                    
+
                         var entityType = memberExpression.Member.ReflectedType;
                         var collectionType = ORMUtilities.CollectionEntityRelations[entityType];
 
@@ -573,7 +578,7 @@ namespace ORM
                 if (firstJoin.RightPropertyInfo.Length == 0)
                 {
                     var propertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null
-                                                  && (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute) == null)
+                                                    && (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute) == null)
                                                        .FirstOrDefault();
 
                     throw new ORMForeignKeyAttributeNotImplementedException(propertyInfo, firstJoin.RightTableAttribute.CollectionType);
@@ -590,9 +595,10 @@ namespace ORM
 
                 if (secondJoin.LeftPropertyInfo == null)
                 {
-                    var propertyInfo = ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties().Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null
-                                                   && (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute) == null)
-                                                       .FirstOrDefault();
+                    var propertyInfo = ORMUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties()
+                                                   .Where(x => (x.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true).FirstOrDefault() as ORMPrimaryKeyAttribute) != null
+                                                      && (x.GetCustomAttributes(typeof(ORMForeignKeyAttribute), true).FirstOrDefault() as ORMForeignKeyAttribute) == null)
+                                                         .FirstOrDefault();
 
                     throw new ORMForeignKeyAttributeNotImplementedException(propertyInfo, secondJoin.LeftTableAttribute.CollectionType);
                 }
@@ -660,7 +666,7 @@ namespace ORM
             }
         }
 
-        private ConstantExpression RecompileConstantExpressionFromMemberExpression(MemberExpression memberExpression)
+        private ConstantExpression ReconstructConstantExpressionFromMemberExpression(MemberExpression memberExpression)
         {
             if (memberExpression.Expression is ConstantExpression constantExpression)
             {
@@ -674,13 +680,13 @@ namespace ORM
 
         private object GetValue(MemberInfo member, object instance)
         {
-            if (member is PropertyInfo pi)
+            if (member is PropertyInfo propertyInfo)
             {
-                return pi.GetValue(instance, null);
+                return propertyInfo.GetValue(instance, null);
             }
-            if (member is FieldInfo fi)
+            if (member is FieldInfo fieldInfo)
             {
-                return fi.GetValue(instance);
+                return fieldInfo.GetValue(instance);
             }
 
             throw new InvalidOperationException();

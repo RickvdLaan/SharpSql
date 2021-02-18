@@ -89,6 +89,51 @@ namespace ORM
             }
         }
 
+        public static List<string> GetDatabaseList()
+        {
+            return GetDatabaseList(ExecuteDirectQuery(new SQLBuilder().ServerDatabaseList()));
+        }
+
+        public static List<string> GetDatabaseList(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+                throw new ArgumentNullException($"Argument [{ nameof(connectionString) }] can't be null or empty.");
+
+            using SqlConnection connection = new SqlConnection(connectionString);
+            using var command = new SqlCommand(new SQLBuilder().ServerDatabaseList(), connection);
+
+            if (!UnitTestUtilities.IsUnitTesting)
+            {
+                command.Connection.Open();
+            }
+
+            return GetDatabaseList(ExecuteReader(command));
+        }
+
+        private static List<string> GetDatabaseList(DataTable dataTable)
+        {
+            var databases = new List<string>(dataTable.Rows.Count);
+            var excludedDatabases = new List<string>(4)
+            { 
+                "master",
+                "tempdb",
+                "model",
+                "msdb"
+            };
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                var databaseName = (string)row[0];
+
+                if (excludedDatabases.Contains(databaseName))
+                    continue;
+
+                databases.Add(databaseName);
+            }
+
+            return databases;
+        }
+
         private static void DisposeTransaction()
         {
             if (IsInTransaction())

@@ -13,6 +13,7 @@ namespace ORMFakeDAL
         [ORMPrimaryKey]
         public int Id { get; internal set; } = -1;
 
+        [ORMUniqueConstraint]
         public string Username { get; set; }
 
         public string Password { get; set; }

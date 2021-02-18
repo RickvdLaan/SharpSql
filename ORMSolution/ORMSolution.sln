@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ORMCodeGenerator", "ORMCode
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ORMFakeDAL", "ORMFakeDAL\ORMFakeDAL.csproj", "{4542F271-A0E1-4774-A10D-AE91364874B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORMBenchmarks", "ORMBenchmarks\ORMBenchmarks.csproj", "{F5837BB6-F8EE-42A7-A117-2E5348CA4E11}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ORMBenchmarks", "ORMBenchmarks\ORMBenchmarks.csproj", "{F5837BB6-F8EE-42A7-A117-2E5348CA4E11}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORMDatabaseUpdater", "ORMDatabaseUpdater\ORMDatabaseUpdater.csproj", "{D5F641F6-6CBA-4AAC-B2A6-4CFF9ABDC59B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{F5837BB6-F8EE-42A7-A117-2E5348CA4E11}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5837BB6-F8EE-42A7-A117-2E5348CA4E11}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F5837BB6-F8EE-42A7-A117-2E5348CA4E11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5F641F6-6CBA-4AAC-B2A6-4CFF9ABDC59B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5F641F6-6CBA-4AAC-B2A6-4CFF9ABDC59B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5F641F6-6CBA-4AAC-B2A6-4CFF9ABDC59B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5F641F6-6CBA-4AAC-B2A6-4CFF9ABDC59B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
