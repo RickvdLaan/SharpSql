@@ -1,8 +1,5 @@
-﻿using ORM;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using DatabaseUpdater.Resources;
-using System.Linq;
 
 namespace ORMDatabaseUpdater
 {
@@ -13,13 +10,11 @@ namespace ORMDatabaseUpdater
         // @Todo: use appsettings.json.
         private static readonly string ConnectionString = "Server=localhost; Trusted_Connection=True; MultipleActiveResultSets=true";
 
-        private static string SelectedDatabase { get; set; }
-
-        private static List<string> DatabaseList { get; set; }
+        private static string SelectedDatabase;
 
         static void Main(string[] _)
         {
-            SelectDatabase();
+            DatabaseUtilities.SelectDatabase(ConnectionString, ref SelectedDatabase);
 
             Console.WriteLine(string.Format(Resources.SelectedDatabase_Description, SelectedDatabase));
 
@@ -32,7 +27,21 @@ namespace ORMDatabaseUpdater
                 switch (command.Split(' ')[0])
                 {
                     case Commands.Update:
-                        ParseUpdateCommand(command);
+                        command = ParseUpdateCommand(command);
+
+                        if (!string.IsNullOrEmpty(command))
+                        {
+                            // Update all tables
+                            if (command.Equals(Commands.Update_All, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                DatabaseUtilities.UpdateDatabase();
+                            }
+                            // Update specific table
+                            else
+                            {
+                                DatabaseUtilities.UpdateTable(command);
+                            }
+                        }
                         break;
                     case Commands.Help:
                         Console.WriteLine(Tab + Resources.Command_Update_TableName_Description);
@@ -54,46 +63,17 @@ namespace ORMDatabaseUpdater
             }
         }
 
-        private static void SelectDatabase()
-        {
-            DatabaseList = ORMUtilities.GetDatabaseList(ConnectionString);
-
-            Console.WriteLine(string.Format(Resources.SelectDatabase_Description, DatabaseList.Count - 1));
-
-            for (int i = 0; i < DatabaseList.Count; i++)
-            {
-                Console.WriteLine(string.Format(Resources.Select_Database_Format, i, DatabaseList[i]));
-            }
-
-            while (true)
-            {
-                string command = Console.ReadLine();
-                if (int.TryParse(command, out int index) && DatabaseList.ElementAtOrDefault(index) != null)
-                {
-                    SelectedDatabase = DatabaseList[index];
-                    return;
-                }
-                else
-                {
-                    Console.WriteLine(string.Format(Resources.SelectDatabase_Description, DatabaseList.Count - 1));
-                }
-            }
-        }
-
-        private static void ParseUpdateCommand(string command)
+        private static string ParseUpdateCommand(string command)
         {
             var commands = command.Split(' ');
 
-            switch (commands.Length)
+            if (commands.Length == 1)
             {
-                case 1:
-                default:
-                    Console.WriteLine(string.Format(Resources.Command_Update_InvalidParameter, commands[0]));
-                    return;
-                case 2:
-                    // @Todo
-                    throw new NotImplementedException();
+                Console.WriteLine(string.Format(Resources.Command_Update_InvalidParameter, commands[0]));
+                return null;
             }
+
+            return commands[1];
         }
     }
 }
