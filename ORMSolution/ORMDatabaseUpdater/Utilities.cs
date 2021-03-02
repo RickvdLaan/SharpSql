@@ -46,10 +46,7 @@ namespace ORMDatabaseUpdater
 
             if (entities.Any(x => (x.GetCustomAttributes(typeof(ORMTableAttribute), true).FirstOrDefault() as ORMTableAttribute).TableName.Equals(tableName, StringComparison.InvariantCultureIgnoreCase)))
             {
-                if (DatabaseUtilities.IfExists($"SELECT * FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WHERE CONSTRAINT_NAME = 'UC_{ tableName }' AND TABLE_NAME = '{ tableName }'"))
-                { 
-                    // @Todo
-                }
+                DatabaseUtilities.CreateUniqueConstraint(tableName, "Username");
             }
             else
             {

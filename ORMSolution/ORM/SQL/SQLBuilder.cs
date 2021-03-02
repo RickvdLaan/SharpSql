@@ -385,10 +385,8 @@ namespace ORM
             return "SELECT D.NAME FROM SYS.DATABASES AS D;";
         }
 
-        internal string CreateUniqueConstraint<EntityType>(EntityType entity, params string[] columnNames) where EntityType : ORMEntity
+        internal string CreateUniqueConstraint(string tableName, params string[] columnNames)
         {
-            string tableName = ORMUtilities.GetTableNameFromEntity(entity);
-
             var stringBuilder = new StringBuilder();
             stringBuilder.Append($"ALTER TABLE { tableName } ADD CONSTRAINT UC_{ tableName } UNIQUE(");
 

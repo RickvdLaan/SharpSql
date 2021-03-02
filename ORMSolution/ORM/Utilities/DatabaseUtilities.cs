@@ -196,6 +196,22 @@ namespace ORM
             return Convert.ToBoolean(ExecuteReader(command).Rows[0].ItemArray[0]);
         }
 
+        public static void CreateUniqueConstraint(string tableName, params string[] columnNames)
+        {
+            if (!DoesTableHaveUC(tableName))
+            {
+                using SqlConnection connection = new SqlConnection(ConnectionString);
+                using var command = new SqlCommand(new SQLBuilder().CreateUniqueConstraint(tableName, columnNames), connection);
+
+                if (!UnitTestUtilities.IsUnitTesting)
+                {
+                    command.Connection.Open();
+                }
+
+                ExecuteReader(command);
+            }
+        }
+
         public static List<string> GetDatabaseList()
         {
             var dataTable = ExecuteDirectQuery(new SQLBuilder().ServerDatabaseList());
