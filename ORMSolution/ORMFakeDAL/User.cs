@@ -40,9 +40,15 @@ namespace ORMFakeDAL
             base.FetchEntityByPrimaryKey<User>(fetchByUserId, joins);
         }
 
-        public User(string username)
+        public User FetchByUsername(string username)
         {
-            base.FetchUsingUC(nameof(Password), username);
+            base.FetchUsingUC(nameof(Username), username);
+
+            if (IsNew)
+            {
+                return null;
+            }
+            return this;
         }
 
         public override void Save()

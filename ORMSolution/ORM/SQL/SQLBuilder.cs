@@ -392,7 +392,7 @@ namespace ORM
 
             for (int i = 0; i < columnNames.Length; i++)
             {
-                var addon = (i <= columnNames.Length) ? ", " : string.Empty;
+                var addon = (i <= columnNames.Length) ? string.Empty : ", ";
 
                 stringBuilder.Append($"{ columnNames[i] }{ addon }");
             }

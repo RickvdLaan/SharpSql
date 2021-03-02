@@ -513,7 +513,7 @@ namespace ORM
             collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, joinExpression == null ? 1 : -1, joinExpression });
 
             if (!UnitTestUtilities.IsUnitTesting && IsNew)
-                throw new Exception($"No [{GetType().Name}] found for {string.Join(", ", PrimaryKey.Keys.Select(x => x.ToString()).ToArray())}.");
+                return null;
 
             ExecutedQuery = (string)collection.GetType().GetProperty(nameof(ORMCollection<ORMEntity>.ExecutedQuery)).GetValue(collection);
 
@@ -551,6 +551,9 @@ namespace ORM
 
             // Fetches the data.
             collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, 1, null });
+
+            if (!UnitTestUtilities.IsUnitTesting && IsNew)
+                return null;
 
             ExecutedQuery = (string)collection.GetType().GetProperty(nameof(ORMCollection<ORMEntity>.ExecutedQuery)).GetValue(collection);
 
