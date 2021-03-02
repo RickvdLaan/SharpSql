@@ -40,6 +40,11 @@ namespace ORMFakeDAL
             base.FetchEntityByPrimaryKey<User>(fetchByUserId, joins);
         }
 
+        public User(string username)
+        {
+            base.FetchUsingUC(nameof(Password), username);
+        }
+
         public override void Save()
         {
             if (IsDirty)

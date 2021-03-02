@@ -138,7 +138,7 @@ namespace ORM
         /// <returns>The record count in the database for the current table</returns>
         public static int Records()
         {
-            return (int)ORMUtilities.ExecuteDirectQuery(new SQLBuilder().Count(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
+            return (int)DatabaseUtilities.ExecuteDirectQuery(new SQLBuilder().Count(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
         }
 
         #region IEnumerable<ORMEntity>

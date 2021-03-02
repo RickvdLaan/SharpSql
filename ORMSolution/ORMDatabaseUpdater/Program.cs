@@ -1,5 +1,7 @@
 ﻿using System;
 using DatabaseUpdater.Resources;
+using Microsoft.Extensions.Configuration;
+using ORM;
 
 namespace ORMDatabaseUpdater
 {
@@ -7,14 +9,19 @@ namespace ORMDatabaseUpdater
     {
         private const string Tab = "\t";
 
-        // @Todo: use appsettings.json.
-        private static readonly string ConnectionString = "Server=localhost; Trusted_Connection=True; MultipleActiveResultSets=true";
-
         private static string SelectedDatabase;
 
-        static void Main(string[] _)
+        static void Main()
         {
-            DatabaseUtilities.SelectDatabase(ConnectionString, ref SelectedDatabase);
+            #region Init
+            IConfiguration configuration = new ConfigurationBuilder()
+                   .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                   .Build();
+
+            _ = new ORMInitialize(configuration);
+            #endregion
+
+            Utilities.SelectDatabase(ref SelectedDatabase);
 
             Console.WriteLine(string.Format(Resources.SelectedDatabase_Description, SelectedDatabase));
 
@@ -34,12 +41,12 @@ namespace ORMDatabaseUpdater
                             // Update all tables
                             if (command.Equals(Commands.Update_All, StringComparison.InvariantCultureIgnoreCase))
                             {
-                                DatabaseUtilities.UpdateDatabase();
+                                Utilities.UpdateDatabase();
                             }
                             // Update specific table
                             else
                             {
-                                DatabaseUtilities.UpdateTable(command);
+                                Utilities.UpdateTable(command);
                             }
                         }
                         break;

@@ -67,7 +67,8 @@ namespace ORM
 
         public ORMInitialize(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false)
         {
-            new ORMUtilities(configuration);
+            new DatabaseUtilities(configuration);
+            new ORMUtilities();
 
             if (loadAllReferencedAssemblies)
             {
@@ -106,15 +107,26 @@ namespace ORM
                         {
                             var sqlBuilder = new SQLBuilder();
                             sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
-                            var rows = ORMUtilities.ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
+                            var rows = DatabaseUtilities.ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
                                   .CreateDataReader()
                                   .GetSchemaTable()
                                   .Rows;
+
+                            var uniqueConstraints = DatabaseUtilities.ExecuteDirectQuery(sqlBuilder.ColumnConstraintInformation(tableAttribute.TableName));
 
                             var columns = new List<string>(rows.Count);
 
                             for (int i = 0; i < rows.Count; i++)
                             {
+                                for (int j = 0; j < uniqueConstraints.Rows.Count; j++)
+                                {
+                                    if (uniqueConstraints.Rows[j][3].Equals(rows[i][0]))
+                                    {
+                                        ORMUtilities.UniqueConstraints.Add((tableAttribute.EntityType, (string)rows[i][0]));
+                                        break;
+                                    }
+                                }
+
                                 columns.Add((string)rows[i][0]);
                             }
 

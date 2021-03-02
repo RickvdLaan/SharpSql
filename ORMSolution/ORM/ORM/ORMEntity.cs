@@ -525,6 +525,43 @@ namespace ORM
             return this;
         }
 
+        public ORMEntity FetchUsingUC(string columnName, string value)
+        {
+            if(columnName == null)
+                throw new ArgumentNullException($"Parameter [{ nameof(columnName) }] cannot be null.");
+            if (value == null)
+                throw new ArgumentNullException($"Parameter [{ nameof(value) }] cannot be null.");
+            if (!ORMUtilities.UniqueConstraints.Contains((GetType(), columnName)))
+                throw new ORMIllegalUniqueConstraintException(columnName);
+
+            // Contains the UC represented as a MemberExpression: {x.columnName}.
+            var memberExpression = Expression.Property(Expression.Parameter(GetType(), $"x"), GetType().GetProperty(columnName, PublicIgnoreCaseFlags | NonPublicFlags));
+
+            // Contains the actual UC represented as a ConstantExpression: {value}.
+            var constantExpression = Expression.Constant(value, value.GetType());
+
+            // Combines the expressions represtend as a Expression: {(x.columnName == value)}
+            var whereExpression = Expression.Equal(memberExpression, constantExpression);
+
+            // Instantiates and fetches the run-time collection.
+            var collection = Activator.CreateInstance(ORMUtilities.CollectionEntityRelations[GetType()]);
+
+            // Sets the InternalWhere with the WhereExpression.
+            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.InternalWhere), NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(collection, new object[] { whereExpression });
+
+            // Fetches the data.
+            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, 1, null });
+
+            ExecutedQuery = (string)collection.GetType().GetProperty(nameof(ORMCollection<ORMEntity>.ExecutedQuery)).GetValue(collection);
+
+            if (OriginalFetchedValue != null)
+            {
+                OriginalFetchedValue.ExecutedQuery = ExecutedQuery;
+            }
+
+            return this;
+        }
+
         private void UpdateIsDirtyList()
         {
             for (int i = 0; i < MutableTableScheme.Count; i++)

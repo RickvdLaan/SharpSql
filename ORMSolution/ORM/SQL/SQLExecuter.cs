@@ -19,15 +19,15 @@ namespace ORM
                 return 1;
             }
 
-            using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+            using var connection = new SqlConnection(DatabaseUtilities.ConnectionString);
             CurrentConnection.Value = connection;
 
             using var command = new SqlCommand(generatedQuery, connection);
             command.Connection.Open();
 
-            if (ORMUtilities.Transaction.Value != null)
+            if (DatabaseUtilities.Transaction.Value != null)
             {
-                command.Transaction = ORMUtilities.Transaction.Value;
+                command.Transaction = DatabaseUtilities.Transaction.Value;
             }
 
             if (sqlParameters != null)
@@ -60,7 +60,7 @@ namespace ORM
                 return;
             }
 
-            using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+            using var connection = new SqlConnection(DatabaseUtilities.ConnectionString);
             CurrentConnection.Value = connection;
 
             using var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection);
@@ -87,15 +87,15 @@ namespace ORM
                 return;
             }
 
-            using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+            using var connection = new SqlConnection(DatabaseUtilities.ConnectionString);
             CurrentConnection.Value = connection;
 
             using var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection);
             command.Connection.Open();
 
-            if (ORMUtilities.Transaction.Value != null)
+            if (DatabaseUtilities.Transaction.Value != null)
             {
-                command.Transaction = ORMUtilities.Transaction.Value;
+                command.Transaction = DatabaseUtilities.Transaction.Value;
             }
 
             if (sqlBuilder.SqlParameters != null)
@@ -112,7 +112,7 @@ namespace ORM
 
         internal static DataTable GetDataTableScheme()
         {
-            using var connection = new SqlConnection(ORMUtilities.ConnectionString);
+            using var connection = new SqlConnection(DatabaseUtilities.ConnectionString);
             return connection.GetSchema();
         }
     }

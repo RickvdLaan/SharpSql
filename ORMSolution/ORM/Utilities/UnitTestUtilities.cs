@@ -35,7 +35,7 @@ namespace ORM
             if (entity.PrimaryKey.Keys.Count == 1)
             {
                 var primaryKey = entity.PrimaryKey.Keys[0];
-                var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
+                var tableName = ORMUtilities.GetTableNameFromEntity(entity);
                 var id = sqlBuilder.SqlParameters.Where(x => x.SourceColumn == primaryKey.PropertyName).FirstOrDefault().Value;
 
                 var reader = ORMUtilities.MemoryEntityDatabase.FetchEntityById(tableName, primaryKey, id);
@@ -49,7 +49,7 @@ namespace ORM
             }
             else
             {
-                var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
+                var tableName = ORMUtilities.GetTableNameFromEntity(entity);
 
                 var ids = new List<object>(entity.PrimaryKey.Keys.Count);
 

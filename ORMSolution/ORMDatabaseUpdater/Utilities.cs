@@ -6,11 +6,11 @@ using DatabaseUpdater.Resources;
 
 namespace ORMDatabaseUpdater
 {
-    internal abstract class DatabaseUtilities
+    internal abstract class Utilities
     {
-        internal static void SelectDatabase(string connectionString, ref string selectedDatabase)
+        internal static void SelectDatabase(ref string selectedDatabase)
         {
-            var databaseList = ORMUtilities.GetDatabaseList(connectionString);
+            var databaseList = DatabaseUtilities.GetDatabaseList();
 
             Console.WriteLine(string.Format(Resources.SelectDatabase_Description, databaseList.Count - 1));
 
@@ -46,8 +46,10 @@ namespace ORMDatabaseUpdater
 
             if (entities.Any(x => (x.GetCustomAttributes(typeof(ORMTableAttribute), true).FirstOrDefault() as ORMTableAttribute).TableName.Equals(tableName, StringComparison.InvariantCultureIgnoreCase)))
             {
-                // @Todo
-                Console.WriteLine($"Table '{tableName}' has been updated.");
+                if (DatabaseUtilities.IfExists($"SELECT * FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WHERE CONSTRAINT_NAME = 'UC_{ tableName }' AND TABLE_NAME = '{ tableName }'"))
+                { 
+                    // @Todo
+                }
             }
             else
             {

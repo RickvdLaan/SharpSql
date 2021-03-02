@@ -90,7 +90,7 @@ namespace ORM
         {
             var stringBuilder = new StringBuilder();
 
-            var tableName = ORMUtilities.CollectionEntityRelations[entity.GetType()].Name;
+            var tableName = ORMUtilities.GetTableNameFromEntity(entity);
 
             stringBuilder.Append($"INSERT INTO [DBO].[{tableName}] (");
 
@@ -365,14 +365,50 @@ namespace ORM
             throw new NotImplementedException();
         }
 
-        public string Count(ORMTableAttribute tableAttribute)
+        internal string Count(ORMTableAttribute tableAttribute)
         {
             return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;";
         }
 
-        public string ServerDatabaseList()
+        internal string ColumnConstraintInformation(string tableName)
+        {
+            return $"SELECT * FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WHERE CONSTRAINT_NAME = 'UC_{ tableName }' AND TABLE_NAME = '{ tableName }'";
+        }
+
+        internal string IfExists(string query)
+        {
+            return $"IF EXISTS({ query }) BEGIN SELECT 1 END ELSE BEGIN SELECT 0 END;";
+        }
+
+        internal string ServerDatabaseList()
         {
             return "SELECT D.NAME FROM SYS.DATABASES AS D;";
+        }
+
+        internal string CreateUniqueConstraint<EntityType>(EntityType entity, params string[] columnNames) where EntityType : ORMEntity
+        {
+            string tableName = ORMUtilities.GetTableNameFromEntity(entity);
+
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append($"ALTER TABLE { tableName } ADD CONSTRAINT UC_{ tableName } UNIQUE(");
+
+            for (int i = 0; i < columnNames.Length; i++)
+            {
+                var addon = (i <= columnNames.Length) ? ", " : string.Empty;
+
+                stringBuilder.Append($"{ columnNames[i] }{ addon }");
+            }
+
+            stringBuilder.Append(");");
+
+            return stringBuilder.ToString();
+        }
+
+        internal string DropUniqueConstraint<EntityType>(EntityType entity) where EntityType : ORMEntity
+        {
+            string tableName = ORMUtilities.GetTableNameFromEntity(entity);
+
+            return $"ALTER TABLE { tableName } DROP CONSTRAINT UC_{ tableName };";
         }
 
         private char Semicolon()
