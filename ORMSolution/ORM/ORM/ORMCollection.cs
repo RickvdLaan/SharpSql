@@ -9,7 +9,7 @@ using System.Linq.Expressions;
 namespace ORM
 {
     [Serializable]
-    public class ORMCollection<EntityType> : IORMCollection, IEnumerable<ORMEntity> where EntityType : ORMEntity
+    public class ORMCollection<EntityType> : IORMCollection<EntityType>, IEnumerable<ORMEntity> where EntityType : ORMEntity
     {
         private string _executedQuery = string.Empty;
         /// <summary>
@@ -78,18 +78,18 @@ namespace ORM
         /// <summary>
         /// Fetches all the records from the database.
         /// </summary>
-        public void Fetch()
+        public IORMCollection<EntityType> Fetch()
         {
-            Fetch(-1);
+            return Fetch(-1);
         }
 
         /// <summary>
         /// Fetches a maximum number records from the database.
         /// </summary>
         /// <param name="maxNumberOfItemsToReturn">The maximum number of records to return.</param>
-        public void Fetch(long maxNumberOfItemsToReturn)
+        public IORMCollection<EntityType> Fetch(long maxNumberOfItemsToReturn)
         {
-            Fetch(null, maxNumberOfItemsToReturn);
+            return Fetch(null, maxNumberOfItemsToReturn);
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace ORM
         /// Adds the provided <see cref="ORMEntity"/> to the current collection.
         /// </summary>
         /// <param name="entity">The <see cref="ORMEntity"/> to be added.</param>
-        public void Add(ORMEntity entity)
+        public void Add(EntityType entity)
         {
             MutableEntityCollection.Add(entity);
         }
@@ -127,7 +127,7 @@ namespace ORM
         /// Marks the provided <see cref="ORMEntity"/> to be deleted.
         /// </summary>
         /// <param name="entity">The <see cref="ORMEntity"/> to be deleted.</param>
-        public void Remove(ORMEntity entity)
+        public void Remove(EntityType entity)
         {
             MutableEntityCollection.Find(x => x.Equals(entity)).IsMarkAsDeleted = true;
         }
@@ -212,14 +212,14 @@ namespace ORM
             return this;
         }
 
-        internal void Fetch(ORMEntity entity, long maxNumberOfItemsToReturn, Expression internalEntityJoinExpression = null)
+        internal IORMCollection<EntityType> Fetch(ORMEntity entity, long maxNumberOfItemsToReturn, Expression internalEntityJoinExpression = null)
         {
             var sqlBuilder = new SQLBuilder();
 
             sqlBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression ?? internalEntityJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
 
             if (ExecutedQuery.Equals(sqlBuilder.GeneratedQuery, StringComparison.InvariantCultureIgnoreCase))
-                return;
+                return this;
 
             if (entity == null)
                 SQLExecuter.ExecuteCollectionQuery(this, sqlBuilder);
@@ -227,6 +227,8 @@ namespace ORM
                 SQLExecuter.ExecuteEntityQuery(entity, sqlBuilder);
 
             ExecutedQuery = sqlBuilder.GeneratedQuery;
+
+            return this;
         }
 
         internal ORMCollection<EntityType> InternalJoin(Expression expression)

@@ -367,7 +367,7 @@ namespace ORM
 
         internal string Count(ORMTableAttribute tableAttribute)
         {
-            return $"SELECT COUNT(*) FROM {tableAttribute.TableName} AS INT;";
+            return $"SELECT COUNT(*) FROM { tableAttribute.TableName } AS INT;";
         }
 
         internal string ColumnConstraintInformation(string tableName)

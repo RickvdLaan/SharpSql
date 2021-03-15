@@ -1,19 +1,19 @@
 ﻿namespace ORM.Interfaces
 {
-    public interface IORMCollection
+    public interface IORMCollection<EntityType> where EntityType : ORMEntity
     {
         public string ExecutedQuery { get; }
 
         public bool DisableChangeTracking { get; }
 
-        void Fetch();
+        IORMCollection<EntityType> Fetch();
 
-        void Fetch(long maxNumberOfItemsToReturn);
+        IORMCollection<EntityType> Fetch(long maxNumberOfItemsToReturn);
 
         void SaveChanges();
 
-        void Add(ORMEntity entity);
+        void Add(EntityType entity);
 
-        void Remove(ORMEntity entity);
+        void Remove(EntityType entity);
     }
 }

@@ -295,7 +295,7 @@ namespace ORM
                 foreach (var data in kvPair.Value)
                 {
                     var property = entity.GetType().GetProperty(data.Key, entity.PublicFlags);
-                    if (typeof(IORMCollection).IsAssignableFrom(property.PropertyType))
+                    if (typeof(IORMCollection<EntityType>).IsAssignableFrom(property.PropertyType))
                     {
                         var subcollection = Activator.CreateInstance(property.PropertyType);
                         var collectionProperty = property.PropertyType.GetProperty(nameof(ORMCollection<ORMEntity>.MutableEntityCollection), entity.NonPublicFlags);
@@ -424,7 +424,7 @@ namespace ORM
                 foreach (var data in kvPair.Value)
                 {
                     var property = entity.GetType().GetProperty(data.Key, entity.PublicFlags);
-                    if (typeof(IORMCollection).IsAssignableFrom(property.PropertyType))
+                    if (typeof(IORMCollection<ORMEntity>).IsAssignableFrom(property.PropertyType))
                     {
                         var propertyValue = entity.GetType().GetProperty(data.Key, entity.PublicFlags).GetValue(entity);
 

@@ -41,7 +41,8 @@ namespace ORM
             return nonQueryType switch
             {
                 NonQueryType.Insert => (int)command.ExecuteScalar(),
-                NonQueryType.Update => command.ExecuteNonQuery(),
+                NonQueryType.Update |
+                NonQueryType.Delete => command.ExecuteNonQuery(),
                 _ => throw new NotImplementedException(nonQueryType.ToString()),
             };
         }

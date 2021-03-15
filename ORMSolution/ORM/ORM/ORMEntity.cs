@@ -1,4 +1,5 @@
-﻿using ORM.Attributes;
+﻿using Newtonsoft.Json;
+using ORM.Attributes;
 using ORM.Exceptions;
 using ORM.Interfaces;
 using System;
@@ -16,9 +17,11 @@ namespace ORM
     public class ORMEntity : ORMObject, IEquatable<ORMEntity>, IORMEntity
     {
         private string _executedQuery = string.Empty;
+
         /// <summary>
         /// Gets the executed query or <see cref="string.Empty"/>.
         /// </summary>
+        [JsonIgnore]
         public string ExecutedQuery
         {
             get { return _executedQuery.ToUpperInvariant(); }
@@ -28,6 +31,7 @@ namespace ORM
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
         /// </summary>
+        [JsonIgnore]
         public bool IsAutoIncrement { get; internal set; } = true; // @ToDo: @Important: still needs to be implemented. -Rick, 25 September 2020
 
         /// <summary>
@@ -39,11 +43,13 @@ namespace ORM
         /// Gets whether change tracking is enabled or disabled, it's <see langword="false"/> by <see langword="default"/> and
         /// can be set to <see langword="true"/> through the <see cref="ORMEntity"/> constructor.
         /// </summary>
+        [JsonIgnore]
         public bool DisableChangeTracking { get; internal set; } = false;
 
         /// <summary>
         /// Gets the <see cref="ORMPrimaryKey"/> of the current <see cref="ORMEntity"/>.
         /// </summary>
+        [JsonIgnore]
         public ORMPrimaryKey PrimaryKey { get; internal set; } = null;
 
         /// <summary>
@@ -65,6 +71,7 @@ namespace ORM
         /// <summary>
         /// Gets the table scheme from the current <see cref="ORMEntity"/>.
         /// </summary>
+        [JsonIgnore]
         public ReadOnlyCollection<string> TableScheme
         {
             get
@@ -334,7 +341,7 @@ namespace ORM
                 var sqlBuilder = new SQLBuilder();
                 sqlBuilder.BuildNonQuery(this, NonQueryType.Delete);
                 SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Delete);
-
+                IsMarkAsDeleted = true;
                 // @Important:
                 // Do we need a ORMEntityState enum?
                 // We need to mark the object as deleted, or it has to be marked as new again.

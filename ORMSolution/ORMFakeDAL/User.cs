@@ -45,9 +45,8 @@ namespace ORMFakeDAL
             base.FetchUsingUC(nameof(Username), username);
 
             if (IsNew)
-            {
                 return null;
-            }
+
             return this;
         }
 
