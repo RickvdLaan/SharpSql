@@ -13,17 +13,29 @@ namespace ORM
 {
     public sealed class ORMInitialize
     {
-        internal ORMInitialize(Assembly externalAssembly, List<string> xmlEntityFilePaths, List<string> xmlCollectionFilePaths)
+        internal ORMInitialize(Assembly callingAssembly, string xmlEntityFilePath, string xmlCollectionFilePath)
         {
-            ORMUtilities.MemoryEntityDatabase = new MemoryEntityDatabase(externalAssembly);
-            ORMUtilities.MemoryEntityDatabase.LoadMemoryTables(xmlEntityFilePaths);
+            ORMUtilities.MemoryEntityDatabase = new MemoryEntityDatabase(Assembly.GetCallingAssembly());
+            ORMUtilities.MemoryEntityDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlEntityFilePath));
 
-            ORMUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase(externalAssembly);
-            ORMUtilities.MemoryCollectionDatabase.LoadMemoryTables(xmlCollectionFilePaths);
+            ORMUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase(Assembly.GetCallingAssembly());
+            ORMUtilities.MemoryCollectionDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlCollectionFilePath));
 
             new ORMInitialize(configuration: null, loadAllReferencedAssemblies: true);
         }
-        
+
+        private List<string> LoadMemoryDatabase(Assembly callingAssembly, string folder)
+        {
+            var files = new List<string>();
+
+            foreach (string resource in callingAssembly.GetManifestResourceNames().Where(resource => resource.Contains(folder)))
+            {
+                files.Add(resource);
+            }
+
+            return files;
+        }
+
         private void LoadAllReferencedAssemblies()
         {
             var referencedPaths = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll");
