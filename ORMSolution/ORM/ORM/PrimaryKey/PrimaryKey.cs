@@ -11,11 +11,14 @@ namespace ORM
 
         public object Value { get; set; }
 
-        public PrimaryKey(string propertyName, string columnName, object id)
+        public bool IsAutoIncrement { get; set; }
+
+        public PrimaryKey(string propertyName, string columnName, object id, bool isAutoIncrement)
         {
             PropertyName = propertyName;
             ColumnName = columnName;
             Value = id;
+            IsAutoIncrement = isAutoIncrement;
         }
 
         public override string ToString()
@@ -46,9 +49,9 @@ namespace ORM
             return (value.PropertyName, value.ColumnName, value.Value);
         }
 
-        public static implicit operator PrimaryKey((string propertyName, string ColumnName, object Id) value)
+        public static implicit operator PrimaryKey((string propertyName, string ColumnName, object Id, bool isAutoIncrement) value)
         {
-            return new PrimaryKey(value.propertyName, value.ColumnName, value.Id);
+            return new PrimaryKey(value.propertyName, value.ColumnName, value.Id, value.isAutoIncrement);
         }
     }
 }

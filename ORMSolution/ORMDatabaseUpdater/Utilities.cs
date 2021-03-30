@@ -46,7 +46,9 @@ namespace ORMDatabaseUpdater
 
             if (entities.Any(x => (x.GetCustomAttributes(typeof(ORMTableAttribute), true).FirstOrDefault() as ORMTableAttribute).TableName.Equals(tableName, StringComparison.InvariantCultureIgnoreCase)))
             {
-                DatabaseUtilities.CreateUniqueConstraint(tableName, "Username");
+                var collectionType = entities.Where(entity => entity.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+
+                DatabaseUtilities.CreateUniqueConstraint(collectionType);
             }
             else
             {

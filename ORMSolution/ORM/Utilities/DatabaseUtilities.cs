@@ -21,6 +21,10 @@ namespace ORM
                 ConnectionString = configuration.GetConnectionString("DefaultConnection");
             }
         }
+        public static void OverrideConnectionString(string connectionString)
+        {
+            ConnectionString = connectionString;
+        }
 
         #region Transactions
 
@@ -196,19 +200,25 @@ namespace ORM
             return Convert.ToBoolean(ExecuteReader(command).Rows[0].ItemArray[0]);
         }
 
-        public static void CreateUniqueConstraint(string tableName, params string[] columnNames)
+        public static void CreateUniqueConstraint(Type collectionType)
         {
-            if (!DoesTableHaveUC(tableName))
+            if (!DoesTableHaveUC(collectionType.Name))
             {
-                using SqlConnection connection = new SqlConnection(ConnectionString);
-                using var command = new SqlCommand(new SQLBuilder().CreateUniqueConstraint(tableName, columnNames), connection);
+                var constraints = ORMUtilities.CollectionEntityRelations[collectionType].GetCustomAttributes(typeof(UniqueConstraint), true);
 
-                if (!UnitTestUtilities.IsUnitTesting)
+                foreach (var constraint in constraints)
                 {
-                    command.Connection.Open();
-                }
+                    using SqlConnection connection = new SqlConnection(ConnectionString);
+                    using var command = new SqlCommand(new SQLBuilder().CreateUniqueConstraint(collectionType.Name, "columnNames"), connection);
 
-                ExecuteReader(command);
+                    if (!UnitTestUtilities.IsUnitTesting)
+                    {
+                        command.Connection.Open();
+                    }
+
+                    ExecuteReader(command);
+                }
+            
             }
         }
 

@@ -23,6 +23,8 @@ namespace ORMDatabaseUpdater
 
             Utilities.SelectDatabase(ref SelectedDatabase);
 
+            DatabaseUtilities.OverrideConnectionString($"Server=localhost; Database={ SelectedDatabase }; Trusted_Connection=True; MultipleActiveResultSets=true");
+
             Console.WriteLine(string.Format(Resources.SelectedDatabase_Description, SelectedDatabase));
 
             Console.WriteLine(Resources.Help_Description);

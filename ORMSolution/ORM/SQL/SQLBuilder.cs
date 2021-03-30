@@ -94,30 +94,24 @@ namespace ORM
 
             stringBuilder.Append($"INSERT INTO [DBO].[{tableName}] (");
 
-            for (int i = 0; i < entity.TableScheme.Count; i++)
+            for (int i = 0; i < entity.MutableTableScheme.Count; i++)
             {
-                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]))
-                    continue;
-
-                var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
-                stringBuilder.Append($"[DBO].[{tableName}].[{entity.TableScheme[i]}]{addon}");
+                var addon = (i >= entity.MutableTableScheme.Count - 1) ? string.Empty : ", ";
+                stringBuilder.Append($"[DBO].[{tableName}].[{entity.MutableTableScheme[i]}]{addon}");
             }
 
             stringBuilder.Append(") VALUES(");
 
-            for (int i = 0; i < entity.TableScheme.Count; i++)
+            for (int i = 0; i < entity.MutableTableScheme.Count; i++)
             {
-                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i]) && entity.IsAutoIncrement)
-                    continue;
-
-                var fieldPropertyInfo = entity.GetPropertyInfo(entity.TableScheme[i]);
-                var addon = ((entity.TableScheme.Count - entity.PrimaryKey.Count == i) ? string.Empty : ", ");
+                var fieldPropertyInfo = entity.GetPropertyInfo(entity.MutableTableScheme[i]);
+                var addon = (i >= entity.MutableTableScheme.Count - 1) ? string.Empty : ", ";
 
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
-                    for (int j = 0; j < entityColumnJoin.TableScheme.Count; j++)
+                    for (int j = 0; j < entityColumnJoin.MutableTableScheme.Count; j++)
                     {
-                        var columnName = entityColumnJoin.TableScheme[j];
+                        var columnName = entityColumnJoin.MutableTableScheme[j];
 
                         if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == columnName))
                         {
@@ -128,7 +122,7 @@ namespace ORM
                 }
                 else
                 {
-                    stringBuilder.Append(AddSqlParameter(entity.SqlValue(entity.TableScheme[i])));
+                    stringBuilder.Append(AddSqlParameter(entity.SqlValue(entity.MutableTableScheme[i])));
                 }
 
                 stringBuilder.Append(addon);
@@ -136,9 +130,11 @@ namespace ORM
 
             stringBuilder.Append(")");
             stringBuilder.Append(Semicolon());
-            // @ToDo: Make this optinal? Or only do it when it has to be done?
-            // -Rick, 16 September 2020
-            stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
+
+            if (!entity.PrimaryKey.IsCombinedPrimaryKey)
+            {
+                stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
+            }
 
             return stringBuilder.ToString();
         }

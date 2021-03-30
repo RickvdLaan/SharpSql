@@ -38,13 +38,23 @@ namespace ORM
                 }
             }
 
-            return nonQueryType switch
+            var sqlReturnValue = nonQueryType switch
             {
-                NonQueryType.Insert => (int)command.ExecuteScalar(),
-                NonQueryType.Update |
+                NonQueryType.Insert => command.ExecuteScalar(),
+                NonQueryType.Update => command.ExecuteNonQuery(),
                 NonQueryType.Delete => command.ExecuteNonQuery(),
                 _ => throw new NotImplementedException(nonQueryType.ToString()),
             };
+
+            if (sqlReturnValue != null 
+             && sqlReturnValue != DBNull.Value)
+            {
+                // Auto increment
+                return (int)sqlReturnValue;
+            }
+
+            // We return -1 because the PK doesn't use AutoIncrement.
+            return -1;
         }
 
         internal static int ExecuteNonQuery(SQLBuilder sqlBuilder, NonQueryType nonQueryType)

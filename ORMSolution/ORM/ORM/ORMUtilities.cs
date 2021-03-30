@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace ORM
 {
@@ -25,6 +24,8 @@ namespace ORM
 
         internal static Dictionary<Type, List<string>> CachedColumns { get; private set; }
 
+        internal static Dictionary<Type, List<string>> CachedMutableColumns { get; private set; }
+
         public ORMUtilities()
         {
             UnitTestUtilities.IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(ORMUnitTestAttribute), false).Any());
@@ -32,6 +33,7 @@ namespace ORM
             ManyToManyRelations = new Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), ORMTableAttribute>();
             UniqueConstraints = new HashSet<(Type EntityType, string ColumnName)>();
             CachedColumns = new Dictionary<Type, List<string>>();
+            CachedMutableColumns = new Dictionary<Type, List<string>>();
         }
 
         public static CollectionType ConvertTo<CollectionType, EntityType>(DataTable dataTable, bool disableChangeTracking)

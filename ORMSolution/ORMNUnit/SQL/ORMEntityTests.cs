@@ -614,5 +614,11 @@ namespace ORMNUnit
             Assert.IsTrue(user.Roles[0].Description == "Admin");
             Assert.IsTrue(user.Roles[1].Description == "Moderator");
         }
+
+        // Write a unit test that checks the MutableTableSchema and TableSchema for both the Organisation and Token objects.
+        // Tokens have multiple PK's, with auto increment false. And Organisations have a single PK with auto increment.
+        // Compare the mutable vs normal schema
+
+        // Write a unit tests to check the PK's for both Organisations as Tokens.
     }
 }

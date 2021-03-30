@@ -32,7 +32,7 @@ namespace ORM
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
         /// </summary>
         [JsonIgnore]
-        public bool IsAutoIncrement { get; internal set; } = true; // @ToDo: @Important: still needs to be implemented. -Rick, 25 September 2020
+        public bool IsAutoIncrement { get { return PrimaryKey.Keys.Any(key => key.IsAutoIncrement); } }
 
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> is new or not.
@@ -72,16 +72,7 @@ namespace ORM
         /// Gets the table scheme from the current <see cref="ORMEntity"/>.
         /// </summary>
         [JsonIgnore]
-        public ReadOnlyCollection<string> TableScheme
-        {
-            get
-            {
-                if (MutableTableScheme == null)
-                    MutableTableScheme = ORMUtilities.CachedColumns[GetType()];
-
-                return MutableTableScheme.AsReadOnly();
-            }
-        }
+        public ReadOnlyCollection<string> TableScheme { get { return ORMUtilities.CachedColumns[GetType()].AsReadOnly(); } }
 
         internal bool IsMarkAsDeleted { get; set; } = false;
 
@@ -91,12 +82,25 @@ namespace ORM
 
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
-        private List<string> MutableTableScheme { get; set; } = null;
+        internal List<string> MutableTableScheme { get; private set; } = null;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ORMEntity"/>.
         /// </summary>
         public ORMEntity()
+        {
+            InitializePrimaryKeys();
+            InitializeMutableTableSchema();
+
+            IsNew = OriginalFetchedValue == null;
+
+            if (!DisableChangeTracking)
+            {
+                IsDirtyList = new (string, bool)[TableScheme.Count - PrimaryKey.Keys.Count(key => key.IsAutoIncrement)];
+            }
+        }
+
+        private void InitializePrimaryKeys()
         {
             var attributes = new List<ORMPrimaryKeyAttribute>();
 
@@ -116,20 +120,34 @@ namespace ORM
             {
                 foreach (var attribute in attributes)
                 {
-                    PrimaryKey.Add(attribute.PropertyName, attribute.ColumnName, null);
+                    PrimaryKey.Add(attribute.PropertyName, attribute.ColumnName, null, attribute.IsAutoIncrement);
                 }
             }
             else
             {
                 throw new ORMPrimaryKeyAttributeNotImplementedException(GetType());
             }
+        }
 
-            IsNew = OriginalFetchedValue == null;
-
-            if (!DisableChangeTracking)
+        private void InitializeMutableTableSchema()
+        {
+            if (ORMUtilities.CachedMutableColumns.ContainsKey(GetType()))
             {
-                IsDirtyList = new (string, bool)[TableScheme.Count - PrimaryKey.Count];
+                MutableTableScheme = ORMUtilities.CachedMutableColumns[GetType()];
+                return;
             }
+
+            MutableTableScheme = new List<string>(TableScheme.Count - PrimaryKey.Keys.Where(pk => pk.IsAutoIncrement).Count());
+
+            foreach (var columnName in TableScheme)
+            {
+                if (PrimaryKey.Keys.Any(pk => pk.ColumnName == columnName && pk.IsAutoIncrement))
+                    continue;
+
+                MutableTableScheme.Add(columnName);
+            }
+
+            ORMUtilities.CachedMutableColumns[GetType()] = MutableTableScheme;
         }
 
         /// <summary>
@@ -266,7 +284,7 @@ namespace ORM
 
                 // @Perfomance: it fixes some issues, but this is terrible for the performance.
                 // Needs to be looked at! -Rick, 12 December 2020
-                foreach (var column in TableScheme)
+                foreach (var column in MutableTableScheme)
                 {
                     // When a subEntity is not filled through the parent the PopulateChildEntity method
                     // isn't called and therefore the subEntity is not added to the EntityRelations.
@@ -312,13 +330,13 @@ namespace ORM
 
                     int id = SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Insert);
 
-                    if (PrimaryKey.Keys.Count == 1)
+                    if (PrimaryKey.IsCombinedPrimaryKey)
                     {
-                        UpdateSinglePrimaryKey(id);
+                        UpdateCombinedPrimaryKey();
                     }
                     else
                     {
-                        UpdateCombinedPrimaryKey();
+                        UpdateSinglePrimaryKey(id);
                     }
                 }
                 else
@@ -576,13 +594,10 @@ namespace ORM
         {
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
-                if (PrimaryKey.Keys.Any(x => x.ColumnName == MutableTableScheme[i]) && IsAutoIncrement)
-                    continue;
-
                 // When an object is new, or change tracking is disabled everything is 'dirty' by default.
                 if (IsNew || DisableChangeTracking)
                 {
-                    IsDirtyList[i - 1] = (MutableTableScheme[i], true);
+                    IsDirtyList[i] = (MutableTableScheme[i], true);
                     continue;
                 }
 
@@ -593,11 +608,11 @@ namespace ORM
                 {
                     if (thisValue != null && !thisValue.Equals(originalValue))
                     {
-                        IsDirtyList[i - 1] = (MutableTableScheme[i], true);
+                        IsDirtyList[i] = (MutableTableScheme[i], true);
                     }
                     else
                     {
-                        IsDirtyList[i - 1] = (MutableTableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
+                        IsDirtyList[i] = (MutableTableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
                     }
                 }
                 else
@@ -605,11 +620,11 @@ namespace ORM
                     if ((thisValue != null && !thisValue.Equals(originalValue))
                      || (thisValue == null && originalValue != null))
                     {
-                        IsDirtyList[i - 1] = (MutableTableScheme[i], true);
+                        IsDirtyList[i] = (MutableTableScheme[i], true);
                     }
                     else
                     {
-                        IsDirtyList[i - 1] = (MutableTableScheme[i], false);
+                        IsDirtyList[i] = (MutableTableScheme[i], false);
                     }
                 }
             }
@@ -621,9 +636,12 @@ namespace ORM
             PrimaryKey.Keys[0].Value = id;
         }
 
-        private void UpdateCombinedPrimaryKey(params object[] ids)
+        private void UpdateCombinedPrimaryKey()
         {
-            throw new NotImplementedException();
+            for (int i = 0; i < PrimaryKey.Keys.Count; i++)
+            {
+                PrimaryKey.Keys[i].Value = this[PrimaryKey.Keys[i].ColumnName];
+            }
         }
     }
 }

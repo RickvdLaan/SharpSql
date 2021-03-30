@@ -13,6 +13,8 @@ namespace ORM
 
         public int Count => Keys.Count;
 
+        public bool IsCombinedPrimaryKey { get { return Keys.Count > 1; } }
+
         public List<IORMPrimaryKey> Keys { get; private set; }
 
         internal ORMPrimaryKey() { }
@@ -33,7 +35,7 @@ namespace ORM
             var hashCode = new HashCode();
             for (int i = 0; i < primaryKeyIndexes.Length; i++)
             {
-                Add(string.Empty, reader.GetName(i), reader.GetValue(i));
+                Add(string.Empty, reader.GetName(i), reader.GetValue(i), false);
                 hashCode.Add(reader.GetValue(i));
             }
 
@@ -44,9 +46,9 @@ namespace ORM
 
         public bool Equals(ORMPrimaryKey x, ORMPrimaryKey y) => x.HashCode == y.HashCode && Enumerable.SequenceEqual(x.Keys, y.Keys);
 
-        public void Add(string propertyName, string columnName, object value)
+        public void Add(string propertyName, string columnName, object value, bool isAutoIncrement)
         {
-            Keys.Add(new PrimaryKey(propertyName, columnName, value));
+            Keys.Add(new PrimaryKey(propertyName, columnName, value, isAutoIncrement));
         }
 
         internal static int[] DeterminePrimaryKeyIndexes(IDataReader reader, ORMEntity entity)
