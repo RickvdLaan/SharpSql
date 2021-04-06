@@ -136,7 +136,7 @@ namespace ORM
                       .GetProperty(nameof(ORMEntity.OriginalFetchedValue), entity.NonPublicFlags)
                       .SetValue(entity, entity.ShallowCopy());
 
-                foreach (var relation in entity.EntityRelations.Where(x => x != null && !x.IsNew))
+                foreach (var relation in entity.Relations.Where(x => x != null && !x.IsNew))
                 {
                     entity.OriginalFetchedValue[relation.GetType().Name] = (entity[relation.GetType().Name] as ORMEntity).OriginalFetchedValue;
                 }
@@ -528,7 +528,7 @@ namespace ORM
 
                             value = subEntity;
 
-                            entity.EntityRelations.Add(value as ORMEntity);
+                            entity.Relations.Add(value as ORMEntity);
 
                             if (entityPropertyInfo == null)
                             {

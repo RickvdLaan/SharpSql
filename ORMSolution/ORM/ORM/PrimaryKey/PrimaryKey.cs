@@ -1,4 +1,5 @@
 ﻿using ORM.Interfaces;
+using System;
 using System.Collections.Generic;
 
 namespace ORM
@@ -35,7 +36,7 @@ namespace ORM
 
         public override int GetHashCode()
         {
-            return System.HashCode.Combine(ColumnName, Value);
+            return HashCode.Combine(ColumnName, Value);
         }
 
         public void Deconstruct(out string columnName, out object id)

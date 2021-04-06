@@ -25,8 +25,8 @@ namespace ORMNUnit
             Assert.AreEqual(false, user.IsDirty);
             Assert.AreEqual(false, user.IsNew);
             Assert.IsNotNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -50,8 +50,8 @@ namespace ORMNUnit
             Assert.AreEqual(user.IsDirty, true);
             Assert.AreEqual(user.IsNew, false);
             Assert.IsNotNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -72,17 +72,17 @@ namespace ORMNUnit
             Assert.AreEqual(false, user.IsDirty);
             Assert.AreEqual(false, user.IsNew);
             Assert.IsNotNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
+            Assert.NotNull(user.OriginalFetchedValue.Relations.OfType<Organisation>().FirstOrDefault());
 
             // Organisation object
             Assert.AreEqual(false, user.Organisation.IsDirty);
             Assert.AreEqual(false, user.Organisation.IsNew);
             Assert.IsNotNull(user.Organisation.OriginalFetchedValue);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
 
             // User query
             Assert.AreEqual(user.ExecutedQuery, expectedUserQuery);
@@ -100,18 +100,18 @@ namespace ORMNUnit
             Assert.AreEqual(true, user.IsDirty);
             Assert.AreEqual(false, user.IsNew);
             Assert.IsNotNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
+            Assert.NotNull(user.OriginalFetchedValue.Relations.OfType<Organisation>().FirstOrDefault());
 
             // Organisation object
             Assert.AreEqual(true, user.Organisation.IsDirty);
             Assert.AreEqual(false, user.Organisation.IsNew);
             Assert.IsNotNull(user.Organisation.OriginalFetchedValue);
             Assert.AreNotEqual(user.Organisation.Name, user.OriginalFetchedValue.ValueAs<User>().Organisation);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -146,10 +146,10 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
+            Assert.NotNull(user.OriginalFetchedValue.Relations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -161,8 +161,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
 
             // Organisation query
             Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
@@ -187,7 +187,7 @@ namespace ORMNUnit
             Assert.AreEqual(true, user.IsDirty);
             Assert.AreEqual(true, user.IsNew);
             Assert.IsNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -215,8 +215,8 @@ namespace ORMNUnit
             Assert.AreEqual(true, user.IsDirty);
             Assert.AreEqual(true, user.IsNew);
             Assert.IsNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -227,7 +227,7 @@ namespace ORMNUnit
             Assert.IsNotNull(user.Organisation);
             Assert.IsNotNull(user.Organisation.OriginalFetchedValue);
             Assert.AreEqual(user.Organisation, user.Organisation.OriginalFetchedValue);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
 
             // Organisation query
             Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
@@ -253,8 +253,8 @@ namespace ORMNUnit
             Assert.AreEqual(true, user.IsNew);
             Assert.IsNull(user.OriginalFetchedValue);
             Assert.IsNotNull(user);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -264,7 +264,7 @@ namespace ORMNUnit
             Assert.AreEqual(true, user.Organisation.IsNew);
             Assert.IsNotNull(user.Organisation);
             Assert.IsNull(user.Organisation.OriginalFetchedValue);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
 
             // Organisation query
             Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
@@ -302,8 +302,8 @@ namespace ORMNUnit
             Assert.IsNull(user.Organisation);
             Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation == null);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
         }
 
         [Test]
@@ -338,8 +338,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.Organisation);
             Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation == null);
 
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
         }
 
         [Test]
@@ -373,10 +373,10 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
+            Assert.NotNull(user.OriginalFetchedValue.Relations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -388,8 +388,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
             Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.IsNull(user.Organisation.OriginalFetchedValue);
             Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation.OriginalFetchedValue);
@@ -428,10 +428,10 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
+            Assert.NotNull(user.OriginalFetchedValue.Relations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -443,8 +443,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
             Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.IsNull(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().OriginalFetchedValue);
 
@@ -478,7 +478,7 @@ namespace ORMNUnit
             Assert.AreEqual(true, user.IsDirty);
             Assert.AreEqual(false, user.IsNew);
             Assert.IsNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
+            Assert.IsTrue(user.Relations.Count == 1);
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -486,7 +486,7 @@ namespace ORMNUnit
             // Organisation object
             Assert.AreEqual(true, user.Organisation.IsDirty);
             Assert.AreEqual(true, user.Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
             Assert.IsNull(user.Organisation.ValueAs<Organisation>().OriginalFetchedValue);
 
             // Organisation query
@@ -519,10 +519,10 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
-            Assert.NotNull(user.EntityRelations.OfType<Organisation>().FirstOrDefault());
-            Assert.NotNull(user.OriginalFetchedValue.EntityRelations.OfType<Organisation>().FirstOrDefault());
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
+            Assert.NotNull(user.Relations.OfType<Organisation>().FirstOrDefault());
+            Assert.NotNull(user.OriginalFetchedValue.Relations.OfType<Organisation>().FirstOrDefault());
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
@@ -540,8 +540,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Organisation.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
             Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.IsNull(user.Organisation.OriginalFetchedValue);
 
@@ -560,7 +560,7 @@ namespace ORMNUnit
             // User object
             Assert.AreEqual(true, user.IsDirty);
             Assert.AreEqual(false, user.IsNew);
-            Assert.IsTrue(user.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
             Assert.IsNull(user.OriginalFetchedValue);
 
             Assert.AreEqual(2, user.Id);
@@ -601,8 +601,8 @@ namespace ORMNUnit
             Assert.AreEqual(false, user.IsDirty);
             Assert.AreEqual(false, user.IsNew);
             Assert.IsNotNull(user.OriginalFetchedValue);
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             // Organisation object
             Assert.IsNull(user.Organisation);

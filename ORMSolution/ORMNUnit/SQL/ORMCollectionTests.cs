@@ -37,8 +37,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.DateLastModified);
             Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.IsTrue(users.All(x => x.ValueAs<User>().Organisation == null));
             Assert.IsTrue(users.All(x => x.OriginalFetchedValue.ValueAs<User>().Organisation == null));
@@ -76,8 +76,8 @@ namespace ORMNUnit
             Assert.IsNull(user.DateCreated);
             Assert.IsNull(user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.IsTrue(users.All(x => x.ValueAs<User>().Organisation == null));
             Assert.IsTrue(users.All(x => x.OriginalFetchedValue.ValueAs<User>().Organisation == null));
@@ -305,8 +305,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.DateLastModified);
             Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
@@ -336,8 +336,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.DateLastModified);
             Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
@@ -368,8 +368,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.DateLastModified);
             Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
@@ -399,8 +399,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.DateLastModified);
             Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
@@ -433,8 +433,8 @@ namespace ORMNUnit
             Assert.IsNotNull(user.DateLastModified);
             Assert.AreEqual(DateTime.Parse("2020-07-23T16:50:38.213"), user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
@@ -527,8 +527,8 @@ namespace ORMNUnit
             Assert.IsNull(user.DateLastModified);
             Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
@@ -567,8 +567,8 @@ namespace ORMNUnit
             Assert.IsNull(user.DateLastModified);
             Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 0);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
@@ -606,8 +606,8 @@ namespace ORMNUnit
             Assert.IsNull(user.DateCreated);
             Assert.IsNull(user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
 
             Assert.IsTrue(user.Organisation != null);
             Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation != null);
@@ -649,8 +649,8 @@ namespace ORMNUnit
             Assert.IsNull(user.DateCreated);
             Assert.IsNull(user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
 
             Assert.IsTrue(user.Organisation != null);
             Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation != null);
@@ -692,8 +692,8 @@ namespace ORMNUnit
             Assert.IsNull(user.DateCreated);
             Assert.IsNull(user.DateLastModified);
 
-            Assert.IsTrue(user.EntityRelations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.EntityRelations.Count == 1);
+            Assert.IsTrue(user.Relations.Count == 1);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 1);
 
             Assert.IsTrue(user.Organisation != null);
             Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation != null);

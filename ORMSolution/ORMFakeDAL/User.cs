@@ -14,6 +14,7 @@ namespace ORMFakeDAL
         public int Id { get; internal set; } = -1;
 
         [ORMUniqueConstraint]
+        [ORMStringLength(200)]
         public string Username { get; set; }
 
         public string Password { get; set; }

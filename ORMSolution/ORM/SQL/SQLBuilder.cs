@@ -109,15 +109,9 @@ namespace ORM
 
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
-                    for (int j = 0; j < entityColumnJoin.MutableTableScheme.Count; j++)
+                    if (entity.DirtyTracker.IsDirty(fieldPropertyInfo.Name))
                     {
-                        var columnName = entityColumnJoin.MutableTableScheme[j];
-
-                        if (entityColumnJoin.PrimaryKey.Keys.Any(x => x.ColumnName == columnName))
-                        {
-                            stringBuilder.Append(AddSqlParameter((entityColumnJoin.GetType().GetProperty(columnName).GetValue(entityColumnJoin), columnName)));
-                            break;
-                        }
+                        stringBuilder.Append(AddSqlParameter((entityColumnJoin.GetType().GetProperty(entityColumnJoin.PrimaryKey.Keys[0].ColumnName).GetValue(entityColumnJoin), fieldPropertyInfo.Name)));
                     }
                 }
                 else
@@ -272,31 +266,31 @@ namespace ORM
 
             var tableAlias = TableOrder.First(x => x.type == entity.GetType()).name;
 
-            if (entity.IsDirtyList.Any(x => x.IsDirty == true)
-            || !entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName)))
+            if (entity.DirtyTracker.Any
+            || !entity.DirtyTracker.AnyDirtyRelations(entity))
             {
                 stringBuilder.Append($"UPDATE [{tableAlias}] SET ");
             }
 
             int entityFieldUpdateCount = 0;
-            for (int i = 0; i < entity.TableScheme.Count; i++)
+            for (int i = 0; i < entity.MutableTableScheme.Count; i++)
             {
-                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.TableScheme[i] && entity.IsAutoIncrement)
-                || !entity.IsDirtyList[i - 1].IsDirty)
+                if (entity.PrimaryKey.Keys.Any(x => x.ColumnName == entity.MutableTableScheme[i] && entity.IsAutoIncrement)
+                || !entity.DirtyTracker.IsDirty(entity.MutableTableScheme[i]))
                     continue;
 
-                var fieldPropertyInfo = entity.GetPropertyInfo(entity.TableScheme[i]);
+                var fieldPropertyInfo = entity.GetPropertyInfo(entity.MutableTableScheme[i]);
 
                 // Checks if the current entity is a joined entity.
                 if (fieldPropertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
                 {
                     // Join child-object is new, or one or more fields are dirty.
-                    if (entityColumnJoin.IsNew && !entityColumnJoin.IsDirtyList.Any(x => x.IsDirty))
+                    if (entityColumnJoin.IsNew && !entityColumnJoin.DirtyTracker.Any)
                     {
                         AddUpdatedParameter(stringBuilder, entity, fieldPropertyInfo, tableAlias, ref entityFieldUpdateCount, i);
                     }
                     // Parent entity join field is dirty.
-                    else if (entity.IsDirtyList[i - 1].IsDirty)
+                    else if (entity.DirtyTracker.IsDirty(entity.MutableTableScheme[i]))
                     {
                         AddUpdatedParameter(stringBuilder, entity, fieldPropertyInfo, tableAlias, ref entityFieldUpdateCount, i);
                     }
@@ -308,8 +302,8 @@ namespace ORM
             }
 
             // Where
-            if (!entity.IsDirtyList.Any(x => entity.EntityRelations.Any(e => e.GetType().Name != x.ColumnName))
-            || (entity.IsDirtyList.Any(x => x.IsDirty == true)))
+            if (!entity.DirtyTracker.AnyDirtyRelations(entity)
+              || entity.DirtyTracker.Any)
             {
                 stringBuilder.Append(From(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType())));
 
@@ -331,13 +325,13 @@ namespace ORM
 
         private void AddUpdatedParameter(StringBuilder stringBuilder, ORMEntity entity, PropertyInfo propertyInfo, string tableAlias, ref int entityFieldUpdateCount, int currentTableSchemeIndex)
         {
-            if (propertyInfo.GetValue(entity) is ORMEntity entityColumnJoin && propertyInfo.PropertyType.IsSubclassOf(typeof(ORMEntity)))
-            {
-                if (entity.PrimaryKey.Keys.Count == 1)
-                {
-                    var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
+            var addon = ((entity.DirtyTracker.Count <= ++entityFieldUpdateCount) ? " " : ", ");
 
-                    stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + (string.IsNullOrEmpty(addon) ? " " : addon));
+            if (propertyInfo.GetValue(entity) is ORMEntity entityColumnJoin)
+            {
+                if (!entity.PrimaryKey.IsCombinedPrimaryKey)
+                {
+                    stringBuilder.Append($"[{tableAlias}].[{entity.MutableTableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + addon);
                 }
                 else
                 {
@@ -347,9 +341,7 @@ namespace ORM
             }
             else
             {
-                var addon = ((entity.IsDirtyList.Where(x => x.IsDirty == true).Count() <= ++entityFieldUpdateCount) ? string.Empty : ", ");
-
-                stringBuilder.Append($"[{tableAlias}].[{entity.TableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter(entity.SqlValue(entity.TableScheme[currentTableSchemeIndex])) + (string.IsNullOrEmpty(addon) ? " " : addon));
+                stringBuilder.Append($"[{tableAlias}].[{entity.MutableTableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter(entity.SqlValue(entity.MutableTableScheme[currentTableSchemeIndex])) + addon);
             }
         }
 

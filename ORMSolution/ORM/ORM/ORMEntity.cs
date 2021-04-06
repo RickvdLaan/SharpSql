@@ -50,7 +50,7 @@ namespace ORM
         /// Gets the <see cref="ORMPrimaryKey"/> of the current <see cref="ORMEntity"/>.
         /// </summary>
         [JsonIgnore]
-        public ORMPrimaryKey PrimaryKey { get; internal set; } = null;
+        public ORMPrimaryKey PrimaryKey { get; private set; }
 
         /// <summary>
         /// Gets whether the value of a <see cref="ORMEntity"/> has changed.
@@ -64,7 +64,7 @@ namespace ORM
 
                 UpdateIsDirtyList();
 
-                return IsDirtyList.Any(x => x.IsDirty == true);
+                return DirtyTracker.Any;
             }
         }
 
@@ -76,9 +76,9 @@ namespace ORM
 
         internal bool IsMarkAsDeleted { get; set; } = false;
 
-        internal List<ORMEntity> EntityRelations { get; private set; } = new List<ORMEntity>();
+        internal List<ORMEntity> Relations { get; private set; } = new List<ORMEntity>();
 
-        internal (string ColumnName, bool IsDirty)[] IsDirtyList { get; set; } = null;
+        internal DirtyTracker DirtyTracker { get; private set; }
 
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
@@ -96,7 +96,7 @@ namespace ORM
 
             if (!DisableChangeTracking)
             {
-                IsDirtyList = new (string, bool)[TableScheme.Count - PrimaryKey.Keys.Count(key => key.IsAutoIncrement)];
+                DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
             }
         }
 
@@ -292,18 +292,18 @@ namespace ORM
                     {
                         var subEntity = Activator.CreateInstance(this[column].GetType().UnderlyingSystemType) as ORMEntity;
 
-                        if (!EntityRelations.Any(x => x.GetType() == subEntity.GetType()))
+                        if (!Relations.Any(x => x.GetType() == subEntity.GetType()))
                         {
                             if ((this[column] as ORMEntity).IsDirty 
                              || (OriginalFetchedValue?[column] == null && !(this[column] as ORMEntity).IsDirty))
                             {
-                                EntityRelations.Add(subEntity);
+                                Relations.Add(subEntity);
                             }
                         }
                     }
                 }
 
-                foreach (var relation in EntityRelations)
+                foreach (var relation in Relations)
                 {
                     if (this[relation.GetType().Name] == null && OriginalFetchedValue[relation.GetType().Name] != null)
                     {
@@ -324,7 +324,7 @@ namespace ORM
                     }
                 }
 
-                if (IsNew || IsNew && EntityRelations.Any(r => r.IsNew))
+                if (IsNew || IsNew && Relations.Any(r => r.IsNew))
                 {
                     sqlBuilder.BuildNonQuery(this, NonQueryType.Insert);
 
@@ -481,7 +481,7 @@ namespace ORM
         {
             var copy = MemberwiseClone() as ORMEntity;
 
-            copy.EntityRelations = new List<ORMEntity>(EntityRelations);
+            copy.Relations = new List<ORMEntity>(Relations);
 
             return copy;
         }
@@ -597,22 +597,22 @@ namespace ORM
                 // When an object is new, or change tracking is disabled everything is 'dirty' by default.
                 if (IsNew || DisableChangeTracking)
                 {
-                    IsDirtyList[i] = (MutableTableScheme[i], true);
+                    DirtyTracker.Update(MutableTableScheme[i], true);
                     continue;
                 }
 
                 var thisValue = this[MutableTableScheme[i]];
                 var originalValue = OriginalFetchedValue?[MutableTableScheme[i]];
 
-                if (EntityRelations.Any(x => x != null && x.GetType().Name == MutableTableScheme[i]) && (thisValue == null || this[MutableTableScheme[i]].GetType() != GetType()))
+                if (Relations.Any(x => x != null && x.GetType().Name == MutableTableScheme[i]) && (thisValue == null || this[MutableTableScheme[i]].GetType() != GetType()))
                 {
                     if (thisValue != null && !thisValue.Equals(originalValue))
                     {
-                        IsDirtyList[i] = (MutableTableScheme[i], true);
+                        DirtyTracker.Update(MutableTableScheme[i], true);
                     }
                     else
                     {
-                        IsDirtyList[i] = (MutableTableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
+                        DirtyTracker.Update(MutableTableScheme[i], (thisValue as ORMEntity)?.IsDirty ?? false);
                     }
                 }
                 else
@@ -620,11 +620,11 @@ namespace ORM
                     if ((thisValue != null && !thisValue.Equals(originalValue))
                      || (thisValue == null && originalValue != null))
                     {
-                        IsDirtyList[i] = (MutableTableScheme[i], true);
+                        DirtyTracker.Update(MutableTableScheme[i], true);
                     }
                     else
                     {
-                        IsDirtyList[i] = (MutableTableScheme[i], false);
+                        DirtyTracker.Update(MutableTableScheme[i], false);
                     }
                 }
             }

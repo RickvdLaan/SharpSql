@@ -32,7 +32,7 @@ namespace ORM
         internal static void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)
                  where EntityType : ORMEntity
         {
-            if (entity.PrimaryKey.Keys.Count == 1)
+            if (!entity.PrimaryKey.IsCombinedPrimaryKey)
             {
                 var primaryKey = entity.PrimaryKey.Keys[0];
                 var tableName = ORMUtilities.GetTableNameFromEntity(entity);
