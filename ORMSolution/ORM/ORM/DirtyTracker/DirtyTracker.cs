@@ -18,7 +18,12 @@ namespace ORM
 
         public bool IsDirty(string columnName)
         {
-            return DirtyList[columnName];
+            if (DirtyList.ContainsKey(columnName))
+            {
+                return DirtyList[columnName];
+            }
+
+            throw new KeyNotFoundException(columnName);
         }
 
         public bool AnyDirtyRelations(ORMEntity entity)

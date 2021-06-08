@@ -467,6 +467,17 @@ namespace ORM
         }
 
         /// <summary>
+        /// Returns if the specified fields is dirty.
+        /// </summary>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <param name="field"></param>
+        /// <returns></returns>
+        public bool IsFieldDirty(string field)
+        {
+            return DirtyTracker.IsDirty(field);
+        }
+
+        /// <summary>
         /// The INNER JOIN keyword selects records that have matching values in both tables.
         /// </summary>
         public ORMEntity Inner() => default;
