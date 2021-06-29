@@ -127,7 +127,10 @@ namespace ORM
 
             if (!entity.PrimaryKey.IsCombinedPrimaryKey)
             {
-                stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
+                if (entity.IsAutoIncrement)
+                {
+                    stringBuilder.Append(" SELECT CAST(SCOPE_IDENTITY() AS INT);");
+                }
             }
 
             return stringBuilder.ToString();

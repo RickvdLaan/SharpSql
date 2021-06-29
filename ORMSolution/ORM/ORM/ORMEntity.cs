@@ -87,6 +87,7 @@ namespace ORM
         /// <summary>
         /// Initializes a new instance of <see cref="ORMEntity"/>.
         /// </summary>
+        [JsonConstructor]
         public ORMEntity()
         {
             InitializePrimaryKeys();
@@ -154,6 +155,7 @@ namespace ORM
         /// Initializes a new instance of <see cref="ORMEntity"/>.
         /// </summary>
         /// <param name="disableChangeTracking">Enables or disables change tracking for the current entity.</param>
+        [JsonConstructor]
         public ORMEntity(bool disableChangeTracking = false) : this()
         {
             DisableChangeTracking = disableChangeTracking;
