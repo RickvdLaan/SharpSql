@@ -10,7 +10,7 @@ namespace ORM
     {
         internal static AsyncLocal<SqlConnection> CurrentConnection { get; set; } = new AsyncLocal<SqlConnection>();
 
-        internal static int ExecuteNonQuery(string generatedQuery, List<SqlParameter> sqlParameters, NonQueryType nonQueryType)
+        internal static object ExecuteNonQuery(SQLBuilder sqlBuilder, List<SqlParameter> sqlParameters)
         {
             if (UnitTestUtilities.IsUnitTesting)
             {
@@ -22,7 +22,7 @@ namespace ORM
             using var connection = new SqlConnection(DatabaseUtilities.ConnectionString);
             CurrentConnection.Value = connection;
 
-            using var command = new SqlCommand(generatedQuery, connection);
+            using var command = new SqlCommand(sqlBuilder.GeneratedQuery, connection);
             command.Connection.Open();
 
             if (DatabaseUtilities.Transaction.Value != null)
@@ -38,12 +38,12 @@ namespace ORM
                 }
             }
 
-            var sqlReturnValue = nonQueryType switch
+            var sqlReturnValue = sqlBuilder.NonQueryType switch
             {
                 NonQueryType.Insert => command.ExecuteScalar(),
                 NonQueryType.Update => command.ExecuteNonQuery(),
                 NonQueryType.Delete => command.ExecuteNonQuery(),
-                _ => throw new NotImplementedException(nonQueryType.ToString()),
+                _ => throw new NotImplementedException(sqlBuilder.NonQueryType.ToString()),
             };
 
             if (sqlReturnValue != null 
@@ -53,13 +53,13 @@ namespace ORM
                 return (int)sqlReturnValue;
             }
 
-            // We return -1 because the PK doesn't use AutoIncrement.
-            return -1;
+            // We return null because the PK doesn't use AutoIncrement.
+            return null;
         }
 
-        internal static int ExecuteNonQuery(SQLBuilder sqlBuilder, NonQueryType nonQueryType)
+        internal static object ExecuteNonQuery(SQLBuilder sqlBuilder)
         {
-            return ExecuteNonQuery(sqlBuilder.GeneratedQuery, sqlBuilder.SqlParameters, nonQueryType);
+            return ExecuteNonQuery(sqlBuilder, sqlBuilder.SqlParameters);
         }
 
         internal static void ExecuteEntityQuery<EntityType>(EntityType entity, SQLBuilder sqlBuilder)

@@ -98,7 +98,17 @@ namespace ORM
             if (!DisableChangeTracking)
             {
                 DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
+                UpdateIsDirtyList();
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ORMEntity"/>.
+        /// </summary>
+        /// <param name="disableChangeTracking">Enables or disables change tracking for the current entity.</param>
+        public ORMEntity(bool disableChangeTracking = false) : this()
+        {
+            DisableChangeTracking = disableChangeTracking;
         }
 
         private void InitializePrimaryKeys()
@@ -149,16 +159,6 @@ namespace ORM
             }
 
             ORMUtilities.CachedMutableColumns[GetType()] = MutableTableScheme;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="ORMEntity"/>.
-        /// </summary>
-        /// <param name="disableChangeTracking">Enables or disables change tracking for the current entity.</param>
-        [JsonConstructor]
-        public ORMEntity(bool disableChangeTracking = false) : this()
-        {
-            DisableChangeTracking = disableChangeTracking;
         }
 
         /// <summary>
@@ -330,7 +330,7 @@ namespace ORM
                 {
                     sqlBuilder.BuildNonQuery(this, NonQueryType.Insert);
 
-                    int id = SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Insert);
+                    var id = SQLExecuter.ExecuteNonQuery(sqlBuilder);
 
                     if (PrimaryKey.IsCombinedPrimaryKey)
                     {
@@ -344,7 +344,7 @@ namespace ORM
                 else
                 {
                     sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
-                    SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Update);
+                    SQLExecuter.ExecuteNonQuery(sqlBuilder);
                 }
 
                 ExecutedQuery = sqlBuilder.GeneratedQuery;
@@ -360,7 +360,7 @@ namespace ORM
             {
                 var sqlBuilder = new SQLBuilder();
                 sqlBuilder.BuildNonQuery(this, NonQueryType.Delete);
-                SQLExecuter.ExecuteNonQuery(sqlBuilder, NonQueryType.Delete);
+                SQLExecuter.ExecuteNonQuery(sqlBuilder);
                 IsMarkAsDeleted = true;
                 // @Important:
                 // Do we need a ORMEntityState enum?

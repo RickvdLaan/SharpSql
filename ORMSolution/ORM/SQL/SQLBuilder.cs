@@ -24,6 +24,8 @@ namespace ORM
 
         private readonly Dictionary<char, int> _tableCharCounts = new Dictionary<char, int>(5);
 
+        internal NonQueryType NonQueryType { get; private set; }
+
         public List<(string name, Type type)> TableOrder { get; private set; } = new List<(string name, Type type)>(10);
 
         public Dictionary<string, int> TableNameColumnCount { get; private set; } = new Dictionary<string, int>();
@@ -77,7 +79,7 @@ namespace ORM
 
         public void BuildNonQuery(ORMEntity entity, NonQueryType nonQueryType)
         {
-            GeneratedQuery = nonQueryType switch
+            GeneratedQuery = (NonQueryType = nonQueryType) switch
             {
                 NonQueryType.Insert => InsertInto(entity),
                 NonQueryType.Update => Update(entity),
