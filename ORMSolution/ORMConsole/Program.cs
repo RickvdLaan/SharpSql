@@ -17,6 +17,13 @@ namespace ORMConsole
             _ = new ORMInitialize(configuration);
             #endregion
 
+            DatabaseUtilities.Update<User>(1, (x => x.Password, "qwerty"));
+            // Todo:
+            // Unit tests
+            // multiple primary keys support
+            // Niet meer hardcoded in Update functie bij ORMEntity
+            // Light version van UpdateIsDirtyList voor fix (toekomstige) bugs bij update velden.
+
             Console.Read();
         }
 

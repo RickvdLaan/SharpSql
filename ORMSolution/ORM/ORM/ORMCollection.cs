@@ -103,13 +103,25 @@ namespace ORM
             // -Rick, 25 September 2020
             foreach (var entity in MutableEntityCollection)
             {
-                if (entity.IsMarkAsDeleted)
+                switch (entity.ObjectState)
                 {
-                    entity.Delete();
-                }
-                else if (entity.IsDirty)
-                {
-                    entity.Save();
+                    case ObjectState.New:
+                    case ObjectState.Untracked:
+                        entity.Save();
+                        break;
+                    case ObjectState.Fetched:
+                        if (entity.IsDirty)
+                            entity.Save();
+                        break;
+                    case ObjectState.Record:
+                        continue;
+                    case ObjectState.ScheduledForDeletion:
+                        // Todo custom exception with proper msg.
+                        throw new Exception("Obj has already been deleted");
+                    default:
+                    case ObjectState.Unset:
+                        // Todo custom exception, should be invalid and impossible.
+                        throw new Exception("Unset?");
                 }
             }
         }
@@ -129,7 +141,7 @@ namespace ORM
         /// <param name="entity">The <see cref="ORMEntity"/> to be deleted.</param>
         public void Remove(EntityType entity)
         {
-            MutableEntityCollection.Find(x => x.Equals(entity)).IsMarkAsDeleted = true;
+            MutableEntityCollection.Find(x => x.Equals(entity)).ScheduleForDeletion();
         }
 
         /// <summary>

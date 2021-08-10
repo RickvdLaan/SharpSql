@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -12,6 +13,15 @@ namespace ORM
 {
     public sealed class DatabaseUtilities
     {
+        public static void Update<EntityType>(
+            object primaryKey,
+            params (Expression<Func<EntityType, object>> column, object value)[] columnValuePairs)
+            where EntityType : ORMEntity
+        {
+            var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
+            entity.Update(primaryKey, columnValuePairs);
+        }
+
         internal static string ConnectionString { get; private set; }
 
         public DatabaseUtilities(IConfiguration configuration)

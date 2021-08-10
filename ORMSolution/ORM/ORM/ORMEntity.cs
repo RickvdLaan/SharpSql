@@ -59,7 +59,7 @@ namespace ORM
         {
             get
             {
-                if (!IsNew && !DisableChangeTracking && OriginalFetchedValue == null)
+                if (!IsNew && !DisableChangeTracking && OriginalFetchedValue == null && ObjectState != ObjectState.Record)
                     return false;
 
                 UpdateIsDirtyList();
@@ -74,11 +74,13 @@ namespace ORM
         [JsonIgnore]
         public ReadOnlyCollection<string> TableScheme { get { return ORMUtilities.CachedColumns[GetType()].AsReadOnly(); } }
 
-        internal bool IsMarkAsDeleted { get; set; } = false;
+        internal bool IsMarkAsDeleted { get; private set; } = false;
 
         internal List<ORMEntity> Relations { get; private set; } = new List<ORMEntity>();
 
         internal DirtyTracker DirtyTracker { get; private set; }
+
+        internal ObjectState ObjectState { get; private set; } = ObjectState.Unset;
 
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
@@ -95,10 +97,23 @@ namespace ORM
 
             IsNew = OriginalFetchedValue == null;
 
+            if (IsNew)
+            {
+                ObjectState = ObjectState.New;
+            }
+            else
+            {
+                ObjectState = ObjectState.Fetched;
+            }
+
             if (!DisableChangeTracking)
             {
                 DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
                 UpdateIsDirtyList();
+            }
+            else
+            {
+                ObjectState = ObjectState.Untracked;
             }
         }
 
@@ -200,6 +215,8 @@ namespace ORM
                         if (columnAttribute?.ColumnName == columnName)
                         {
                             GetType().GetProperty(property.Name, PublicIgnoreCaseFlags | NonPublicFlags).SetValue(this, value);
+                            // @Todo: this takes a performance hit, needs an improved (light) version.
+                            UpdateIsDirtyList();
 
                             return;
                         }
@@ -209,6 +226,8 @@ namespace ORM
                 }
 
                 propertyInfo.SetValue(this, value);
+                // @Todo: this takes a performance hit, needs an improved (light) version.
+                UpdateIsDirtyList();
             }
         }
 
@@ -280,6 +299,12 @@ namespace ORM
         /// </summary>
         public virtual void Save()
         {
+            if (ObjectState == ObjectState.ScheduledForDeletion)
+            {
+                Delete();
+                return;
+            }
+
             if (IsDirty)
             {
                 var sqlBuilder = new SQLBuilder();
@@ -351,22 +376,50 @@ namespace ORM
             }
         }
 
+        internal void Update<EntityType>(object primaryKey, params (Expression<Func<EntityType, object>> column, object value)[] columnValuePairs)
+             where EntityType : ORMEntity
+        {
+            ObjectState = ObjectState.Record;
+            IsNew = false;
+
+            FetchEntityByPrimaryKey(primaryKey);
+
+
+            this[PrimaryKey.Keys[0].ColumnName] = primaryKey;
+
+            foreach (var item in columnValuePairs)
+            {
+                this["Password"] = item.value;
+            }
+
+            var sqlBuilder = new SQLBuilder();
+            sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
+            SQLExecuter.ExecuteNonQuery(sqlBuilder);
+
+            ExecutedQuery = sqlBuilder.GeneratedQuery;
+        }
+
         /// <summary>
         /// Deletes the current <see cref="ORMEntity"/> from the database.
         /// </summary>
         public virtual void Delete()
         {
+            ScheduleForDeletion();
+
             if (!IsNew)
             {
                 var sqlBuilder = new SQLBuilder();
                 sqlBuilder.BuildNonQuery(this, NonQueryType.Delete);
                 SQLExecuter.ExecuteNonQuery(sqlBuilder);
                 IsMarkAsDeleted = true;
-                // @Important:
-                // Do we need a ORMEntityState enum?
-                // We need to mark the object as deleted, or it has to be marked as new again.
-                // Something has to be done here, has to be thought out.
-                // -Rick, 25 September 2020
+            }
+        }
+
+        internal void ScheduleForDeletion()
+        {
+            if (!IsNew)
+            {
+                ObjectState = ObjectState.ScheduledForDeletion;
             }
         }
 
@@ -546,18 +599,21 @@ namespace ORM
 
             // Sets the InternalWhere with the WhereExpression.
             collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.InternalWhere), NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(collection, new object[] { whereExpression });
-            
-            // Fetches the data.
-            collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, joinExpression == null ? 1 : -1, joinExpression });
 
-            if (!UnitTestUtilities.IsUnitTesting && IsNew)
-                return null;
-
-            ExecutedQuery = (string)collection.GetType().GetProperty(nameof(ORMCollection<ORMEntity>.ExecutedQuery)).GetValue(collection);
-
-            if (OriginalFetchedValue != null)
+            if (ObjectState != ObjectState.Record)
             {
-                OriginalFetchedValue.ExecutedQuery = ExecutedQuery;
+                // Fetches the data.
+                collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, joinExpression == null ? 1 : -1, joinExpression });
+
+                if (!UnitTestUtilities.IsUnitTesting && IsNew)
+                    return null;
+
+                ExecutedQuery = (string)collection.GetType().GetProperty(nameof(ORMCollection<ORMEntity>.ExecutedQuery)).GetValue(collection);
+
+                if (OriginalFetchedValue != null)
+                {
+                    OriginalFetchedValue.ExecutedQuery = ExecutedQuery;
+                }
             }
 
             return this;
