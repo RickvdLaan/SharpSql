@@ -9,7 +9,7 @@ using System.Linq.Expressions;
 namespace ORM
 {
     [Serializable]
-    public class ORMCollection<EntityType> : IORMCollection<EntityType>, IEnumerable<ORMEntity> where EntityType : ORMEntity
+    public class ORMCollection<EntityType> : IORMCollection<EntityType>, IEnumerable<EntityType> where EntityType : ORMEntity
     {
         private string _executedQuery = string.Empty;
         /// <summary>
@@ -39,11 +39,11 @@ namespace ORM
         /// <summary>
         /// Gets a read-only collection of fetched <see cref="ORMEntity"/> entities.
         /// </summary>
-        public ReadOnlyCollection<ORMEntity> EntityCollection => MutableEntityCollection.AsReadOnly();
+        public ReadOnlyCollection<EntityType> EntityCollection => MutableEntityCollection.AsReadOnly();
 
         internal ORMTableAttribute TableAttribute => (ORMTableAttribute)Attribute.GetCustomAttribute(GetType(), typeof(ORMTableAttribute));
 
-        internal List<ORMEntity> MutableEntityCollection { get; set; } = new List<ORMEntity>();
+        internal List<EntityType> MutableEntityCollection { get; set; } = new List<EntityType>();
 
         private Expression<Func<EntityType, object>> SelectExpression { get; set; }
 
@@ -116,8 +116,11 @@ namespace ORM
                     case ObjectState.Record:
                         continue;
                     case ObjectState.ScheduledForDeletion:
-                        // Todo custom exception with proper msg.
-                        throw new Exception("Obj has already been deleted");
+                        if (entity.IsMarkAsDeleted)
+                            throw new Exception("Obj has already been deleted");
+                        //else
+                            //entity.Save();
+                        break;
                     default:
                     case ObjectState.Unset:
                         // Todo custom exception, should be invalid and impossible.
@@ -159,7 +162,7 @@ namespace ORM
         /// Returns an enumerator that iterates through the <see cref="ORMCollection{EntityType}"/>.
         /// </summary>
         /// <returns>A <see cref="List{EntityType}.Enumerator"/>.</returns>
-        public IEnumerator<ORMEntity> GetEnumerator()
+        public IEnumerator<EntityType> GetEnumerator()
         {
             return MutableEntityCollection.GetEnumerator();
         }

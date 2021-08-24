@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using ORM;
 using ORM.Attributes;
 using ORMFakeDAL;
 using System;
@@ -753,6 +754,23 @@ namespace ORMNUnit
             Assert.AreEqual(users.EntityCollection[4]["Id"], 1);
 
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
+        }
+
+        [Test, ORMUnitTest("BasicSelectUsers")]
+        public void RemoveUsers()
+        {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
+
+            var users = new Users();
+            users.Fetch(5);
+
+            var userToBeRemoved = users.First() as User;
+            users.Remove(userToBeRemoved);
+            
+            Assert.AreEqual(ObjectState.ScheduledForDeletion, userToBeRemoved.ObjectState);
+
+            users.SaveChanges();
+            // TODO: Check if user is marked for deletion an correct query is executed after implementation
         }
 
         // @TODO: Fix before 0.2 release

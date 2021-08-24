@@ -13,13 +13,14 @@ namespace ORM
 {
     public sealed class DatabaseUtilities
     {
-        public static void Update<EntityType>(
+        public static EntityType Update<EntityType>(
             object primaryKey,
-            params (Expression<Func<EntityType, object>> column, object value)[] columnValuePairs)
+            params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
             where EntityType : ORMEntity
         {
             var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
             entity.Update(primaryKey, columnValuePairs);
+            return entity;
         }
 
         internal static string ConnectionString { get; private set; }

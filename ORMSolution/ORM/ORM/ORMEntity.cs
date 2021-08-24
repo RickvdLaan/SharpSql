@@ -376,7 +376,7 @@ namespace ORM
             }
         }
 
-        internal void Update<EntityType>(object primaryKey, params (Expression<Func<EntityType, object>> column, object value)[] columnValuePairs)
+        internal void Update<EntityType>(object primaryKey, params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
              where EntityType : ORMEntity
         {
             ObjectState = ObjectState.Record;
@@ -384,12 +384,12 @@ namespace ORM
 
             FetchEntityByPrimaryKey(primaryKey);
 
-
             this[PrimaryKey.Keys[0].ColumnName] = primaryKey;
 
-            foreach (var item in columnValuePairs)
+            foreach (var columnValuePair in columnValuePairs)
             {
-                this["Password"] = item.value;
+                var columnName = SQLBuilder.ParseUpdateExpression(columnValuePair.Expression);
+                this[columnName] = columnValuePair.Value;
             }
 
             var sqlBuilder = new SQLBuilder();

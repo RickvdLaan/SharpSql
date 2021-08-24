@@ -529,12 +529,6 @@ namespace ORM
                             value = subEntity;
 
                             entity.Relations.Add(value as ORMEntity);
-
-                            if (entityPropertyInfo == null)
-                            {
-                                entityPropertyInfo = entity.GetType().GetProperty("Organisation", entity.PublicIgnoreCaseFlags);
-                            }
-
                             break;
                         }
                     }

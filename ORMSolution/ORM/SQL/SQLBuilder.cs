@@ -243,6 +243,36 @@ namespace ORM
             return expression;
         }
 
+        internal static string ParseUpdateExpression(Expression body)
+        {
+            switch (body)
+            {
+                case MemberExpression memberExpression:
+                    {
+                        if (memberExpression.Member.GetCustomAttributes(typeof(ORMColumnAttribute), true).FirstOrDefault() is ORMColumnAttribute columnAttribute)
+                        {
+                            return columnAttribute.ColumnName;
+                        }
+                        else
+                        {
+                            return memberExpression.Member.Name;
+                        }
+                    }
+                case UnaryExpression unaryExpression:
+                    {
+                        return ParseUpdateExpression(unaryExpression.Operand);
+                    }
+                case LambdaExpression lambdaExpression:
+                    {
+                        return ParseUpdateExpression(lambdaExpression.Body);
+                    }
+                default:
+                    throw new NotImplementedException(body.NodeType.ToString());
+                case null:
+                    throw new ArgumentNullException(nameof(body));
+            }
+        }
+
         private void InvalidJoinException(PropertyInfo propertyInfo)
         {
             throw new ORMInvalidJoinException(propertyInfo);

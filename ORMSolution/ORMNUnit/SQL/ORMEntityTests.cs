@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using ORM;
 using ORM.Attributes;
 using ORMFakeDAL;
 using System;
@@ -268,6 +269,23 @@ namespace ORMNUnit
 
             // Organisation query
             Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
+        }
+
+        [Test]
+        public void UpdateDirect()
+        {
+            var expectedUpdateQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM2);";
+            var user = DatabaseUtilities.Update<User>(1, (x => x.Password, "UnitTest password"));
+
+            Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
+
+            Assert.AreEqual(1, user.Id);
+            Assert.AreEqual("UnitTest password", user.Password);
+
+            Assert.AreEqual(ObjectState.Record, user.ObjectState);
+            Assert.AreEqual(true, user.IsDirty);
+            Assert.AreEqual(false, user.IsNew);
+            Assert.IsNull(user.OriginalFetchedValue);
         }
 
         [Test]
