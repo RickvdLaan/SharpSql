@@ -1,7 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
-using ORM.Attributes;
-using ORM.Exceptions;
+﻿using ORM.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Data;

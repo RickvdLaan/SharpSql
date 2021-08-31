@@ -17,7 +17,7 @@ namespace ORMConsole
             _ = new ORMInitialize(configuration);
             #endregion
 
-            var user = DatabaseUtilities.Update<User>(1, (x => x.DateCreated, DateTime.Now));
+var user = DatabaseUtilities.Update<User>(1, (x => x.DateCreated, DateTime.Now));
             // Todo:
             // Unit tests
             // multiple primary keys support

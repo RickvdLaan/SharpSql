@@ -7,7 +7,8 @@ namespace ORMBenchmarks
     {
         static void Main(string[] args)
         {
-            BenchmarkRunner.Run<ORMEntityBenchmark>();
+            //BenchmarkRunner.Run<ORMEntityBenchmark>();
+            BenchmarkRunner.Run<ORMCollectionBenchmark>();
 
             Console.ReadLine();
         }
