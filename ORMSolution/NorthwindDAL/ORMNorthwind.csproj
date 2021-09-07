@@ -8,8 +8,4 @@
     <ProjectReference Include="..\ORM\ORM.csproj" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <FCCExcludeFromCodeCoverage />
-  </PropertyGroup>
-
 </Project>

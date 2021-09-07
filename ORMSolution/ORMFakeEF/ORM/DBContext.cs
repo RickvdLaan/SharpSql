@@ -10,6 +10,6 @@ public class ORMDBContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseSqlServer(
-            @"Server=localhost; Database=ORM; Trusted_Connection=True; MultipleActiveResultSets=true");
+            @"Server=localhost; Database=Northwind; Trusted_Connection=True; MultipleActiveResultSets=true");
     }
 }

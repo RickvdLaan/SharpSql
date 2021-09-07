@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ORMFakeDAL\ORMFakeDAL.csproj" />
-    <ProjectReference Include="..\ORMFakeEF\ORMFakeEF.csproj" />
+    <ProjectReference Include="..\NorthwindDAL\ORMNorthwind.csproj" />
+    <ProjectReference Include="..\ORMFakeEF\EFCNorthwind.csproj" />
     <ProjectReference Include="..\ORM\ORM.csproj" />
   </ItemGroup>
 
@@ -22,5 +22,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <PropertyGroup>
+    <FCCExcludeFromCodeCoverage />
+  </PropertyGroup>
 
 </Project>

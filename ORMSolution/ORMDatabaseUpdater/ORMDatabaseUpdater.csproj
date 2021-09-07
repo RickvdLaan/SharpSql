@@ -41,4 +41,8 @@
     </None>
   </ItemGroup>
 
+  <PropertyGroup>
+    <FCCExcludeFromCodeCoverage/>
+  </PropertyGroup>
+
 </Project>
