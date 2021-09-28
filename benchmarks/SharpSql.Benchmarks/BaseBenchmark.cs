@@ -6,13 +6,13 @@
 
         protected void BaseSetup()
         {
-            i = 0;
+            i = 10247;
         }
 
         protected void Step()
         {
             i++;
-            if (i > 829) i = 1;
+            if (i > 11077) i = 10248;
         }
     }
 }

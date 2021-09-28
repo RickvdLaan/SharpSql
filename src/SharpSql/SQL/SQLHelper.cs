@@ -461,7 +461,9 @@ namespace SharpSql
         {
             // All joins (child-entities) are filled through PopulateChildEntity, therefore we can
             // skip anything past the current entity (parent) within the reader.
-            if (iteration >= sqlBuilder.TableNameColumnCount.First().Value && !isEntityManyTomany)
+            // When executing DirectQueries the sqlBuilder is null, and since joins aren't supported
+            // in DirectQueries, this can be ignored safely.
+            if (iteration >= sqlBuilder?.TableNameColumnCount.First().Value && !isEntityManyTomany)
             {
                 // Skipping.
                 return;

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using SharpSql.Northwind;
 using System.ComponentModel;
+using System.Data;
 using System.Linq;
 
 namespace SharpSql.Benchmarks
@@ -44,11 +45,18 @@ namespace SharpSql.Benchmarks
             return new Order(i, true);
         }
 
-        [Benchmark(Description = nameof(SqlQuery))]
-        public Order SqlQuery()
+        [Benchmark(Description = nameof(SqlQueryMapped))]
+        public Order SqlQueryMapped()
         {
             Step();
-            return DatabaseUtilities.ExecuteDirectQuery<Orders, Order>("select * from Orders where OrderID = @PARAM1", false, 1).First();
+            return DatabaseUtilities.ExecuteDirectQuery<Orders, Order>("select * from Orders where OrderID = @PARAM1;", false, i).First();
+        }
+
+        [Benchmark(Description = nameof(SqlQueryDefault))]
+        public DataTable SqlQueryDefault()
+        {
+            Step();
+            return DatabaseUtilities.ExecuteDirectQuery("select * from Orders where OrderID = @PARAM1;", i);
         }
     }
 }
