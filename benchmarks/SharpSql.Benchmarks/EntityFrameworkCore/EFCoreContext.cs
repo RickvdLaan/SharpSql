@@ -8,5 +8,5 @@ public class EFCoreContext : DbContext
         optionsBuilder.UseSqlServer(@"Server=localhost; Database=Northwind; Trusted_Connection=True; MultipleActiveResultSets=true");
     }
 
-    public DbSet<Customer> Customers { get; set; }
+    public DbSet<Order> Orders { get; set; }
 }
