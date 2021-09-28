@@ -1,4 +1,4 @@
-name: ORM Unit Tests
+name: SharpSql Unit Tests
 
 on:
   push:
