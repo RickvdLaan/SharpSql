@@ -15,5 +15,5 @@ jobs:
       with:
         dotnet-version: 5.0.100
     - name: Test
-      working-directory: ORMSolution/ORMNUnit
+      working-directory: tests/SharpSql.Tests/SharpSql.NUnit
       run: dotnet test --no-restore --verbosity normal
