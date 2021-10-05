@@ -9,7 +9,7 @@ namespace ORMBenchmarks
         static void Main(string[] args)
         {
             BenchmarkRunner.Run<SharpSqlBenchmarks>();
-            //BenchmarkRunner.Run<EFCoreBenchmarks>();
+            BenchmarkRunner.Run<EFCoreBenchmarks>();
 
             Console.ReadLine();
         }

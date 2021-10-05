@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SharpSql\SharpSql.csproj" />
-    <ProjectReference Include="..\SharpSql.Northwind\SharpSql.Northwind.csproj" />
   </ItemGroup>
 
   <ItemGroup>

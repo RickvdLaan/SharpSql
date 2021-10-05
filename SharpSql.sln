@@ -17,8 +17,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpSql", "src\SharpSql\Sh
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpSql.Benchmarks", "benchmarks\SharpSql.Benchmarks\SharpSql.Benchmarks.csproj", "{A481C151-50FA-4583-B1A1-D8B040844531}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpSql.Northwind", "benchmarks\SharpSql.Northwind\SharpSql.Northwind.csproj", "{90138A84-0A88-4158-8E52-51DBBDAB82ED}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,10 +39,6 @@ Global
 		{A481C151-50FA-4583-B1A1-D8B040844531}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A481C151-50FA-4583-B1A1-D8B040844531}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A481C151-50FA-4583-B1A1-D8B040844531}.Release|Any CPU.Build.0 = Release|Any CPU
-		{90138A84-0A88-4158-8E52-51DBBDAB82ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90138A84-0A88-4158-8E52-51DBBDAB82ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90138A84-0A88-4158-8E52-51DBBDAB82ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{90138A84-0A88-4158-8E52-51DBBDAB82ED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,7 +48,6 @@ Global
 		{BF826202-317D-421E-9FCC-EB0093A28531} = {4E4738D0-6562-461E-8C13-16A56DCA79DA}
 		{AFA17BE4-F6B4-41B0-8915-04B5CE091390} = {291D5219-2315-488A-8ADC-0BD8E375C9AD}
 		{A481C151-50FA-4583-B1A1-D8B040844531} = {FEE804FB-A9D1-45D9-AFFB-4067BFB63221}
-		{90138A84-0A88-4158-8E52-51DBBDAB82ED} = {FEE804FB-A9D1-45D9-AFFB-4067BFB63221}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8BEE0566-52C0-44F1-A710-1A21E9C42B54}

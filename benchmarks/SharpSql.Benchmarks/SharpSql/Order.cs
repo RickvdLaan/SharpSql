@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("SharpSql.Benchmarks")]
 
-namespace SharpSql.Northwind
+namespace SharpSql
 {
     public class Order : ORMEntity
     {

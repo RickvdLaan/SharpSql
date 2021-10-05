@@ -1,12 +1,13 @@
 ﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Engines;
 using Microsoft.Extensions.Configuration;
-using SharpSql.Northwind;
 using System.ComponentModel;
 using System.Data;
 using System.Linq;
 
 namespace SharpSql.Benchmarks
 {
+    [SimpleJob(RunStrategy.Throughput)]
     [MemoryDiagnoser]
     [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
     [RankColumn]
@@ -25,14 +26,20 @@ namespace SharpSql.Benchmarks
             BaseSetup();
         }
 
+        [Benchmark(Description = nameof(GetOrderById))]
+        public Order GetOrderById()
+        {
+            return new Order(10248);
+        }
+
         [Benchmark(Description = nameof(GetAllOrders))]
         public Orders GetAllOrders()
         {
             return new Orders().Fetch() as Orders;
         }
 
-        [Benchmark(Description = nameof(GetAllOrderIndividual))]
-        public Order GetAllOrderIndividual()
+        [Benchmark(Description = nameof(GetAllOrdersIndividually))]
+        public Order GetAllOrdersIndividually()
         {
             Step();
             return new Order(i);

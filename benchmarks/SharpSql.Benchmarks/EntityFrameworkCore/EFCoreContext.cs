@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SharpSql.Northwind;
+﻿using EFCore;
+using Microsoft.EntityFrameworkCore;
 
 public class EFCoreContext : DbContext
 {

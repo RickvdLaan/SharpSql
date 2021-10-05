@@ -1,6 +1,6 @@
 ﻿using SharpSql.Attributes;
 
-namespace SharpSql.Northwind
+namespace SharpSql
 {
     [ORMTable(typeof(Orders), typeof(Order))]
     public class Orders : ORMCollection<Order>
