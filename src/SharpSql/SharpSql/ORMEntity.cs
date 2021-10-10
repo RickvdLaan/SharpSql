@@ -8,9 +8,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-
-[assembly: InternalsVisibleTo("SharpSql.NUnit")]
 
 namespace SharpSql
 {
@@ -74,7 +71,7 @@ namespace SharpSql
         [JsonIgnore]
         public ReadOnlyCollection<string> TableScheme { get { return ORMUtilities.CachedColumns[GetType()].AsReadOnly(); } }
 
-        internal bool IsMarkAsDeleted { get; private set; } = false;
+        internal bool IsMarkedAsDeleted { get; private set; } = false;
 
         internal List<ORMEntity> Relations { get; private set; } = new List<ORMEntity>();
 
@@ -299,6 +296,9 @@ namespace SharpSql
         /// </summary>
         public virtual void Save()
         {
+            if (IsMarkedAsDeleted)
+                return;
+
             if (ObjectState == ObjectState.ScheduledForDeletion)
             {
                 Delete();
@@ -376,7 +376,7 @@ namespace SharpSql
             }
         }
 
-        internal void Update<EntityType>(object primaryKey, params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
+        internal void NonQuery<EntityType>(NonQueryType nonQueryType, object primaryKey, params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
              where EntityType : ORMEntity
         {
             ObjectState = ObjectState.Record;
@@ -386,17 +386,26 @@ namespace SharpSql
 
             this[PrimaryKey.Keys[0].ColumnName] = primaryKey;
 
-            foreach (var columnValuePair in columnValuePairs)
+            if (columnValuePairs != null)
             {
-                var columnName = SQLBuilder.ParseUpdateExpression(columnValuePair.Expression);
-                this[columnName] = columnValuePair.Value;
+                foreach (var columnValuePair in columnValuePairs)
+                {
+                    var columnName = SQLBuilder.ParseUpdateExpression(columnValuePair.Expression);
+                    this[columnName] = columnValuePair.Value;
+                }
             }
 
-            var sqlBuilder = new SQLBuilder();
-            sqlBuilder.BuildNonQuery(this, NonQueryType.Update);
-            SQLExecuter.ExecuteNonQuery(sqlBuilder);
-
-            ExecutedQuery = sqlBuilder.GeneratedQuery;
+            if (nonQueryType == NonQueryType.Delete)
+            {
+                Delete();
+            }
+            else
+            {
+                var sqlBuilder = new SQLBuilder();
+                sqlBuilder.BuildNonQuery(this, nonQueryType);
+                SQLExecuter.ExecuteNonQuery(sqlBuilder);
+                ExecutedQuery = sqlBuilder.GeneratedQuery;
+            }
         }
 
         /// <summary>
@@ -411,13 +420,15 @@ namespace SharpSql
                 var sqlBuilder = new SQLBuilder();
                 sqlBuilder.BuildNonQuery(this, NonQueryType.Delete);
                 SQLExecuter.ExecuteNonQuery(sqlBuilder);
-                IsMarkAsDeleted = true;
+                ExecutedQuery = sqlBuilder.GeneratedQuery;
+                ObjectState = ObjectState.Deleted;
+                IsMarkedAsDeleted = true;
             }
         }
 
         internal void ScheduleForDeletion()
         {
-            if (!IsNew)
+            if (!IsNew && ObjectState != ObjectState.ScheduledForDeletion)
             {
                 ObjectState = ObjectState.ScheduledForDeletion;
             }
@@ -604,6 +615,8 @@ namespace SharpSql
             {
                 // Fetches the data.
                 collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, joinExpression == null ? 1 : -1, joinExpression });
+
+                ObjectState = ObjectState.Fetched;
 
                 if (!UnitTestUtilities.IsUnitTesting && IsNew)
                     return null;

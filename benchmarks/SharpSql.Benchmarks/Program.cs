@@ -6,7 +6,7 @@ namespace ORMBenchmarks
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
             BenchmarkRunner.Run<SharpSqlBenchmarks>();
             BenchmarkRunner.Run<EFCoreBenchmarks>();

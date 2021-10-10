@@ -7,18 +7,18 @@ using System.Linq;
 
 namespace SharpSql.Benchmarks
 {
-    [SimpleJob(RunStrategy.Throughput)]
-    [MemoryDiagnoser]
-    [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
     [RankColumn]
+    [MemoryDiagnoser]
+    [SimpleJob(RunStrategy.Throughput)]
     [Description(nameof(SharpSqlBenchmarks))]
+    [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
     public class SharpSqlBenchmarks : BaseBenchmark
     {
         [GlobalSetup]
         public void Init()
         {
             IConfiguration configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
+                .AddJsonFile("SharpSql/appsettings.json")
                 .Build();
 
             _ = new SharpSqlInitializer(configuration, loadAllReferencedAssemblies: true);

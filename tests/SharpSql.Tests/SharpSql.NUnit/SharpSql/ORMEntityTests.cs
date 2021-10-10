@@ -287,6 +287,83 @@ namespace SharpSql.NUnit
         }
 
         [Test]
+        public void DeleteDirect()
+        {
+            var expectedUpdateQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+            var user = DatabaseUtilities.Delete<User>(1);
+
+            Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
+            Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
+            Assert.AreEqual(false, user.IsDirty);
+            Assert.AreEqual(false, user.IsNew);
+            Assert.AreEqual(true, user.IsMarkedAsDeleted);
+
+            Assert.IsNull(user.OriginalFetchedValue);
+        }
+
+        //[Test]
+        //public void InsertDirect()
+        //{
+        //    var expectedUpdateQuery = "INSERT INTO [DBO].[USERS] ([DBO].[USERS].[USERNAME], [DBO].[USERS].[PASSWORD], [DBO].[USERS].[ORGANISATION], [DBO].[USERS].[DATECREATED], [DBO].[USERS].[DATELASTMODIFIED]) VALUES(@PARAM1, @PARAM2, @PARAM3, @PARAM4, @PARAM5); SELECT CAST(SCOPE_IDENTITY() AS INT);";
+        //    var user = DatabaseUtilities.Insert<User>(1);
+
+        //    Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
+        //    Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
+        //    Assert.AreEqual(false, user.IsDirty);
+        //    Assert.AreEqual(false, user.IsNew);
+        //    Assert.AreEqual(true, user.IsMarkedAsDeleted);
+
+        //    Assert.IsNull(user.OriginalFetchedValue);
+        //}
+
+        [Test]
+        public void Delete()
+        {
+            var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+            var expectedDeleteQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+            var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+
+            var user = new User(1);
+
+            // User object
+            Assert.AreEqual(false, user.IsDirty);
+            Assert.AreEqual(false, user.IsNew);
+            Assert.AreEqual(ObjectState.Fetched, user.ObjectState);
+            Assert.IsNotNull(user.OriginalFetchedValue);
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
+
+            // User query
+            Assert.AreEqual(expectedInitialUserQuery, user.ExecutedQuery);
+
+            // Organisation is not null, but no join is provided so should be null.
+            Assert.IsNull(user.Organisation);
+            Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
+
+            user.Delete();
+
+            // User object
+            Assert.AreEqual(expectedDeleteQuery, user.ExecutedQuery);
+            Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
+            Assert.AreEqual(false, user.IsDirty);
+            Assert.AreEqual(false, user.IsNew);
+            Assert.AreEqual(true, user.IsMarkedAsDeleted);
+            Assert.IsNotNull(user.OriginalFetchedValue);
+            Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
+            Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
+
+            // User query
+            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+
+            // Organisation is not null, but no join is provided so should be null.
+            Assert.IsNull(user.Organisation);
+            Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
+
+            Assert.IsTrue(user.Relations.Count == 0);
+            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
+        }
+
+        [Test]
         public void Update()
         {
             var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";

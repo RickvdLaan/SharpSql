@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
+using EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,16 +9,16 @@ using System.Linq;
 
 namespace SharpSql.Benchmarks
 {
-    [SimpleJob(RunStrategy.Throughput)]
-    [MemoryDiagnoser]
-    [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
     [RankColumn]
+    [MemoryDiagnoser]
+    [SimpleJob(RunStrategy.Throughput)]
     [Description(nameof(EFCoreBenchmarks))]
+    [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
     public class EFCoreBenchmarks : BaseBenchmark
     {
         private EFCoreContext Context;
 
-        private static readonly Func<EFCoreContext, int, EFCore.Order> compiledQuery =
+        private static readonly Func<EFCoreContext, int, EntityFrameworkCore.Order> compiledQuery =
             EF.CompileQuery((EFCoreContext ctx, int id) => ctx.Orders.First(x => x.OrderId == id));
 
         [GlobalSetup]
@@ -28,40 +29,40 @@ namespace SharpSql.Benchmarks
         }
 
         [Benchmark(Description = nameof(GetOrderById))]
-        public EFCore.Order GetOrderById()
+        public EntityFrameworkCore.Order GetOrderById()
         {
             return Context.Orders.First(x => x.OrderId == 10248);
         }
 
         [Benchmark(Description = nameof(GetAllOrders))]
-        public List<EFCore.Order> GetAllOrders()
+        public List<EntityFrameworkCore.Order> GetAllOrders()
         {
             return Context.Orders.ToList();
         }
 
         [Benchmark(Description = nameof(GetAllOrdersIndividually))]
-        public EFCore.Order GetAllOrdersIndividually()
+        public EntityFrameworkCore.Order GetAllOrdersIndividually()
         {
             Step();
             return Context.Orders.First(x => x.OrderId == i);
         }
 
         [Benchmark(Description = nameof(GetAllOrdersIndividuallyCompiled))]
-        public EFCore.Order GetAllOrdersIndividuallyCompiled()
+        public EntityFrameworkCore.Order GetAllOrdersIndividuallyCompiled()
         {
             Step();
             return compiledQuery(Context, i);
         }
 
         [Benchmark(Description = nameof(SqlQueryMapped))]
-        public EFCore.Order SqlQueryMapped()
+        public EntityFrameworkCore.Order SqlQueryMapped()
         {
             Step();
             return Context.Orders.FromSqlRaw("select * from Orders where OrderID = {0}", i).First();
         }
 
         [Benchmark(Description = nameof(NoTracking))]
-        public EFCore.Order NoTracking()
+        public EntityFrameworkCore.Order NoTracking()
         {
             Step();
             return Context.Orders.AsNoTracking().First(x => x.OrderId == i);

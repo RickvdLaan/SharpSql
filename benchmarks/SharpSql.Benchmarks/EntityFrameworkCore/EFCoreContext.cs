@@ -1,12 +1,14 @@
-﻿using EFCore;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
-public class EFCoreContext : DbContext
+namespace EntityFrameworkCore
 {
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public class EFCoreContext : DbContext
     {
-        optionsBuilder.UseSqlServer(@"Server=localhost; Database=Northwind; Trusted_Connection=True; MultipleActiveResultSets=true");
-    }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer(@"Server=localhost; Database=Northwind; Trusted_Connection=True; MultipleActiveResultSets=true");
+        }
 
-    public DbSet<Order> Orders { get; set; }
+        public DbSet<Order> Orders { get; set; }
+    }
 }

@@ -94,6 +94,14 @@ namespace SharpSql
             SQLHelper.DataReader<ORMCollection<EntityType>, EntityType>(ormCollection, reader, sqlBuilder);
         }
 
+        internal static string GetMemoryTableName()
+        {
+            // If an exception occurs, it just means you didn't specify the ORMUnitTestAttribute to the Unit Test.
+            var unitTestAttribute = new StackTrace().GetFrames().Select(x => x.GetMethod().GetCustomAttributes(typeof(ORMUnitTestAttribute), false)).Where(x => x.Any()).First().First() as ORMUnitTestAttribute;
+
+            return unitTestAttribute.MemoryTables[0].MemoryTableName;
+        }
+
         private static IDataReader ApplyEntityJoinsToReader(ORMEntity entity, IDataReader reader, SQLBuilder sqlBuilder)
         {
             foreach (var join in sqlBuilder.Joins)
@@ -121,11 +129,7 @@ namespace SharpSql
                                     if (!string.IsNullOrEmpty(executedQuery))
                                         break;
 
-#pragma warning disable IDE0019 // Use pattern matching
-                                    var fkAttribute = childProperty.GetCustomAttributes(typeof(ORMForeignKeyAttribute), false).FirstOrDefault() as ORMForeignKeyAttribute;
-#pragma warning restore IDE0019 // Use pattern matching
-
-                                    if (fkAttribute != null && fkAttribute.Relation == entity.GetType())
+                                    if (childProperty.GetCustomAttributes(typeof(ORMForeignKeyAttribute), false).FirstOrDefault() is ORMForeignKeyAttribute fkAttribute && fkAttribute.Relation == entity.GetType())
                                     {
                                         BinaryExpression whereExpression = null;
 

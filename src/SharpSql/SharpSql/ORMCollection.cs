@@ -69,7 +69,7 @@ namespace SharpSql
             get 
             {
                 if (index < MutableEntityCollection.Count)
-                    return MutableEntityCollection[index] as EntityType;
+                    return MutableEntityCollection[index];
 
                 return null;
             }
@@ -97,29 +97,29 @@ namespace SharpSql
         /// </summary>
         public void SaveChanges()
         {
-            // @Todo:
-            // A naive approach - but it works for now. We probably want to create some kind of state
-            // for objects and add batch execution.
             // -Rick, 25 September 2020
-            foreach (var entity in MutableEntityCollection)
+            for (int i = 0; i < MutableEntityCollection.Count; i++)
             {
-                switch (entity.ObjectState)
+                switch (MutableEntityCollection[i].ObjectState)
                 {
                     case ObjectState.New:
                     case ObjectState.Untracked:
-                        entity.Save();
+                        MutableEntityCollection[i].Save();
                         break;
                     case ObjectState.Fetched:
-                        if (entity.IsDirty)
-                            entity.Save();
+                        if (MutableEntityCollection[i].IsDirty)
+                            MutableEntityCollection[i].Save();
                         break;
                     case ObjectState.Record:
                         continue;
                     case ObjectState.ScheduledForDeletion:
-                        if (entity.IsMarkAsDeleted)
+                        if (MutableEntityCollection[i].IsMarkedAsDeleted)
                             throw new Exception("Obj has already been deleted");
-                        //else
-                            //entity.Save();
+                        else
+                        {
+                            MutableEntityCollection[i].Save();
+                            PhysicalRemove(MutableEntityCollection[i]);
+                        }
                         break;
                     default:
                     case ObjectState.Unset:
@@ -145,6 +145,11 @@ namespace SharpSql
         public void Remove(EntityType entity)
         {
             MutableEntityCollection.Find(x => x.Equals(entity)).ScheduleForDeletion();
+        }
+
+        internal void PhysicalRemove(EntityType entity)
+        {
+            MutableEntityCollection.Remove(entity);
         }
 
         /// <summary>

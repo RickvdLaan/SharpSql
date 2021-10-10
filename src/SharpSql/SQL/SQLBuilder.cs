@@ -288,6 +288,27 @@ namespace SharpSql
             return $" WHERE {ParseExpression(whereExpression)}";
         }
 
+        private void WhereClauseFromEntity(StringBuilder stringBuilder, ORMEntity entity)
+        {
+            if (!entity.DirtyTracker.AnyDirtyRelations(entity)
+              || entity.DirtyTracker.Any)
+            {
+                stringBuilder.Append(From(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType())));
+
+                var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
+
+                for (int i = 0; i < propertyInfo.Length; i++)
+                {
+                    var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo[i]);
+                    var constantExpression = Expression.Constant(propertyInfo[i].GetValue(entity), propertyInfo[i].GetValue(entity).GetType());
+
+                    stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
+                }
+
+                stringBuilder.Append(Semicolon());
+            }
+        }
+
         private string OrderBy(Expression sortExpression)
         {
             return $" ORDER BY {ParseExpression(sortExpression)}";
@@ -336,24 +357,7 @@ namespace SharpSql
                 }
             }
 
-            // Where
-            if (!entity.DirtyTracker.AnyDirtyRelations(entity)
-              || entity.DirtyTracker.Any)
-            {
-                stringBuilder.Append(From(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType())));
-
-                var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
-
-                for (int i = 0; i < propertyInfo.Length; i++)
-                {
-                    var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo[i]);
-                    var constantExpression = Expression.Constant(propertyInfo[i].GetValue(entity), propertyInfo[i].GetValue(entity).GetType());
-
-                    stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
-                }
-
-                stringBuilder.Append(Semicolon());
-            }
+            WhereClauseFromEntity(stringBuilder, entity);
 
             return stringBuilder.ToString();
         }
@@ -382,10 +386,13 @@ namespace SharpSql
 
         private string Delete(ORMEntity entity)
         {
-            // We won't add support for drop table, this can be done through a direct query.
-            // -Rick, 19 July 2020
+            AddQueryTableName(new ORMTableAttribute(ORMUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType()));
 
-            throw new NotImplementedException();
+            var stringBuilder = new StringBuilder("DELETE ");
+
+            WhereClauseFromEntity(stringBuilder, entity);
+
+            return stringBuilder.ToString();
         }
 
         internal string Count(ORMTableAttribute tableAttribute)

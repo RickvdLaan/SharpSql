@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EFCore
+namespace EntityFrameworkCore
 {
     public class Order
     {

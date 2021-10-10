@@ -14,6 +14,9 @@ namespace SharpSql
         {
             if (UnitTestUtilities.IsUnitTesting)
             {
+                if (sqlBuilder.NonQueryType == NonQueryType.Delete)
+                    return null;
+
                 // The SQL server returns the unique id of the just inserted row, but during a unit test
                 // nothing is actually inserted, thus returning 1.
                 return 1;

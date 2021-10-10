@@ -13,13 +13,32 @@ namespace SharpSql
 {
     public sealed class DatabaseUtilities
     {
+        public static EntityType Insert<EntityType>(
+            object primaryKey,
+            params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
+            where EntityType : ORMEntity
+        {
+            var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
+            entity.NonQuery(NonQueryType.Insert, primaryKey, columnValuePairs);
+            return entity;
+        }
+
         public static EntityType Update<EntityType>(
             object primaryKey,
             params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
             where EntityType : ORMEntity
         {
             var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
-            entity.Update(primaryKey, columnValuePairs);
+            entity.NonQuery(NonQueryType.Update, primaryKey, columnValuePairs);
+            return entity;
+        }
+
+        public static EntityType Delete<EntityType>(
+          object primaryKey)
+          where EntityType : ORMEntity
+        {
+            var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
+            entity.NonQuery(NonQueryType.Delete, primaryKey, ((Expression<Func<EntityType, object>> Expression, object Value)[])null);
             return entity;
         }
 

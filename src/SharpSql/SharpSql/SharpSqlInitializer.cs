@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System;
 using SharpSql.Attributes;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.IO;
 using System.Reflection;
-
-[assembly: InternalsVisibleTo("SharpSql.NUnit")]
 
 namespace SharpSql
 {

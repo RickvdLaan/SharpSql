@@ -13,7 +13,7 @@ namespace SharpSql.NUnit
 
         public DateTime Expired { get; internal set; } = DateTime.MinValue;
 
-        private Token() { }
+        internal Token() { }
 
         public Token(Guid userId, DateTime expired)
         {

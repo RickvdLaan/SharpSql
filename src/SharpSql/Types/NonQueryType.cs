@@ -1,8 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-[assembly: InternalsVisibleTo("SharpSql.Benchmarks")]
-
-namespace SharpSql
+﻿namespace SharpSql
 {
     internal enum NonQueryType
     {

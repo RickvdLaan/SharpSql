@@ -12,4 +12,9 @@
     <FCCExcludeFromCodeCoverage />
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SharpSql.Benchmarks" />
+    <InternalsVisibleTo Include="SharpSql.NUnit" />
+  </ItemGroup>
+
 </Project>

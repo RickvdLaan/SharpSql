@@ -1,9 +1,6 @@
 ﻿using SharpSql.Attributes;
 using System;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-
-[assembly: InternalsVisibleTo("SharpSql.Benchmarks")]
 
 namespace SharpSql.NUnit
 {

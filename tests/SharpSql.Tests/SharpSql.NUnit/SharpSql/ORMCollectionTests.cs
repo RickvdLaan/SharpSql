@@ -26,7 +26,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(5, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(1, user.Id);
             Assert.AreEqual("Imaani", user.Username);
             Assert.AreEqual("qwerty", user.Password);
@@ -45,7 +45,7 @@ namespace SharpSql.NUnit
             Assert.IsFalse(users.All(x => x.IsNew == true));
             Assert.IsFalse(users.All(x => x.IsDirty == true));
             Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-            Assert.IsFalse(users.All(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
             Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -65,7 +65,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(5, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
 
             Assert.AreEqual(-1, user.Id);
             Assert.AreEqual("Imaani", user.Username);
@@ -84,7 +84,7 @@ namespace SharpSql.NUnit
             Assert.IsFalse(users.All(x => x.IsNew == true));
             Assert.IsFalse(users.All(x => x.IsDirty == true));
             Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-            Assert.IsFalse(users.All(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
             Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -103,7 +103,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(1, user.Id);
             Assert.AreEqual("Imaani", user.Username);
             Assert.AreEqual("qwerty", user.Password);
@@ -117,7 +117,7 @@ namespace SharpSql.NUnit
             Assert.IsFalse(user.IsNew == true);
             Assert.IsFalse(user.IsDirty == true);
             Assert.IsFalse(user.IsAutoIncrement == false);
-            Assert.IsFalse(user.IsMarkAsDeleted == true);
+            Assert.IsFalse(user.IsMarkedAsDeleted == true);
             Assert.IsFalse(user.DisableChangeTracking == true);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -145,10 +145,10 @@ namespace SharpSql.NUnit
             Assert.IsFalse(users.All(x => x.IsNew == true));
             Assert.IsFalse(users.All(x => x.IsDirty == true));
             Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-            Assert.IsFalse(users.All(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
             Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
-            var user1 = users.FirstOrDefault() as User;
+            var user1 = users.FirstOrDefault();
             Assert.AreEqual(1, user1.Id);
             Assert.AreEqual("Imaani", user1.Username);
             Assert.AreEqual("qwerty", user1.Password);
@@ -166,7 +166,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(user1.Organisation, user1.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.IsFalse(ReferenceEquals(user1.Organisation, user1.OriginalFetchedValue.ValueAs<User>().Organisation));
 
-            var user2 = users.LastOrDefault() as User;
+            var user2 = users.LastOrDefault();
             Assert.AreEqual(5, user2.Id);
             Assert.AreEqual(user2.Username, "Chloe");
             Assert.AreEqual(user2.Password, "dragon");
@@ -196,10 +196,10 @@ namespace SharpSql.NUnit
             Assert.IsFalse(users.All(x => x.IsNew == true));
             Assert.IsFalse(users.All(x => x.IsDirty == true));
             Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-            Assert.IsFalse(users.All(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
             Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
-            user1 = users.FirstOrDefault() as User;
+            user1 = users.FirstOrDefault();
             Assert.AreEqual(1, user1.Id);
             Assert.AreEqual("Imaani", user1.Username);
             Assert.AreEqual("qwerty", user1.Password);
@@ -217,7 +217,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(user1.Organisation, user1.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.IsFalse(ReferenceEquals(user1.Organisation, user1.OriginalFetchedValue.ValueAs<User>().Organisation));
 
-            user2 = users.LastOrDefault() as User;
+            user2 = users.LastOrDefault();
             Assert.AreEqual(5, user2.Id);
             Assert.AreEqual(user2.Username, "Chloe");
             Assert.AreEqual(user2.Password, "dragon");
@@ -252,10 +252,10 @@ namespace SharpSql.NUnit
             Assert.IsFalse(users.All(x => x.IsNew == true));
             Assert.IsFalse(users.All(x => x.IsDirty == true));
             Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-            Assert.IsFalse(users.All(x => x.IsMarkAsDeleted == true));
+            Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
             Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(1, user.Id);
             Assert.AreEqual(user.Username, "Imaani");
             Assert.AreEqual(user.Password, "qwerty");
@@ -270,7 +270,7 @@ namespace SharpSql.NUnit
             Assert.IsFalse(user.IsNew == true);
             Assert.IsFalse(user.IsDirty == true);
             Assert.IsFalse(user.IsAutoIncrement == false);
-            Assert.IsFalse(user.IsMarkAsDeleted == true);
+            Assert.IsFalse(user.IsMarkedAsDeleted == true);
             Assert.IsFalse(user.DisableChangeTracking == true);
 
             Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -293,7 +293,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(1, user.Id);
             Assert.AreEqual("Imaani", user.Username);
             Assert.AreEqual("qwerty", user.Password);
@@ -324,7 +324,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(1, user.Id);
             Assert.AreEqual("Imaani", user.Username);
             Assert.AreEqual("qwerty", user.Password);
@@ -356,7 +356,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(1, user.Id);
             Assert.AreEqual("Imaani", user.Username);
             Assert.AreEqual("qwerty", user.Password);
@@ -387,7 +387,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(4, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(2, user.Id);
             Assert.AreEqual("Clarence", user.Username);
             Assert.AreEqual("password", user.Password);
@@ -404,7 +404,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
 
-            Assert.IsTrue(users.All(x => (x as User).Organisation == null));
+            Assert.IsTrue(users.All(x => x.Organisation == null));
             Assert.IsTrue(users.All(x => (x.OriginalFetchedValue as User).Organisation == null));
 
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
@@ -421,7 +421,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(5, user.Id);
             Assert.AreEqual("Chloe", user.Username);
             Assert.AreEqual("dragon", user.Password);
@@ -438,7 +438,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(user, user.OriginalFetchedValue);
             Assert.IsFalse(ReferenceEquals(user, user.OriginalFetchedValue));
 
-            Assert.IsTrue(users.All(x => (x as User).Organisation == null));
+            Assert.IsTrue(users.All(x => x.Organisation == null));
             Assert.IsTrue(users.All(x => (x.OriginalFetchedValue as User).Organisation == null));
 
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
@@ -455,7 +455,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(1, user.Id);
             Assert.AreEqual(user.Username, "Imaani");
             Assert.AreEqual(user.Password, "qwerty");
@@ -480,7 +480,7 @@ namespace SharpSql.NUnit
             users.Where(x => x.Id >= 5);
             users.Fetch();
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(5, user.Id);
             Assert.AreEqual(user.Username, "Chloe");
             Assert.AreEqual(user.Password, "dragon");
@@ -515,7 +515,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(-1, user.Id);
             Assert.AreEqual("Clarence", user.Username);
             Assert.AreEqual("password", user.Password);
@@ -555,7 +555,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(-1, user.Id);
             Assert.AreEqual("Clarence", user.Username);
             Assert.AreEqual("password", user.Password);
@@ -595,7 +595,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(-1, user.Id);
             Assert.AreEqual("Clarence", user.Username);
             Assert.AreEqual("password", user.Password);
@@ -638,7 +638,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(-1, user.Id);
             Assert.AreEqual("Clarence", user.Username);
             Assert.AreEqual("password", user.Password);
@@ -681,7 +681,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(-1, user.Id);
             Assert.AreEqual("Clarence", user.Username);
             Assert.AreEqual("password", user.Password);
@@ -721,7 +721,7 @@ namespace SharpSql.NUnit
 
             Assert.AreEqual(1, users.Count);
 
-            var user = users.FirstOrDefault() as User;
+            var user = users.FirstOrDefault();
             Assert.AreEqual(user.Id, 1);
             Assert.AreEqual(user.Username, "Imaani");
             Assert.AreEqual(user.Password, "qwerty");
@@ -757,43 +757,25 @@ namespace SharpSql.NUnit
         [Test, ORMUnitTest("BasicSelectUsers")]
         public void RemoveUsers()
         {
-            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
+            var expectedQuery = "SELECT TOP (5) * FROM [DBO].[USERS] AS [U];";
 
             var users = new Users();
             users.Fetch(5);
 
-            var userToBeRemoved = users.First() as User;
+            Assert.AreEqual(5, users.Count);
+
+            var userToBeRemoved = users.First();
             users.Remove(userToBeRemoved);
             
             Assert.AreEqual(ObjectState.ScheduledForDeletion, userToBeRemoved.ObjectState);
+            Assert.AreEqual(expectedQuery, users.ExecutedQuery);
 
             users.SaveChanges();
-            // TODO: Check if user is marked for deletion an correct query is executed after implementation
+
+            var expectedDeletionQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+
+            Assert.AreEqual(4, users.Count);
+            Assert.AreEqual(expectedDeletionQuery, userToBeRemoved.ExecutedQuery);
         }
-
-        // @TODO: Fix before 0.2 release
-        // Currently does not have an implementation to read from the memory database
-        //[Test]
-        //public void DirectQuery_Simple()
-        //{
-        //    var expectedQuery = "SELECT TOP 10 * FROM USERS;";
-        //    var directQuery   = "SELECT TOP 10 * FROM USERS;";
-        //    var collection    = ORMUtilities.ExecuteDirectQuery<Users, User>(directQuery);
-
-        //    Assert.IsFalse(collection.DisableChangeTracking);
-        //    Assert.IsFalse(collection.First().DisableChangeTracking);
-        //    Assert.AreEqual(expectedQuery, collection.ExecutedQuery);
-        //}
-
-        //[Test]
-        //public void DirectQuery_Complex()
-        //{
-        //    var expectedQuery = "SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;";
-        //    var directQuery   = "SELECT TOP 10 * FROM USERS WHERE ((ID = @PARAM1 OR ID = @PARAM1) OR (ID = @PARAM2)) ORDER BY ID ASC;";
-        //    //var collection    = ORMUtilities.ExecuteDirectQuery(directQuery, 1, 2);
-
-        //    Assert.AreEqual(true, false);
-        //    Assert.AreEqual(expectedQuery, directQuery);
-        //}
     }
 }
