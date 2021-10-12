@@ -428,7 +428,7 @@ namespace SharpSql
 
         internal void ScheduleForDeletion()
         {
-            if (!IsNew && ObjectState != ObjectState.ScheduledForDeletion)
+            if (!IsNew && ObjectState != ObjectState.ScheduledForDeletion && !IsMarkedAsDeleted)
             {
                 ObjectState = ObjectState.ScheduledForDeletion;
             }

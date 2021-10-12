@@ -307,6 +307,10 @@ namespace SharpSql
 
                 stringBuilder.Append(Semicolon());
             }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private string OrderBy(Expression sortExpression)
