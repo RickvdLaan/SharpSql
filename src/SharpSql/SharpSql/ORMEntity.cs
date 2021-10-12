@@ -11,6 +11,7 @@ using System.Reflection;
 
 namespace SharpSql
 {
+    [JsonConverter(typeof(EntityConverter))]
     public class ORMEntity : ORMObject, IEquatable<ORMEntity>, IORMEntity
     {
         private string _executedQuery = string.Empty;
@@ -26,6 +27,11 @@ namespace SharpSql
         }
 
         /// <summary>
+        /// Gets the state of the entity.
+        /// </summary>
+        public ObjectState ObjectState { get; private set; } = ObjectState.Unset;
+
+        /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
         /// </summary>
         [JsonIgnore]
@@ -34,7 +40,7 @@ namespace SharpSql
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> is new or not.
         /// </summary>
-        public bool IsNew { get; internal set; } = true;
+        internal bool IsNew { get; set; } = true;
 
         /// <summary>
         /// Gets whether change tracking is enabled or disabled, it's <see langword="false"/> by <see langword="default"/> and
@@ -77,41 +83,33 @@ namespace SharpSql
 
         internal DirtyTracker DirtyTracker { get; private set; }
 
-        internal ObjectState ObjectState { get; private set; } = ObjectState.Unset;
-
         internal ORMEntity OriginalFetchedValue { get; set; } = null;
 
         internal List<string> MutableTableScheme { get; private set; } = null;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="ORMEntity"/>.
+        /// Initializes a new instance of <see cref="ORMEntity"/> when deserializing.
         /// </summary>
         [JsonConstructor]
+        private ORMEntity(ObjectState objectState)
+        {
+            InitializePrimaryKeys();
+            InitializeMutableTableSchema();
+            DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
+            UpdateIsDirtyList();
+            ObjectState = objectState;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ORMEntity"/>.
+        /// </summary>
         public ORMEntity()
         {
             InitializePrimaryKeys();
             InitializeMutableTableSchema();
-
-            IsNew = OriginalFetchedValue == null;
-
-            if (IsNew)
-            {
-                ObjectState = ObjectState.New;
-            }
-            else
-            {
-                ObjectState = ObjectState.Fetched;
-            }
-
-            if (!DisableChangeTracking)
-            {
-                DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
-                UpdateIsDirtyList();
-            }
-            else
-            {
-                ObjectState = ObjectState.Untracked;
-            }
+            DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
+            UpdateIsDirtyList();
+            ObjectState = ObjectState.New;
         }
 
         /// <summary>
