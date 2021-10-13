@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace SharpSql
 {
-    [JsonConverter(typeof(EntityConverter))]
+    [JsonConverter(typeof(EntityDeserializer))]
     public class ORMEntity : ORMObject, IEquatable<ORMEntity>, IORMEntity
     {
         private string _executedQuery = string.Empty;
@@ -91,13 +91,14 @@ namespace SharpSql
         /// Initializes a new instance of <see cref="ORMEntity"/> when deserializing.
         /// </summary>
         [JsonConstructor]
-        private ORMEntity(ObjectState objectState)
+        private ORMEntity(Type externalType, ObjectState objectState)
         {
-            InitializePrimaryKeys();
-            InitializeMutableTableSchema();
+            InitializePrimaryKeys(externalType);
+            InitializeMutableTableSchema(externalType);
             DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
             UpdateIsDirtyList();
             ObjectState = objectState;
+            DisableChangeTracking = true;
         }
 
         /// <summary>
@@ -121,11 +122,11 @@ namespace SharpSql
             DisableChangeTracking = disableChangeTracking;
         }
 
-        private void InitializePrimaryKeys()
+        private void InitializePrimaryKeys(Type externalType = null)
         {
             var attributes = new List<ORMPrimaryKeyAttribute>();
 
-            foreach (var property in GetType().GetProperties())
+            foreach (var property in externalType?.GetProperties() ?? GetType().GetProperties())
             {
                 foreach (ORMPrimaryKeyAttribute attribute in property.GetCustomAttributes(typeof(ORMPrimaryKeyAttribute), true))
                 {
@@ -150,11 +151,11 @@ namespace SharpSql
             }
         }
 
-        private void InitializeMutableTableSchema()
+        private void InitializeMutableTableSchema(Type externalType = null)
         {
-            if (ORMUtilities.CachedMutableColumns.ContainsKey(GetType()))
+            if (ORMUtilities.CachedMutableColumns.ContainsKey(externalType ?? GetType()))
             {
-                MutableTableScheme = ORMUtilities.CachedMutableColumns[GetType()];
+                MutableTableScheme = ORMUtilities.CachedMutableColumns[externalType ?? GetType()];
                 return;
             }
 
@@ -168,7 +169,7 @@ namespace SharpSql
                 MutableTableScheme.Add(columnName);
             }
 
-            ORMUtilities.CachedMutableColumns[GetType()] = MutableTableScheme;
+            ORMUtilities.CachedMutableColumns[externalType ?? GetType()] = MutableTableScheme;
         }
 
         /// <summary>
@@ -559,6 +560,20 @@ namespace SharpSql
             copy.Relations = new List<ORMEntity>(Relations);
 
             return copy;
+        }
+
+        internal ORMEntity CloneToChild(ORMEntity child)
+        {
+            child.DirtyTracker = DirtyTracker;
+            child.DisableChangeTracking = DisableChangeTracking;
+            child.ExecutedQuery = ExecutedQuery;
+            child.IsMarkedAsDeleted = IsMarkedAsDeleted;
+            child.MutableTableScheme = MutableTableScheme;
+            child.ObjectState = ObjectState;
+            child.PrimaryKey = PrimaryKey;
+            child.Relations = Relations;
+
+            return child;
         }
 
         internal PropertyInfo[] GetPrimaryKeyPropertyInfo()
