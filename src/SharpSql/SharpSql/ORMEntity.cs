@@ -29,7 +29,7 @@ namespace SharpSql
         /// <summary>
         /// Gets the state of the entity.
         /// </summary>
-        public ObjectState ObjectState { get; private set; } = ObjectState.Unset;
+        public ObjectState ObjectState { get; internal set; } = ObjectState.Unset;
 
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
@@ -393,7 +393,33 @@ namespace SharpSql
                     this[columnName] = columnValuePair.Value;
                 }
             }
+            if (nonQueryType == NonQueryType.Delete)
+            {
+                Delete();
+            }
+            else
+            {
+                var sqlBuilder = new SQLBuilder();
+                sqlBuilder.BuildNonQuery(this, nonQueryType);
+                SQLExecuter.ExecuteNonQuery(sqlBuilder);
+                ExecutedQuery = sqlBuilder.GeneratedQuery;
+            }
+        }
 
+        internal void NonQuery<EntityType>(NonQueryType nonQueryType, params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
+          where EntityType : ORMEntity
+        {
+            if (ObjectState == ObjectState.ExternalRecord)
+            {
+                DirtyTracker.ResetDirtyTracker();
+            }
+            if (columnValuePairs != null)
+            {
+                foreach (var columnValuePair in columnValuePairs)
+                {
+                    DirtyTracker.Update(SQLBuilder.ParseUpdateExpression(columnValuePair.Expression), true);
+                }
+            }
             if (nonQueryType == NonQueryType.Delete)
             {
                 Delete();
@@ -671,6 +697,8 @@ namespace SharpSql
 
             // Fetches the data.
             collection.GetType().GetMethod(nameof(ORMCollection<ORMEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(ORMEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, 1, null });
+
+            ObjectState = ObjectState.Fetched;
 
             if (!UnitTestUtilities.IsUnitTesting && IsNew)
                 return null;

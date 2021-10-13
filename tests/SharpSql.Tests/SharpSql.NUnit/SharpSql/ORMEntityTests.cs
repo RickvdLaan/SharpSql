@@ -270,7 +270,7 @@ namespace SharpSql.NUnit
         }
 
         [Test]
-        public void UpdateDirect()
+        public void UpdateDirectById()
         {
             var expectedUpdateQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM2);";
             var user = DatabaseUtilities.Update<User>(1, (x => x.Password, "UnitTest password"));
@@ -286,8 +286,35 @@ namespace SharpSql.NUnit
             Assert.IsNull(user.OriginalFetchedValue);
         }
 
+        // Still needs to be fixed.
+        //[Test]
+        //public void UpdateDirectByEntity()
+        //{
+        //    var expectedUpdateQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM2);";
+        //    var expectedOriginalQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+        //    var user = DatabaseUtilities.Update(new User(1), (x => x.Password, "UnitTest password"));
+
+        //    Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
+
+        //    Assert.AreEqual(1, user.Id);
+        //    Assert.AreEqual("UnitTest password", user.Password);
+
+        //    Assert.AreEqual(ObjectState.Record, user.ObjectState);
+        //    Assert.AreEqual(true, user.IsDirty);
+        //    Assert.AreEqual(false, user.IsNew);
+        //    Assert.IsNull(user.OriginalFetchedValue);
+
+        //    Assert.IsNotNull(user.OriginalFetchedValue);
+
+        //    Assert.AreEqual(expectedOriginalQuery, user.OriginalFetchedValue.ExecutedQuery);
+        //    Assert.AreEqual(ObjectState.Fetched, user.OriginalFetchedValue.ObjectState);
+        //    Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
+        //    Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
+        //    Assert.AreEqual(false, user.OriginalFetchedValue.IsMarkedAsDeleted);
+        //}
+
         [Test]
-        public void DeleteDirect()
+        public void DeleteDirectById()
         {
             var expectedUpdateQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
             var user = DatabaseUtilities.Delete<User>(1);
@@ -301,20 +328,33 @@ namespace SharpSql.NUnit
             Assert.IsNull(user.OriginalFetchedValue);
         }
 
+        [Test]
+        public void DeleteDirectByEntity()
+        {
+            var expectedUpdateQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+            var expectedOriginalQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+
+            var user = DatabaseUtilities.Delete(new User(1));
+
+            Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
+            Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
+            Assert.AreEqual(false, user.IsDirty);
+            Assert.AreEqual(false, user.IsNew);
+            Assert.AreEqual(true, user.IsMarkedAsDeleted);
+
+            Assert.IsNotNull(user.OriginalFetchedValue);
+
+            Assert.AreEqual(expectedOriginalQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.AreEqual(ObjectState.Fetched, user.OriginalFetchedValue.ObjectState);
+            Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
+            Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
+            Assert.AreEqual(false, user.OriginalFetchedValue.IsMarkedAsDeleted);
+        }
+
         //[Test]
-        //public void InsertDirect()
-        //{
-        //    var expectedUpdateQuery = "INSERT INTO [DBO].[USERS] ([DBO].[USERS].[USERNAME], [DBO].[USERS].[PASSWORD], [DBO].[USERS].[ORGANISATION], [DBO].[USERS].[DATECREATED], [DBO].[USERS].[DATELASTMODIFIED]) VALUES(@PARAM1, @PARAM2, @PARAM3, @PARAM4, @PARAM5); SELECT CAST(SCOPE_IDENTITY() AS INT);";
-        //    var user = DatabaseUtilities.Insert<User>(1);
-
-        //    Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
-        //    Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
-        //    Assert.AreEqual(false, user.IsDirty);
-        //    Assert.AreEqual(false, user.IsNew);
-        //    Assert.AreEqual(true, user.IsMarkedAsDeleted);
-
-        //    Assert.IsNull(user.OriginalFetchedValue);
-        //}
+        //public void InsertDirectById() {}
+        //[Test]
+        //public void InsertDirectByEntity() {}
 
         [Test]
         public void Delete()

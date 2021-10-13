@@ -129,6 +129,7 @@ namespace SharpSql
         internal static void FinaliaseEntity(ORMEntity entity)
         {
             entity.IsNew = false;
+            entity.ObjectState = ObjectState.Fetched;
 
             if (!entity.DisableChangeTracking)
             {
