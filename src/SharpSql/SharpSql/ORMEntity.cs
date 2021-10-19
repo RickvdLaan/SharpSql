@@ -26,10 +26,24 @@ namespace SharpSql
             internal set { _executedQuery = value; }
         }
 
+        private ObjectState _objectState = ObjectState.Unset;
         /// <summary>
         /// Gets the state of the entity.
         /// </summary>
-        public ObjectState ObjectState { get; internal set; } = ObjectState.Unset;
+        public ObjectState ObjectState
+        {
+            get
+            {
+                return _objectState;
+            }
+            internal set
+            {
+                if (ObjectState == ObjectState.Deleted)
+                    throw new InvalidOperationException();
+
+                _objectState = value;
+            }
+        }
 
         /// <summary>
         /// Gets whether the <see cref="ORMEntity"/> has an auto-increment primary key field.
@@ -38,16 +52,32 @@ namespace SharpSql
         public bool IsAutoIncrement { get { return PrimaryKey.Keys.Any(key => key.IsAutoIncrement); } }
 
         /// <summary>
-        /// Gets whether the <see cref="ORMEntity"/> is new or not.
+        /// Gets whether the <see cref="ObjectState"/> is new.
         /// </summary>
-        internal bool IsNew { get; set; } = true;
+        public bool IsNew
+        {
+            get
+            {
+                // Should never happen, but it's here in case it does happen. We can actually fix
+                // the bug.
+                if (ObjectState == ObjectState.Unset)
+                    throw new ArgumentException();
+
+                return ObjectState == ObjectState.New;
+            }
+        }
+
+        /// <summary>
+        /// Gets whether the <see cref="ObjectState"/> is deleted.
+        /// </summary>
+        public bool IsMarkedAsDeleted => ObjectState == ObjectState.Deleted;
 
         /// <summary>
         /// Gets whether change tracking is enabled or disabled, it's <see langword="false"/> by <see langword="default"/> and
         /// can be set to <see langword="true"/> through the <see cref="ORMEntity"/> constructor.
         /// </summary>
         [JsonIgnore]
-        public bool DisableChangeTracking { get; internal set; } = false;
+        public bool DisableChangeTracking { get; internal set; } = false; // Refactor to ObjectState.
 
         /// <summary>
         /// Gets the <see cref="ORMPrimaryKey"/> of the current <see cref="ORMEntity"/>.
@@ -62,7 +92,18 @@ namespace SharpSql
         {
             get
             {
-                if (!IsNew && !DisableChangeTracking && OriginalFetchedValue == null && ObjectState != ObjectState.Record)
+                // A new object is always dirty.
+                if (IsNew)
+                    return true;
+                // An object that has been deleted cannot be dirty.
+                if (ObjectState == ObjectState.Deleted)
+                    return false;
+                // Without change tracking we must assume everything is dirty.
+                if (DisableChangeTracking)
+                    return true;
+                // Joined objects have a original fetched value, but the original fetched value
+                // from the join-object does not have a orignal fetched value, therefore IsDirty is false.
+                if (ObjectState == ObjectState.Fetched && !IsNew && OriginalFetchedValue == null)
                     return false;
 
                 UpdateIsDirtyList();
@@ -77,8 +118,6 @@ namespace SharpSql
         [JsonIgnore]
         public ReadOnlyCollection<string> TableScheme { get { return ORMUtilities.CachedColumns[GetType()].AsReadOnly(); } }
 
-        internal bool IsMarkedAsDeleted { get; private set; } = false;
-
         internal List<ORMEntity> Relations { get; private set; } = new List<ORMEntity>();
 
         internal DirtyTracker DirtyTracker { get; private set; }
@@ -91,14 +130,14 @@ namespace SharpSql
         /// Initializes a new instance of <see cref="ORMEntity"/> when deserializing.
         /// </summary>
         [JsonConstructor]
-        private ORMEntity(Type externalType, ObjectState objectState)
+        private ORMEntity(Type externalType)
         {
+            ObjectState = ObjectState.ExternalRecord;
+
             InitializePrimaryKeys(externalType);
             InitializeMutableTableSchema(externalType);
             DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
             UpdateIsDirtyList();
-            ObjectState = objectState;
-            DisableChangeTracking = true;
         }
 
         /// <summary>
@@ -106,11 +145,12 @@ namespace SharpSql
         /// </summary>
         public ORMEntity()
         {
+            ObjectState = ObjectState.New;
+
             InitializePrimaryKeys();
             InitializeMutableTableSchema();
             DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
             UpdateIsDirtyList();
-            ObjectState = ObjectState.New;
         }
 
         /// <summary>
@@ -379,7 +419,6 @@ namespace SharpSql
              where EntityType : ORMEntity
         {
             ObjectState = ObjectState.Record;
-            IsNew = false;
 
             FetchEntityByPrimaryKey(primaryKey);
 
@@ -409,15 +448,12 @@ namespace SharpSql
         internal void NonQuery<EntityType>(NonQueryType nonQueryType, params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
           where EntityType : ORMEntity
         {
-            if (ObjectState == ObjectState.ExternalRecord)
-            {
-                DirtyTracker.ResetDirtyTracker();
-            }
             if (columnValuePairs != null)
             {
                 foreach (var columnValuePair in columnValuePairs)
                 {
-                    DirtyTracker.Update(SQLBuilder.ParseUpdateExpression(columnValuePair.Expression), true);
+                    var columnName = SQLBuilder.ParseUpdateExpression(columnValuePair.Expression);
+                    this[columnName] = columnValuePair.Value;
                 }
             }
             if (nonQueryType == NonQueryType.Delete)
@@ -426,10 +462,7 @@ namespace SharpSql
             }
             else
             {
-                var sqlBuilder = new SQLBuilder();
-                sqlBuilder.BuildNonQuery(this, nonQueryType);
-                SQLExecuter.ExecuteNonQuery(sqlBuilder);
-                ExecutedQuery = sqlBuilder.GeneratedQuery;
+                Save();
             }
         }
 
@@ -440,14 +473,13 @@ namespace SharpSql
         {
             ScheduleForDeletion();
 
-            if (!IsNew)
+            if (ObjectState == ObjectState.ScheduledForDeletion)
             {
                 var sqlBuilder = new SQLBuilder();
                 sqlBuilder.BuildNonQuery(this, NonQueryType.Delete);
                 SQLExecuter.ExecuteNonQuery(sqlBuilder);
                 ExecutedQuery = sqlBuilder.GeneratedQuery;
                 ObjectState = ObjectState.Deleted;
-                IsMarkedAsDeleted = true;
             }
         }
 
@@ -568,6 +600,24 @@ namespace SharpSql
             return DirtyTracker.IsDirty(field);
         }
 
+        public void MarkFieldsAsDirty(params string[] fields)
+        {
+            MarkDirtyFieldsAs(true, fields);
+        }
+
+        internal void MarkDirtyFieldsAs(bool isDirty, params string[] fields)
+        {
+            if (ObjectState == ObjectState.ExternalRecord || (!DisableChangeTracking))
+            {
+                foreach (var field in fields)
+                {
+                    DirtyTracker.Update(field, isDirty);
+                }
+            }
+            else
+                throw new InvalidOperationException("ObjectState must be ExternalRecord or DisableChangeTracking must be set to true to mark fields as dirty.");
+        }
+
         /// <summary>
         /// The INNER JOIN keyword selects records that have matching values in both tables.
         /// </summary>
@@ -593,7 +643,6 @@ namespace SharpSql
             child.DirtyTracker = DirtyTracker;
             child.DisableChangeTracking = DisableChangeTracking;
             child.ExecutedQuery = ExecutedQuery;
-            child.IsMarkedAsDeleted = IsMarkedAsDeleted;
             child.MutableTableScheme = MutableTableScheme;
             child.ObjectState = ObjectState;
             child.PrimaryKey = PrimaryKey;
@@ -718,9 +767,14 @@ namespace SharpSql
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
                 // When an object is new, or change tracking is disabled everything is 'dirty' by default.
-                if (IsNew || DisableChangeTracking)
+                if (ObjectState == ObjectState.New || DisableChangeTracking)
                 {
                     DirtyTracker.Update(MutableTableScheme[i], true);
+                    continue;
+                }
+                else if (ObjectState == ObjectState.ExternalRecord)
+                {
+                    DirtyTracker.Update(MutableTableScheme[i], false);
                     continue;
                 }
 

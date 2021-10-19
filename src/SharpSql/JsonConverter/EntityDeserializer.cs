@@ -11,8 +11,8 @@ namespace SharpSql
         {
             var externalEntity = Activator.CreateInstance(objectType) as ORMEntity;
 
-            var constructorInfo = typeof(ORMEntity).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault();
-            var entity = constructorInfo.Invoke(new object[] { objectType, ObjectState.ExternalRecord }) as ORMEntity;
+            var constructorInfo = typeof(ORMEntity).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).First();
+            var entity = constructorInfo.Invoke(new object[] { objectType }) as ORMEntity;
 
             entity.CloneToChild(externalEntity);
 

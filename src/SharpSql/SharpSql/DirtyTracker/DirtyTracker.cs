@@ -35,13 +35,5 @@ namespace SharpSql
         {
             DirtyList[columnName] = isDirty;
         }
-
-        internal void ResetDirtyTracker()
-        {
-            foreach (var columnName in DirtyList.Keys)
-            {
-                Update(columnName, false);
-            }
-        }
     }
 }
