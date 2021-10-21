@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-public static class ORMExtensions
+public static class SharpSqlExtensions
 {
     public static T Ascending<T>(this T _) => default;
 
@@ -30,7 +30,7 @@ public static class ORMExtensions
         return @this.ToString("yyyy-MM-dd HH:mm:ss.fff");
     }
 
-    public static (object value, string sourceColumn) SqlValue(this ORMEntity entity, string columnName)
+    public static (object value, string sourceColumn) SqlValue(this SharpSqlEntity entity, string columnName)
     {
         object value;
         // use TypeCode? seperate SqlToCSharp and CSharpToSqlthe mapper to seperate class.
@@ -60,17 +60,17 @@ public static class ORMExtensions
         }
     }
 
-    public static PropertyInfo GetPropertyInfo(this ORMEntity entity, string propertyName)
+    public static PropertyInfo GetPropertyInfo(this SharpSqlEntity entity, string propertyName)
     {
         return entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
-            ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(ORMColumnAttribute), false).FirstOrDefault() as ORMColumnAttribute)?.ColumnName == propertyName);
+            ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).FirstOrDefault() as SharpSqlColumnAttribute)?.ColumnName == propertyName);
     }
 
-    public static bool IsForeignKeyOfType(this ORMEntity entity, string propertyName, Type type)
+    public static bool IsForeignKeyOfType(this SharpSqlEntity entity, string propertyName, Type type)
     {
         var propertyInfo = entity.GetPropertyInfo(propertyName);
 
-        var fkAttribute = propertyInfo.GetCustomAttributes(typeof(ORMForeignKeyAttribute), false).FirstOrDefault() as ORMForeignKeyAttribute;
+        var fkAttribute = propertyInfo.GetCustomAttributes(typeof(SharpSqlForeignKeyAttribute), false).FirstOrDefault() as SharpSqlForeignKeyAttribute;
 
         return type == fkAttribute.Relation;
     }

@@ -1,8 +1,7 @@
 ﻿using BenchmarkDotNet.Running;
-using SharpSql.Benchmarks;
 using System;
 
-namespace ORMBenchmarks
+namespace SharpSql.Benchmarks
 {
     class Program
     {

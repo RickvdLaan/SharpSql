@@ -2,12 +2,12 @@
 
 namespace SharpSql.NUnit
 {
-    public class UserRole : ORMEntity
+    public class UserRole : SharpSqlEntity
     {
-        [ORMPrimaryKey, ORMForeignKey(typeof(User)), ORMColumn("UserId")]
+        [SharpSqlPrimaryKey, SharpSqlForeignKey(typeof(User)), SharpSqlColumn("UserId")]
         public int Column_UserId { get; private set; }
 
-        [ORMPrimaryKey, ORMForeignKey(typeof(Role)), ORMColumn("RoleId")]
+        [SharpSqlPrimaryKey, SharpSqlForeignKey(typeof(Role)), SharpSqlColumn("RoleId")]
         public int Column_RoleId { get; private set; }
 
         internal UserRole() { }

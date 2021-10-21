@@ -2,9 +2,9 @@
 
 namespace SharpSql.NUnit
 {
-    public class Organisation : ORMEntity
+    public class Organisation : SharpSqlEntity
     {
-        [ORMPrimaryKey]
+        [SharpSqlPrimaryKey]
         public int Id { get; internal set; } = -1;
 
         public string Name { get; set; }

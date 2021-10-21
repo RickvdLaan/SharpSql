@@ -2,12 +2,12 @@
 
 namespace SharpSql.NUnit
 {
-    public class Role : ORMEntity
+    public class Role : SharpSqlEntity
     {
-        [ORMPrimaryKey, ORMColumn(RoleConstants.ColumnId)]
+        [SharpSqlPrimaryKey, SharpSqlColumn(RoleConstants.ColumnId)]
         public int RoleId { get; private set; } = -1;
 
-        [ORMColumn(RoleConstants.ColumnName)]
+        [SharpSqlColumn(RoleConstants.ColumnName)]
         public string Description { get; set; }
 
         public Role() { }

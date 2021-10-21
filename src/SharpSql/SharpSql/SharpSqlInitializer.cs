@@ -12,11 +12,11 @@ namespace SharpSql
     {
         internal SharpSqlInitializer(Assembly callingAssembly, string xmlEntityFilePath, string xmlCollectionFilePath)
         {
-            ORMUtilities.MemoryEntityDatabase = new MemoryEntityDatabase(Assembly.GetCallingAssembly());
-            ORMUtilities.MemoryEntityDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlEntityFilePath));
+            SharpSqlUtilities.MemoryEntityDatabase = new MemoryEntityDatabase(Assembly.GetCallingAssembly());
+            SharpSqlUtilities.MemoryEntityDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlEntityFilePath));
 
-            ORMUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase(Assembly.GetCallingAssembly());
-            ORMUtilities.MemoryCollectionDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlCollectionFilePath));
+            SharpSqlUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase(Assembly.GetCallingAssembly());
+            SharpSqlUtilities.MemoryCollectionDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlCollectionFilePath));
 
             new SharpSqlInitializer(configuration: null, loadAllReferencedAssemblies: true);
         }
@@ -60,7 +60,7 @@ namespace SharpSql
                     // .NET Core only: This member is not supported.
                     var assembly = Assembly.ReflectionOnlyLoad(assemblyBytes);
 
-                    if (assembly.GetReferencedAssemblies().Contains(Assembly.GetAssembly(typeof(ORMEntity)).GetName()))
+                    if (assembly.GetReferencedAssemblies().Contains(Assembly.GetAssembly(typeof(SharpSqlEntity)).GetName()))
                     {
                         AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(referencedPath));
                     }
@@ -77,7 +77,7 @@ namespace SharpSql
         public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false)
         {
             new DatabaseUtilities(configuration);
-            new ORMUtilities();
+            new SharpSqlUtilities();
 
             if (loadAllReferencedAssemblies)
             {
@@ -86,9 +86,9 @@ namespace SharpSql
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(type => type.GetCustomAttributes(typeof(ORMTableAttribute), true).Length > 0))
+                foreach (var type in assembly.GetTypes().Where(type => type.GetCustomAttributes(typeof(SharpSqlTableAttribute), true).Length > 0))
                 {
-                    var tableAttribute = type.GetCustomAttribute(typeof(ORMTableAttribute), true) as ORMTableAttribute;
+                    var tableAttribute = type.GetCustomAttribute(typeof(SharpSqlTableAttribute), true) as SharpSqlTableAttribute;
 
                     var constructor = tableAttribute.EntityType.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
                     if (constructor == null)
@@ -99,29 +99,29 @@ namespace SharpSql
                     if (tableAttribute.CollectionTypeLeft == null
                      && tableAttribute.CollectionTypeRight == null)
                     {
-                        ORMUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
-                        ORMUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
+                        SharpSqlUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
+                        SharpSqlUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
                     }
                     else
                     {
-                        ORMUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
-                        ORMUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
-                        ORMUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight), tableAttribute);
-                        ORMUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeRight, tableAttribute.CollectionTypeLeft), tableAttribute);
+                        SharpSqlUtilities.CollectionEntityRelations.Add(tableAttribute.CollectionType, tableAttribute.EntityType);
+                        SharpSqlUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
+                        SharpSqlUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight), tableAttribute);
+                        SharpSqlUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeRight, tableAttribute.CollectionTypeLeft), tableAttribute);
                     }
-                    if (!ORMUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
-                     && !ORMUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
+                    if (!SharpSqlUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
+                     && !SharpSqlUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
                     {
                         if (!UnitTestUtilities.IsUnitTesting)
                         {
-                            var sqlBuilder = new SQLBuilder();
-                            sqlBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
-                            var rows = DatabaseUtilities.ExecuteDirectQuery(sqlBuilder.GeneratedQuery)
+                            var queryBuilder = new QueryBuilder();
+                            queryBuilder.BuildQuery(tableAttribute, null, null, null, null, 0);
+                            var rows = DatabaseUtilities.ExecuteDirectQuery(queryBuilder.GeneratedQuery)
                                   .CreateDataReader()
                                   .GetSchemaTable()
                                   .Rows;
 
-                            var uniqueConstraints = DatabaseUtilities.ExecuteDirectQuery(sqlBuilder.ColumnConstraintInformation(tableAttribute.TableName));
+                            var uniqueConstraints = DatabaseUtilities.ExecuteDirectQuery(queryBuilder.ColumnConstraintInformation(tableAttribute.TableName));
 
                             var columns = new List<string>(rows.Count);
 
@@ -131,7 +131,7 @@ namespace SharpSql
                                 {
                                     if (uniqueConstraints.Rows[j][3].Equals(rows[i][0]))
                                     {
-                                        ORMUtilities.UniqueConstraints.Add((tableAttribute.EntityType, (string)rows[i][0]));
+                                        SharpSqlUtilities.UniqueConstraints.Add((tableAttribute.EntityType, (string)rows[i][0]));
                                         break;
                                     }
                                 }
@@ -139,17 +139,17 @@ namespace SharpSql
                                 columns.Add((string)rows[i][0]);
                             }
 
-                            ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
-                            ORMUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
+                            SharpSqlUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
+                            SharpSqlUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
                         }
                         else
                         {
-                            var columns = ORMUtilities.MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
+                            var columns = SharpSqlUtilities.MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
 
                             if (columns != null)
                             {
-                                ORMUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
-                                ORMUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
+                                SharpSqlUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
+                                SharpSqlUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
                             }
                         }
                     }

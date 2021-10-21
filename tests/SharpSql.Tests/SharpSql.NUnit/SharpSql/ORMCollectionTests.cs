@@ -1,5 +1,5 @@
 ﻿using NUnit.Framework;
-using SharpSql.Attributes;
+using SharpSql.UnitTests;
 using System;
 using System.Linq;
 
@@ -14,9 +14,9 @@ using System.Linq;
 namespace SharpSql.NUnit
 {
     [TestFixture]
-    public class ORMCollectionTests
+    public class SharpSqlCollectionTests
     {
-        [Test, ORMUnitTest("BasicFetchUsers")]
+        [Test, SharpSqlUnitTest("BasicFetchUsers")]
         public void BasicFetch()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U];";
@@ -54,7 +54,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicSelectUsers")]
+        [Test, SharpSqlUnitTest("BasicSelectUsers")]
         public void Basic_Select()
         {
             var expectedQuery = "SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];";
@@ -93,7 +93,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicFetchTopUsers")]
+        [Test, SharpSqlUnitTest("BasicFetchTopUsers")]
         public void BasicFetch_Top()
         {
             var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U];";
@@ -126,7 +126,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicJoinLeft")]
+        [Test, SharpSqlUnitTest("BasicJoinLeft")]
         public void Basic_Join_Left()
         {
             // A left join has two cases, either .Left() is provided or no join type is provided.
@@ -238,7 +238,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicJoinInner")]
+        [Test, SharpSqlUnitTest("BasicJoinInner")]
         public void Basic_Join_Inner()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] INNER JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID];";
@@ -282,7 +282,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicWhereAnd")]
+        [Test, SharpSqlUnitTest("BasicWhereAnd")]
         public void Basic_Where_And()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE (([U].[ID] = @PARAM1) AND ([U].[USERNAME] = @PARAM2));";
@@ -313,7 +313,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicWhereLessThanOrEqual")]
+        [Test, SharpSqlUnitTest("BasicWhereLessThanOrEqual")]
         public void Basic_Where_LessThan()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] < @PARAM1);";
@@ -344,7 +344,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicWhereEqualTo")]
+        [Test, SharpSqlUnitTest("BasicWhereEqualTo")]
         public void Basic_Where_EqualTo()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
@@ -376,7 +376,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicWhereNotEqualTo")]
+        [Test, SharpSqlUnitTest("BasicWhereNotEqualTo")]
         public void Basic_Where_NotEqualTo()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] <> @PARAM1);";
@@ -410,7 +410,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicWhereGreaterThanOrEqual")]
+        [Test, SharpSqlUnitTest("BasicWhereGreaterThanOrEqual")]
         public void Basic_Where_GreaterThan()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] > @PARAM1);";
@@ -444,7 +444,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicWhereLessThanOrEqual")]
+        [Test, SharpSqlUnitTest("BasicWhereLessThanOrEqual")]
         public void Basic_Where_LessThanOrEqual()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] <= @PARAM1);";
@@ -471,7 +471,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicWhereGreaterThanOrEqual")]
+        [Test, SharpSqlUnitTest("BasicWhereGreaterThanOrEqual")]
         public void Basic_Where_GreaterThanOrEqual()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] >= @PARAM1);";
@@ -496,7 +496,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("ComplexJoinA")]
+        [Test, SharpSqlUnitTest("ComplexJoinA")]
         public void Complex_Join_A()
         {
             // First case
@@ -537,7 +537,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(firstExpectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("ComplexJoinB")]
+        [Test, SharpSqlUnitTest("ComplexJoinB")]
         public void Complex_Join_B()
         {
             var firstExpectedQuery = "SELECT TOP (1) [U].[USERNAME], [U].[PASSWORD], [O].[ID] " +
@@ -577,7 +577,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(firstExpectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("ComplexJoinC")]
+        [Test, SharpSqlUnitTest("ComplexJoinC")]
         public void Complex_Join_C()
         {
             var secondExpectedQuery = "SELECT TOP (1) [U].[USERNAME], [U].[PASSWORD], [U].[ORGANISATION], [O].[ID] " +
@@ -620,7 +620,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(secondExpectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("ComplexJoinD")]
+        [Test, SharpSqlUnitTest("ComplexJoinD")]
         public void Complex_Join_D()
         {
             var thirdExpectedQuery = "SELECT TOP (1) [U].[USERNAME], [U].[PASSWORD], [U].[ORGANISATION], [O].[NAME] " +
@@ -663,7 +663,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(thirdExpectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("ComplexJoinE")]
+        [Test, SharpSqlUnitTest("ComplexJoinE")]
         public void Complex_Join_E()
         {
             var thirdExpectedQuery = "SELECT TOP (1) [U].[USERNAME], [U].[PASSWORD], [U].[ORGANISATION], [O].[ID], [O].[NAME] " +
@@ -707,7 +707,7 @@ namespace SharpSql.NUnit
         }
 
 
-        [Test, ORMUnitTest("ComplexWhereLike")]
+        [Test, SharpSqlUnitTest("ComplexWhereLike")]
         public void Complex_Where_Like()
         {
             var expectedQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ((([U].[ID] LIKE @PARAM1 + '%') " +
@@ -736,7 +736,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicOrderBy")]
+        [Test, SharpSqlUnitTest("BasicOrderBy")]
         public void Basic_OrderBy()
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC, [U].[PASSWORD] ASC;";
@@ -754,7 +754,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(expectedQuery, users.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("BasicSelectUsers")]
+        [Test, SharpSqlUnitTest("BasicSelectUsers")]
         public void RemoveUsers()
         {
             var expectedQuery = "SELECT TOP (5) * FROM [DBO].[USERS] AS [U];";

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SharpSql
 {
-    internal struct PrimaryKey : IORMPrimaryKey
+    internal struct PrimaryKey : ISharpSqlPrimaryKey
     {
         public string PropertyName { get; set; }
 

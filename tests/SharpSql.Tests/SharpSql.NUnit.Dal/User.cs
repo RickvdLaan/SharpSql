@@ -4,25 +4,25 @@ using System.Linq.Expressions;
 
 namespace SharpSql.NUnit
 {
-    public class User : ORMEntity
+    public class User : SharpSqlEntity
     {
-        [ORMPrimaryKey]
+        [SharpSqlPrimaryKey]
         public int Id { get; internal set; } = -1;
 
-        [ORMUniqueConstraint]
-        [ORMStringLength(200)]
+        [SharpSqlUniqueConstraint]
+        [SharpSqlStringLength(200)]
         public string Username { get; set; }
 
         public string Password { get; set; }
 
-        [ORMForeignKey(typeof(Organisation))]
+        [SharpSqlForeignKey(typeof(Organisation))]
         public Organisation Organisation { get; set; }
 
         public DateTime? DateCreated { get; internal set; }
 
         public DateTime? DateLastModified { get; internal set; }
 
-        [ORMManyToMany]
+        [SharpSqlManyToMany]
         public Roles Roles { get; set; }
 
         public User() { }

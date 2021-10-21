@@ -2,8 +2,8 @@
 
 namespace SharpSql.NUnit
 {
-    [ORMTable(typeof(Tokens), typeof(Token))]
-    public class Tokens : ORMCollection<User>
+    [SharpSqlTable(typeof(Tokens), typeof(Token))]
+    public class Tokens : SharpSqlCollection<User>
     {
         public Tokens() { }
     }

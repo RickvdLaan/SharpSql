@@ -16,7 +16,7 @@ namespace SharpSql
         public static EntityType Insert<EntityType>(
             EntityType entity,
             params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
-            where EntityType : ORMEntity
+            where EntityType : SharpSqlEntity
         {
             entity.NonQuery(NonQueryType.Insert, columnValuePairs);
             return entity;
@@ -25,7 +25,7 @@ namespace SharpSql
         public static EntityType Insert<EntityType>(
             object primaryKey,
             params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
-            where EntityType : ORMEntity
+            where EntityType : SharpSqlEntity
         {
             var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
             entity.NonQuery(NonQueryType.Insert, primaryKey, columnValuePairs);
@@ -35,7 +35,7 @@ namespace SharpSql
         public static EntityType Update<EntityType>(
           EntityType entity,
           params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
-          where EntityType : ORMEntity
+          where EntityType : SharpSqlEntity
         {
             // Allocation for no resson, fix ToArray().
             entity.MarkDirtyFieldsAs(false, entity.TableScheme.ToArray());
@@ -46,7 +46,7 @@ namespace SharpSql
         public static EntityType Update<EntityType>(
             object primaryKey,
             params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
-            where EntityType : ORMEntity
+            where EntityType : SharpSqlEntity
         {
             var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
             entity.NonQuery(NonQueryType.Update, primaryKey, columnValuePairs);
@@ -56,7 +56,7 @@ namespace SharpSql
         public static EntityType Delete<EntityType>(
             EntityType entity,
             params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
-            where EntityType : ORMEntity
+            where EntityType : SharpSqlEntity
         {
             entity.NonQuery(NonQueryType.Delete, columnValuePairs);
             return entity;
@@ -64,7 +64,7 @@ namespace SharpSql
 
         public static EntityType Delete<EntityType>(
           object primaryKey)
-          where EntityType : ORMEntity
+          where EntityType : SharpSqlEntity
         {
             var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
             entity.NonQuery(NonQueryType.Delete, primaryKey, ((Expression<Func<EntityType, object>> Expression, object Value)[])null);
@@ -96,7 +96,7 @@ namespace SharpSql
 
         public static void TransactionBegin()
         {
-            Transaction.Value = SQLExecuter.CurrentConnection.Value.BeginTransaction();
+            Transaction.Value = QueryExecuter.CurrentConnection.Value.BeginTransaction();
         }
 
         public static void TransactionCommit(bool rollbackTransactionOnFailure = false)
@@ -147,18 +147,18 @@ namespace SharpSql
         #region Direct Queries
 
         public static CollectionType ExecuteDirectQuery<CollectionType, EntityType>(string query, bool disableChangeTracking = false, params object[] parameters)
-            where CollectionType : ORMCollection<EntityType>, new()
-            where EntityType : ORMEntity
+            where CollectionType : SharpSqlCollection<EntityType>, new()
+            where EntityType : SharpSqlEntity
         {
-            if (query.Contains("INNER JOIN")
-             || query.Contains("LEFT JOIN")
-             || query.Contains("RIGHT JOIN")
-             || query.Contains("FULL OUTER JOIN"))
+            if (query.Contains($"{Constants.Inner} {Constants.Join}")
+             || query.Contains($"{Constants.Left} {Constants.Join}")
+             || query.Contains($"{Constants.Right} {Constants.Join}")
+             || query.Contains($"{Constants.Full} {Constants.Outer} {Constants.Join}"))
             {
-                throw new ORMInvalidJoinException("Joins are not supported on POCO's when using direct queries.");
+                throw new InvalidJoinException("Joins are not supported on POCO's when using direct queries.");
             }
 
-            var collection = ORMUtilities.ConvertTo<CollectionType, EntityType>(ExecuteDirectQuery(query, parameters), disableChangeTracking);
+            var collection = SharpSqlUtilities.ConvertTo<CollectionType, EntityType>(ExecuteDirectQuery(query, parameters), disableChangeTracking);
 
             collection.ExecutedQuery = query;
 
@@ -202,7 +202,7 @@ namespace SharpSql
         private static T ExecuteQuery<T>(Func<SqlCommand, T> method, string query, params object[] parameters)
         {
             using SqlConnection connection = new SqlConnection(ConnectionString);
-            SQLExecuter.CurrentConnection.Value = connection;
+            QueryExecuter.CurrentConnection.Value = connection;
 
             using var command = new SqlCommand(query, connection);
             if (!UnitTestUtilities.IsUnitTesting)
@@ -243,13 +243,13 @@ namespace SharpSql
 
         public static bool DoesTableHaveUC(string tableName)
         {
-            return IfExists(new SQLBuilder().ColumnConstraintInformation(tableName));
+            return IfExists(new QueryBuilder().ColumnConstraintInformation(tableName));
         }
 
         public static bool IfExists(string query)
         {
             using SqlConnection connection = new SqlConnection(ConnectionString);
-            using var command = new SqlCommand(new SQLBuilder().IfExists(query), connection);
+            using var command = new SqlCommand(new QueryBuilder().IfExists(query), connection);
 
             if (!UnitTestUtilities.IsUnitTesting)
             {
@@ -263,12 +263,12 @@ namespace SharpSql
         {
             if (!DoesTableHaveUC(collectionType.Name))
             {
-                var constraints = ORMUtilities.CollectionEntityRelations[collectionType].GetCustomAttributes(typeof(UniqueConstraint), true);
+                var constraints = SharpSqlUtilities.CollectionEntityRelations[collectionType].GetCustomAttributes(typeof(UniqueConstraint), true);
 
                 foreach (var constraint in constraints)
                 {
                     using SqlConnection connection = new SqlConnection(ConnectionString);
-                    using var command = new SqlCommand(new SQLBuilder().CreateUniqueConstraint(collectionType.Name, "columnNames"), connection);
+                    using var command = new SqlCommand(new QueryBuilder().CreateUniqueConstraint(collectionType.Name, "columnNames"), connection);
 
                     if (!UnitTestUtilities.IsUnitTesting)
                     {
@@ -283,7 +283,7 @@ namespace SharpSql
 
         public static List<string> GetDatabaseList()
         {
-            var dataTable = ExecuteDirectQuery(new SQLBuilder().ServerDatabaseList());
+            var dataTable = ExecuteDirectQuery(new QueryBuilder().ServerDatabaseList());
             var databases = new List<string>(dataTable.Rows.Count);
             var excludedDatabases = new List<string>(4)
             {

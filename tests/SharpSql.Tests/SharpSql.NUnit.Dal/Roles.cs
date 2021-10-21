@@ -2,8 +2,8 @@
 
 namespace SharpSql.NUnit
 {
-    [ORMTable(typeof(Roles), typeof(Role))]
-    public class Roles : ORMCollection<Role>
+    [SharpSqlTable(typeof(Roles), typeof(Role))]
+    public class Roles : SharpSqlCollection<Role>
     {
         public Roles() { }
     }
