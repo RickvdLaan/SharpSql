@@ -147,7 +147,7 @@ namespace SharpSql
             InitializePrimaryKeys(externalType);
             InitializeMutableTableSchema(externalType);
             DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
-            UpdateIsDirtyList();
+            UpdateIsDirtyList(externalType);
         }
 
         /// <summary>
@@ -447,6 +447,11 @@ namespace SharpSql
                 {
                     var columnName = QueryBuilder.ParseUpdateExpression(columnValuePair.Expression);
                     this[columnName] = columnValuePair.Value;
+                    
+                    if (ObjectState == ObjectState.ExternalRecord)
+                    {
+                        MarkDirtyFieldsAs(true, columnName);
+                    }
                 }
             }
             if (nonQueryType == NonQueryType.Delete)
@@ -755,7 +760,7 @@ namespace SharpSql
             return this;
         }
 
-        private void UpdateIsDirtyList()
+        private void UpdateIsDirtyList(Type externalType = null)
         {
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
@@ -765,9 +770,13 @@ namespace SharpSql
                     DirtyTracker.Update(MutableTableScheme[i], true);
                     continue;
                 }
-                else if (ObjectState == ObjectState.ExternalRecord)
+                else if (ObjectState == ObjectState.ExternalRecord && externalType != null)
                 {
                     DirtyTracker.Update(MutableTableScheme[i], false);
+                    continue;
+                } else if (ObjectState == ObjectState.ExternalRecord && OriginalFetchedValue == null)
+                {
+                    // Because the source is exteral there is no original fetched value. Therefore the dirty fields have to be set manually
                     continue;
                 }
 
