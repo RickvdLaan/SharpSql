@@ -672,11 +672,11 @@ namespace SharpSql
                 GenerateJoinSql(joinType, stringBuilder, secondJoin);
 
                 var parentTableName = _queryTableNames[firstJoin.RightTableAttribute.TableName];
-                var basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : string.Empty;
+                var basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}" : string.Empty;
                 TableNameResolvePaths.Add(_queryTableNames[firstJoin.RightTableAttribute.TableName], basePath + targetProperty.Name());
 
                 parentTableName = _queryTableNames[secondJoin.RightTableAttribute.TableName];
-                basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}." : string.Empty;
+                basePath = TableNameResolvePaths.ContainsKey(parentTableName) ? $"{TableNameResolvePaths[parentTableName]}" : string.Empty;
                 TableNameResolvePaths.Add(_queryTableNames[secondJoin.RightTableAttribute.TableName], basePath + targetProperty.Name());
 
                 return stringBuilder.ToString();

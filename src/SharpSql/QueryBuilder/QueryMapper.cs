@@ -449,7 +449,7 @@ namespace SharpSql
                         {
                             foreach (var item in data.Value)
                             {
-                                propertyValue.GetType().GetMethod("Add", entity.PublicFlags).Invoke(propertyValue, new object[] { item });
+                                propertyValue.GetType().GetMethod(nameof(IList.Add), entity.PublicFlags).Invoke(propertyValue, new object[] { item });
                             }
                         }
                     }

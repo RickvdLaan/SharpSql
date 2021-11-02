@@ -732,6 +732,8 @@ namespace SharpSql.NUnit
         [Test, SharpSqlUnitTest("ManyToManyUserRoles", typeof(UserRole), "ManyToManyRoles", typeof(Role))]
         public void ManyToMany()
         {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[USERROLES] AS [UU] ON [U].[ID] = [UU].[USERID] LEFT JOIN [DBO].[ROLES] AS [R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = @PARAM1);";
+
             var user = new User(1, x => x.Roles.Left());
 
             // User object
@@ -750,6 +752,8 @@ namespace SharpSql.NUnit
             Assert.IsTrue(user.Roles.Count == 2);
             Assert.IsTrue(user.Roles[0].Description == "Admin");
             Assert.IsTrue(user.Roles[1].Description == "Moderator");
+
+            Assert.AreEqual(expectedQuery, user.ExecutedQuery);
         }
 
         // Write a unit test that checks the MutableTableSchema and TableSchema for both the Organisation and Token objects.
