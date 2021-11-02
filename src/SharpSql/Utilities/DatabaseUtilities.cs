@@ -268,6 +268,7 @@ namespace SharpSql
                 foreach (var constraint in constraints)
                 {
                     using SqlConnection connection = new SqlConnection(ConnectionString);
+                    // Todo: column names
                     using var command = new SqlCommand(new QueryBuilder().CreateUniqueConstraint(collectionType.Name, "columnNames"), connection);
 
                     if (!UnitTestUtilities.IsUnitTesting)
@@ -279,6 +280,11 @@ namespace SharpSql
                 }
             
             }
+        }
+
+        public static void DropUniqueConstraint()
+        {
+            // Todo
         }
 
         public static List<string> GetDatabaseList()
