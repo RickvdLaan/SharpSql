@@ -3,12 +3,12 @@ using System;
 
 namespace SharpSql.NUnit
 {
-    public class Token : ORMEntity
+    public class Token : SharpSqlEntity
     {
-        [ORMPrimaryKey(false)]
+        [SharpSqlPrimaryKey(false)]
         public Guid UserId { get; internal set; } = Guid.Empty;
 
-        [ORMPrimaryKey(false), ORMUniqueConstraint]
+        [SharpSqlPrimaryKey(false), SharpSqlUniqueConstraint]
         public Guid TokenId { get; internal set; } = Guid.Empty;
 
         public DateTime Expired { get; internal set; } = DateTime.MinValue;

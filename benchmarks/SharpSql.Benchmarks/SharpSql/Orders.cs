@@ -2,8 +2,8 @@
 
 namespace SharpSql
 {
-    [ORMTable(typeof(Orders), typeof(Order))]
-    public class Orders : ORMCollection<Order>
+    [SharpSqlTable(typeof(Orders), typeof(Order))]
+    public class Orders : SharpSqlCollection<Order>
     {
         public Orders() { }
     }

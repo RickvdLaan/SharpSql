@@ -1,10 +1,10 @@
 ﻿using NUnit.Framework;
-using SharpSql.Attributes;
+using SharpSql.UnitTests;
 using System.Reflection;
 
 namespace SharpSql.NUnit
 {
-    [SetUpFixture, ORMUnitTest]
+    [SetUpFixture, SharpSqlUnitTest]
     internal class NUnitSetupFixture
     {
         [OneTimeSetUp]

@@ -5,14 +5,14 @@ using System.Reflection;
 
 namespace SharpSql
 {
-    public class EntityDeserializer : CustomCreationConverter<ORMEntity>
+    public class EntityDeserializer : CustomCreationConverter<SharpSqlEntity>
     {
-        public override ORMEntity Create(Type objectType)
+        public override SharpSqlEntity Create(Type objectType)
         {
-            var externalEntity = Activator.CreateInstance(objectType) as ORMEntity;
+            var externalEntity = Activator.CreateInstance(objectType) as SharpSqlEntity;
 
-            var constructorInfo = typeof(ORMEntity).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).First();
-            var entity = constructorInfo.Invoke(new object[] { objectType }) as ORMEntity;
+            var constructorInfo = typeof(SharpSqlEntity).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).First();
+            var entity = constructorInfo.Invoke(new object[] { objectType }) as SharpSqlEntity;
 
             entity.CloneToChild(externalEntity);
 

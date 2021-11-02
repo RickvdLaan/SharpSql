@@ -7,9 +7,9 @@ namespace SharpSql
     {
         public static string Name(this PropertyInfo propertyInfo)
         {
-            if (typeof(ORMEntity).IsAssignableFrom(propertyInfo.DeclaringType))
+            if (typeof(SharpSqlEntity).IsAssignableFrom(propertyInfo.DeclaringType))
             {
-                var customAttribute =  propertyInfo.GetCustomAttribute<ORMColumnAttribute>(true);
+                var customAttribute =  propertyInfo.GetCustomAttribute<SharpSqlColumnAttribute>(true);
                 if (customAttribute != null)
                 {
                     return customAttribute.ColumnName;

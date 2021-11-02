@@ -2,8 +2,8 @@
 
 namespace SharpSql.NUnit
 {
-    [ORMTable(typeof(Users), typeof(User))]
-    public class Users : ORMCollection<User>
+    [SharpSqlTable(typeof(Users), typeof(User))]
+    public class Users : SharpSqlCollection<User>
     {
         public Users() { }
     }

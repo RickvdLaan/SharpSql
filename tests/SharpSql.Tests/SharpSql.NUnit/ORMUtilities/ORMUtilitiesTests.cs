@@ -1,19 +1,19 @@
 ﻿using NUnit.Framework;
-using SharpSql.Attributes;
+using SharpSql.UnitTests;
 using System.Linq;
 
 namespace SharpSql.NUnit
 {
     [TestFixture]
-    public partial class ORMUtilityTests
+    public partial class SharpSqlUtilityTests
     {
-        [Test, ORMUnitTest("BasicSelectUsers")]
+        [Test, SharpSqlUnitTest("BasicSelectUsers")]
         [TestCaseSource(nameof(ConvertTo_Data))]
         public void ConvertTo(string username, string password, bool disableChangeTracking, int index)
         {
-            var dataTable = ORMUtilities.MemoryCollectionDatabase.Fetch(UnitTestUtilities.GetMemoryTableName());
+            var dataTable = SharpSqlUtilities.MemoryCollectionDatabase.Fetch(UnitTestUtilities.GetMemoryTableName());
 
-            var users = ORMUtilities.ConvertTo<Users, User>(dataTable, disableChangeTracking);
+            var users = SharpSqlUtilities.ConvertTo<Users, User>(dataTable, disableChangeTracking);
 
             Assert.AreEqual(5, users.Count);
 

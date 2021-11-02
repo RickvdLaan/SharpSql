@@ -26,7 +26,7 @@ namespace SharpSql
             throw new KeyNotFoundException(columnName);
         }
 
-        public bool AnyDirtyRelations(ORMEntity entity)
+        public bool AnyDirtyRelations(SharpSqlEntity entity)
         {
             return DirtyList.Any(x => entity.Relations.Any(e => e.GetType().Name != x.Key));
         }

@@ -4,7 +4,7 @@ using System.Collections;
 namespace SharpSql.NUnit
 {
     [TestFixture]
-    public partial class ORMUtilityTests
+    public partial class SharpSqlUtilityTests
     {
         public static IEnumerable ConvertTo_Data
         {

@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using SharpSql.Attributes;
+using SharpSql.UnitTests;
 using System;
 using System.Linq;
 
@@ -11,7 +12,7 @@ using System.Linq;
 namespace SharpSql.NUnit
 {
     [TestFixture]
-    public class ORMEntityTests
+    public class SharpSqlEntityTests
     {
         [Test]
         public void Fetch()
@@ -272,7 +273,7 @@ namespace SharpSql.NUnit
         [Test]
         public void UpdateDirectById()
         {
-            var expectedUpdateQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM2);";
+            var expectedUpdateQuery = "UPDATE [U] SET [U].[PASSWORD] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
             var user = DatabaseUtilities.Update<User>(1, (x => x.Password, "UnitTest password"));
 
             Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
@@ -722,15 +723,17 @@ namespace SharpSql.NUnit
             Assert.AreEqual(1, userRole.Column_UserId);
             Assert.AreEqual(1, userRole.Column_RoleId);
 
-            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_UserId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
-            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_RoleId)).GetCustomAttributes(typeof(ORMColumnAttribute), false).Length == 1);
+            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_UserId)).GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).Length == 1);
+            Assert.IsTrue(userRole.GetType().GetProperty(nameof(userRole.Column_RoleId)).GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).Length == 1);
 
             Assert.AreEqual(expectedQuery, userRole.ExecutedQuery);
         }
 
-        [Test, ORMUnitTest("ManyToManyUserRoles", typeof(UserRole), "ManyToManyRoles", typeof(Role))]
+        [Test, SharpSqlUnitTest("ManyToManyUserRoles", typeof(UserRole), "ManyToManyRoles", typeof(Role))]
         public void ManyToMany()
         {
+            var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[USERROLES] AS [UU] ON [U].[ID] = [UU].[USERID] LEFT JOIN [DBO].[ROLES] AS [R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = @PARAM1);";
+
             var user = new User(1, x => x.Roles.Left());
 
             // User object
@@ -749,6 +752,8 @@ namespace SharpSql.NUnit
             Assert.IsTrue(user.Roles.Count == 2);
             Assert.IsTrue(user.Roles[0].Description == "Admin");
             Assert.IsTrue(user.Roles[1].Description == "Moderator");
+
+            Assert.AreEqual(expectedQuery, user.ExecutedQuery);
         }
 
         // Write a unit test that checks the MutableTableSchema and TableSchema for both the Organisation and Token objects.

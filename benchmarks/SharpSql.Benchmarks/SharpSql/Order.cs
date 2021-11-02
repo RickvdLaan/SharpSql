@@ -3,12 +3,12 @@ using System;
 
 namespace SharpSql
 {
-    public class Order : ORMEntity
+    public class Order : SharpSqlEntity
     {
-        [ORMPrimaryKey]
+        [SharpSqlPrimaryKey]
         public int OrderId { get; internal set; } = 0;
 
-        [ORMStringLength(5)]
+        [SharpSqlStringLength(5)]
         public string CustomerID { get; set; }
         public int? EmployeeID { get; set; }
 
@@ -18,17 +18,17 @@ namespace SharpSql
         public int? ShipVia { get; set; }
         public decimal? Freight { get; set; }
 
-        [ORMStringLength(40)]
+        [SharpSqlStringLength(40)]
         public string ShipName { get; set; }
-        [ORMStringLength(60)]
+        [SharpSqlStringLength(60)]
         public string ShipAddress { get; set; }
-        [ORMStringLength(15)]
+        [SharpSqlStringLength(15)]
         public string ShipCity { get; set; }
-        [ORMStringLength(15)]
+        [SharpSqlStringLength(15)]
         public string ShipRegion { get; set; }
-        [ORMStringLength(10)]
+        [SharpSqlStringLength(10)]
         public string ShipPostalCode { get; set; }
-        [ORMStringLength(15)]
+        [SharpSqlStringLength(15)]
         public string ShipCountry { get; set; }
 
         public Order() { }
