@@ -107,7 +107,8 @@ namespace SharpSql
 
                 if (fieldPropertyInfo.GetValue(entity) is SharpSqlEntity entityColumnJoin && fieldPropertyInfo.PropertyType.IsSubclassOf(typeof(SharpSqlEntity)))
                 {
-                    if (entity.DirtyTracker.IsDirty(fieldPropertyInfo.Name))
+                    if (entity.DirtyTracker.IsDirty(fieldPropertyInfo.Name)
+                     || entity.IsNew) // ObjectState is new, therefore the join has to be added.
                     {
                         stringBuilder.Append(AddSqlParameter((entityColumnJoin.GetType().GetProperty(entityColumnJoin.PrimaryKey.Keys[0].ColumnName).GetValue(entityColumnJoin), fieldPropertyInfo.Name)));
                     }

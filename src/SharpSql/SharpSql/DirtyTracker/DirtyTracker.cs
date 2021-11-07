@@ -11,9 +11,14 @@ namespace SharpSql
 
         public int Count { get { return DirtyList.Where(x => x.Value).Count(); } }
 
-        public DirtyTracker(int capacity)
+        public DirtyTracker(List<string> fields)
         {
-            DirtyList = new Dictionary<string, bool>(capacity);
+            DirtyList = new Dictionary<string, bool>(fields.Count);
+
+            for (int i = 0; i < fields.Count; i++)
+            {
+                Update(fields[i], false);
+            }
         }
 
         public bool IsDirty(string columnName)
@@ -34,6 +39,17 @@ namespace SharpSql
         public void Update(string columnName, bool isDirty)
         {
             DirtyList[columnName] = isDirty;
+        }
+
+        internal void Reset()
+        {
+            if (Any)
+            {
+                foreach (var key in DirtyList.Keys)
+                {
+                    Update(key, false);
+                }
+            }
         }
     }
 }

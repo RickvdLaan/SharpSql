@@ -37,8 +37,9 @@ namespace SharpSql
           params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
           where EntityType : SharpSqlEntity
         {
+            // Needs testing, commented the code out to make sure it doesn't get missed.
             // Allocation for no resson, fix ToArray().
-            entity.MarkDirtyFieldsAs(false, entity.TableScheme.ToArray());
+            //entity.MarkDirtyTrackerFieldsAs(false, entity.TableScheme.ToArray());
             entity.NonQuery(NonQueryType.Update, columnValuePairs);
             return entity;
         }

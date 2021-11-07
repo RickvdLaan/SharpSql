@@ -6,13 +6,17 @@
     public enum ObjectState
     {
         /// <summary>
-        /// Should throw an exception.
+        /// Throws an exception.
         /// </summary>
         Unset,
         /// <summary>
-        /// New entity object.
+        /// A new entity.
         /// </summary>
         New,
+        /// <summary>
+        /// Temporarily in-memory immutable object of the new entity.
+        /// </summary>
+        NewRecord,
         /// <summary>
         /// Temporarily in-memory object, but exists in the database.
         /// </summary>
@@ -26,6 +30,10 @@
         /// </summary>
         Fetched,
         /// <summary>
+        /// The original immutable fetched value.
+        /// </summary>
+        OriginalFetchedValue,
+        /// <summary>
         /// An untracked object, could be new, or existing, and is always dirty.
         /// </summary>
         Untracked,
@@ -37,5 +45,9 @@
         /// Object has been deleted.
         /// </summary>
         Deleted,
+        /// <summary>
+        /// The entity (changes) have been saved.
+        /// </summary>
+        Saved
     }
 }
