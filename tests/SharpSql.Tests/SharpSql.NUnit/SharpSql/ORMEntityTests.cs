@@ -374,16 +374,6 @@ namespace SharpSql.NUnit
             Assert.AreEqual(false, user.OriginalFetchedValue.IsMarkedAsDeleted);
         }
 
-        //[Test]
-        //public void InsertDirectById() {}
-        //[Test]
-        //public void InsertDirectByEntity() {}
-
-        //[Test]
-        // JsonDeserializeTest
-        //[Test]
-        // JsonSerializeTest
-
         [Test]
         public void Delete()
         {
@@ -484,6 +474,9 @@ namespace SharpSql.NUnit
             // Initial User query
             Assert.AreEqual(expectedInitialUserQuery, user.ExecutedQuery);
             Assert.AreEqual(true, user.IsDirty);
+            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation == null);
+            Assert.IsEmpty(user.OriginalFetchedValue.Relations);
 
             user.Save();
 
@@ -496,14 +489,14 @@ namespace SharpSql.NUnit
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
-            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.OriginalFetchedValue.ExecutedQuery);
 
             // Organisation object
             Assert.IsNotNull(user.Organisation);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation == null);
+            Assert.IsTrue(user.OriginalFetchedValue.OriginalFetchedValue.ValueAs<User>().Organisation == null);
 
             Assert.IsTrue(user.Relations.Count == 1);
-            Assert.IsTrue(user.OriginalFetchedValue.Relations.Count == 0);
+            Assert.IsNotEmpty(user.OriginalFetchedValue.Relations);
         }
 
         [Test]
@@ -534,6 +527,9 @@ namespace SharpSql.NUnit
 
             Assert.IsNull(user.Organisation.OriginalFetchedValue);
             Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation.OriginalFetchedValue);
+            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
+            Assert.AreEqual(expectedOriginalUserOrganisationQuery, user.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
 
             user.Save();
 
@@ -550,7 +546,7 @@ namespace SharpSql.NUnit
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
-            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.OriginalFetchedValue.ExecutedQuery);
 
             // Organisation object
             Assert.AreEqual(false, user.Organisation.IsDirty);
@@ -559,16 +555,16 @@ namespace SharpSql.NUnit
             Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-            Assert.IsTrue(user.Organisation.Relations.Count == 0);
-            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
-            Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
+            Assert.IsEmpty(user.Organisation.Relations);
+            Assert.IsEmpty(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations);
+            Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.OriginalFetchedValue.ValueAs<User>().Organisation);
             // Originally it was null, but since it's been saved it has a original fetched value to track changes.
             Assert.IsNotNull(user.Organisation.OriginalFetchedValue);
             Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation.OriginalFetchedValue);
 
             // Organisation query
             Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
-            Assert.AreEqual(expectedOriginalUserOrganisationQuery, user.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
+            Assert.AreEqual(expectedOriginalUserOrganisationQuery, user.OriginalFetchedValue.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
         }
 
         [Test]
@@ -635,6 +631,158 @@ namespace SharpSql.NUnit
         }
 
         [Test]
+        public void Insert_JoinInsert_DisableChangeTracking()
+        {
+            var userQuery = "INSERT INTO [DBO].[USERS] ([DBO].[USERS].[USERNAME], [DBO].[USERS].[PASSWORD], [DBO].[USERS].[ORGANISATION], [DBO].[USERS].[DATECREATED], [DBO].[USERS].[DATELASTMODIFIED]) VALUES(@PARAM1, @PARAM2, @PARAM3, @PARAM4, @PARAM5); SELECT CAST(SCOPE_IDENTITY() AS INT);";
+            var organisationQuery = "INSERT INTO [DBO].[ORGANISATIONS] ([DBO].[ORGANISATIONS].[NAME]) VALUES(@PARAM1); SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+            var user = new User(true)
+            {
+                Username = "Name",
+                Password = "Password",
+                Organisation = new Organisation(true)
+                {
+                    Name = "UnitTest"
+                }
+            };
+
+            // User
+            Assert.IsNotNull(user.Username);
+            Assert.IsNotNull(user.Password);
+            Assert.IsNotNull(user.Organisation);
+            
+            Assert.IsNull(user.DateCreated);
+            Assert.IsNull(user.DateLastModified);
+            Assert.IsNull(user.OriginalFetchedValue);
+            Assert.IsNull(user.Roles);
+
+            Assert.IsTrue(user.IsNew);
+            Assert.IsTrue(user.DisableChangeTracking);
+            Assert.IsTrue(user.IsAutoIncrement);
+            Assert.IsTrue(user.IsDirty);
+
+            Assert.IsFalse(user.IsMarkedAsDeleted);
+
+            Assert.IsEmpty(user.ExecutedQuery);
+            Assert.IsEmpty(user.Relations);
+
+            Assert.AreEqual(ObjectState.New, user.ObjectState);
+
+            // Organisation
+            Assert.IsNotNull(user.Organisation.Name);
+
+            Assert.IsNull(user.Organisation.OriginalFetchedValue);
+
+            Assert.IsTrue(user.Organisation.IsNew);
+            Assert.IsTrue(user.Organisation.DisableChangeTracking);
+            Assert.IsTrue(user.Organisation.IsAutoIncrement);
+            Assert.IsTrue(user.Organisation.IsDirty);
+
+            Assert.IsFalse(user.Organisation.IsMarkedAsDeleted);
+
+            Assert.IsEmpty(user.Organisation.ExecutedQuery);
+            Assert.IsEmpty(user.Organisation.Relations);
+
+            Assert.AreEqual(ObjectState.New, user.Organisation.ObjectState);
+
+            user.Save();
+
+            Assert.AreEqual(userQuery, user.ExecutedQuery);
+            Assert.AreEqual(organisationQuery, user.Organisation.ExecutedQuery);
+
+            // User
+            Assert.IsNotNull(user.Username);
+            Assert.IsNotNull(user.Password);
+            Assert.IsNotNull(user.Organisation);
+            Assert.IsNotNull(user.DateCreated);
+            Assert.IsNotNull(user.DateLastModified);
+            Assert.IsNotNull(user.OriginalFetchedValue);
+
+            Assert.IsNull(user.Roles);
+
+            Assert.IsTrue(user.DisableChangeTracking);
+            Assert.IsTrue(user.IsAutoIncrement);
+
+            Assert.IsFalse(user.IsDirty);
+            Assert.IsFalse(user.IsNew);
+            Assert.IsFalse(user.IsMarkedAsDeleted);
+
+            Assert.IsNotEmpty(user.Relations);
+
+            Assert.AreEqual(ObjectState.Saved, user.ObjectState);
+
+            // Organisation
+            Assert.IsNotNull(user.Organisation.Name);
+            Assert.IsNotNull(user.Organisation.OriginalFetchedValue);
+
+            Assert.IsTrue(user.Organisation.DisableChangeTracking);
+            Assert.IsTrue(user.Organisation.IsAutoIncrement);
+            
+            Assert.IsFalse(user.Organisation.IsDirty);
+            Assert.IsFalse(user.Organisation.IsNew);
+            Assert.IsFalse(user.Organisation.IsMarkedAsDeleted);
+
+            Assert.IsEmpty(user.Organisation.Relations);
+
+            Assert.AreEqual(ObjectState.Saved, user.Organisation.ObjectState);
+
+            // user.OriginalFetchedValue.User
+            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Username);
+            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Password);
+            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
+            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().DateCreated);
+            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().DateLastModified);
+
+            Assert.IsNull(user.OriginalFetchedValue.OriginalFetchedValue);
+            Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Roles);
+
+            Assert.IsTrue(user.OriginalFetchedValue.DisableChangeTracking);
+            Assert.IsTrue(user.OriginalFetchedValue.IsAutoIncrement);
+
+            Assert.IsFalse(user.OriginalFetchedValue.IsDirty);
+            Assert.IsFalse(user.OriginalFetchedValue.IsNew);
+            Assert.IsFalse(user.OriginalFetchedValue.IsMarkedAsDeleted);
+
+            Assert.IsNotEmpty(user.OriginalFetchedValue.Relations);
+
+            Assert.AreEqual(userQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.AreEqual(ObjectState.NewRecord, user.OriginalFetchedValue.ObjectState);
+
+            // user.OriginalFetchedValue.Organisation
+            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation.Name);
+            Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().Organisation.OriginalFetchedValue);
+
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.DisableChangeTracking);
+            Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.IsAutoIncrement);
+
+            Assert.IsFalse(user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
+            Assert.IsFalse(user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
+            Assert.IsFalse(user.OriginalFetchedValue.ValueAs<User>().Organisation.IsMarkedAsDeleted);
+
+            Assert.IsEmpty(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations);
+
+            Assert.AreEqual(organisationQuery, user.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
+            Assert.AreEqual(ObjectState.Saved, user.OriginalFetchedValue.ValueAs<User>().Organisation.ObjectState);
+
+            // User.Organisation.OriginalFetchedValue
+            Assert.IsNotNull(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().Name);
+
+            Assert.IsNull(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().OriginalFetchedValue);
+
+            Assert.IsTrue(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().DisableChangeTracking);
+            Assert.IsTrue(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().IsAutoIncrement);
+
+            Assert.IsFalse(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().IsDirty);
+            Assert.IsFalse(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().IsNew);
+            Assert.IsFalse(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().IsMarkedAsDeleted);
+
+            Assert.IsEmpty(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().Relations);
+
+            Assert.AreEqual(organisationQuery, user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().ExecutedQuery);
+            Assert.AreEqual(ObjectState.NewRecord, user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().ObjectState);
+        }
+
+        [Test]
         public void Update_JoinInsert_DisableChangeTracking()
         {
             var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM2);";
@@ -648,8 +796,6 @@ namespace SharpSql.NUnit
                     Name = "UnitTest"
                 }
             };
-
-            user.MarkFieldsAsDirty(nameof(user.Organisation));
 
             // Initial User query
             Assert.AreEqual(expectedInitialUserQuery, user.ExecutedQuery);
@@ -695,7 +841,6 @@ namespace SharpSql.NUnit
             var expectedInitialUserQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[ORGANISATIONS] AS [O] ON [U].[ORGANISATION] = [O].[ID] WHERE ([U].[ID] = @PARAM1);";
             var expectedUserQuery = "UPDATE [U] SET [U].[ORGANISATION] = @PARAM1, [U].[DATELASTMODIFIED] = @PARAM2 FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM3);";
 
-            var expectedOrganisationQuery = "UPDATE [O] SET [O].[NAME] = @PARAM1 FROM [DBO].[ORGANISATIONS] AS [O] WHERE ([O].[ID] = @PARAM2);";
             var expectedOriginalOrganisationQuery = "INITIALISED THROUGH PARENT";
 
             var user = new User(2, x => x.Organisation.Left())
@@ -706,6 +851,9 @@ namespace SharpSql.NUnit
             // Initial User query
             Assert.AreEqual(expectedInitialUserQuery, user.ExecutedQuery);
             Assert.AreEqual(true, user.IsDirty);
+            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.DisableChangeTracking);
+            Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
 
             user.Save();
 
@@ -725,13 +873,13 @@ namespace SharpSql.NUnit
 
             // User query
             Assert.AreEqual(expectedUserQuery, user.ExecutedQuery);
-            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+            Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.OriginalFetchedValue.ExecutedQuery);
 
             // DisableChangeTracking
             Assert.AreEqual(false, user.DisableChangeTracking);
             Assert.AreEqual(true, user.Organisation.DisableChangeTracking);
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().DisableChangeTracking);
-            Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.DisableChangeTracking);
+            Assert.AreEqual(false, user.OriginalFetchedValue.OriginalFetchedValue.ValueAs<User>().Organisation.DisableChangeTracking);
 
             // Organisation object
             Assert.AreEqual(false, user.Organisation.IsDirty);
@@ -741,12 +889,11 @@ namespace SharpSql.NUnit
             Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
             Assert.IsTrue(user.Organisation.Relations.Count == 0);
             Assert.IsTrue(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations.Count == 0);
-            Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
+            Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.OriginalFetchedValue.ValueAs<User>().Organisation);
             Assert.IsNull(user.Organisation.OriginalFetchedValue);
 
             // Organisation query
-            Assert.AreEqual(expectedOrganisationQuery, user.Organisation.ExecutedQuery);
-            Assert.AreEqual(expectedOriginalOrganisationQuery, user.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
+            Assert.AreEqual(expectedOriginalOrganisationQuery, user.OriginalFetchedValue.ValueAs<User>().OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
         }
 
         [Test]
@@ -819,7 +966,7 @@ namespace SharpSql.NUnit
             Assert.AreEqual(false, user.Organisation.IsDirty);
 
             // Making changes known to SharpSql
-            user.MarkFieldsAsDirty(nameof(user.Organisation));
+            user.Organisation.MarkFieldsAsDirty(nameof(user.Organisation.Name));
             Assert.AreEqual(true, user.Organisation.IsDirty);
 
             user.Save();
@@ -976,5 +1123,15 @@ namespace SharpSql.NUnit
         // Compare the mutable vs normal schema
 
         // Write a unit tests to check the PK's for both Organisations as Tokens.
+
+        //[Test]
+        //public void InsertDirectById() {}
+        //[Test]
+        //public void InsertDirectByEntity() {}
+
+        //[Test]
+        // JsonDeserializeTest
+        //[Test]
+        // JsonSerializeTest
     }
 }

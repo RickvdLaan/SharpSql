@@ -624,17 +624,14 @@ namespace SharpSql
             {
                 if (this[field] is SharpSqlEntity join)
                 {
-                    if (join.IsNew)
-                    {
-                        DirtyTracker.Update(field, isDirty);
-                    }
+                    throw new InvalidOperationException($"You can't mark the {GetType()}.{join.GetType().Name} as dirty, you have to mark the fields in {GetType()}.{join.GetType().Name} as dirty.");
                 }
                 else if (ObjectState == ObjectState.ExternalRecord || DisableChangeTracking)
                 {
                     DirtyTracker.Update(field, isDirty);
                 }
                 else
-                    throw new InvalidOperationException("ObjectState must be ExternalRecord or DisableChangeTracking must be set to true to mark fields as dirty.");
+                    throw new InvalidOperationException("ObjectState must be ExternalRecord or DisableChangeTracking must be set to true to mark fields as dirty. When the ObjectState is New, fields do not have to be marked as dirty.");
             }
         }
 
@@ -787,9 +784,13 @@ namespace SharpSql
         {
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
+                // When the mutable field is a join that's new, while the parent has change tracking disabled
+                // it should not be skipped.
+                bool hasJoinThatsNew = (this[MutableTableScheme[i]] as SharpSqlEntity)?.IsNew ?? false;
+
                 if (IsNew                                                                           // When an object is new everything is 'dirty' by default.
-                 || DisableChangeTracking                                                           // When changetracking is disabeld, dirty fields have to be set manually.
-                 || (ObjectState == ObjectState.ExternalRecord && OriginalFetchedValue == null))    // Because the source is exteral there is no original fetched value. Therefore the dirty fields have to be set manually      
+                 || DisableChangeTracking && !hasJoinThatsNew                                       // When changetracking is disabeld, dirty fields have to be set manually.
+                 || (ObjectState == ObjectState.ExternalRecord && OriginalFetchedValue == null))    // Because the source is exteral there is no original fetched value. Therefore the dirty fields have to be set manually
                 {
                     continue;
                 }
