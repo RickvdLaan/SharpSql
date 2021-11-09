@@ -27,6 +27,8 @@ namespace SharpSql.NUnit
 
         public User() { }
 
+        public User(bool disableChangeTracking) : base(disableChangeTracking) { }
+
         public User(int fetchByUserId, bool disableChangeTracking = default) : base(disableChangeTracking)
         {
             base.FetchEntityByPrimaryKey(fetchByUserId);

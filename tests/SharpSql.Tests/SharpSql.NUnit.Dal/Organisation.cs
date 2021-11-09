@@ -15,5 +15,7 @@ namespace SharpSql.NUnit
         {
             base.FetchEntityByPrimaryKey(fetchByUserId);
         }
+
+        public Organisation(bool disableChangeTracking) : base(disableChangeTracking) { }
     }
 }

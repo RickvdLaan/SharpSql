@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace SharpSql
 {
@@ -62,7 +63,7 @@ namespace SharpSql
         public bool IsAutoIncrement { get { return PrimaryKey.Keys.Any(key => key.IsAutoIncrement); } }
 
         /// <summary>
-        /// Gets whether the <see cref="ObjectState"/> is new.
+        /// Gets whether the <see cref="ObjectState"/> is <see cref="ObjectState.New"/>.
         /// </summary>
         public bool IsNew
         {
@@ -78,7 +79,7 @@ namespace SharpSql
         }
 
         /// <summary>
-        /// Gets whether the <see cref="ObjectState"/> is deleted.
+        /// Gets whether the <see cref="ObjectState"/> is <see cref="ObjectState.Deleted"/>.
         /// </summary>
         public bool IsMarkedAsDeleted => ObjectState == ObjectState.Deleted;
 
@@ -102,18 +103,19 @@ namespace SharpSql
         {
             get
             {
-                // A new object is always dirty.
+                // A new object is always dirty (DirtyTracker is not doing anything in this case)
                 if (IsNew)
                     return true;
                 // An object that has been deleted cannot be dirty.
-                if (ObjectState == ObjectState.Deleted)
+                if (IsMarkedAsDeleted)
                     return false;
-                // Without change tracking we must assume everything is dirty.
-                if (DisableChangeTracking)
-                    return true;
-                // Joined objects have a original fetched value, but the original fetched value
-                // from the join-object does not have a orignal fetched value, therefore IsDirty is false.
-                if (ObjectState == ObjectState.Fetched && !IsNew && OriginalFetchedValue == null)
+                // An original fetched value is immutable; therefore it can't be dirty.
+                if (ObjectState == ObjectState.OriginalFetchedValue)
+                    return false;
+                // When a copy is made from the original value it becomes immutable; therefore it can't be
+                // dirty regardless of what the DirtyTracker says based on its previous comparison.
+                // Therefore it's always false.
+                if (ObjectState == ObjectState.NewRecord)
                     return false;
 
                 UpdateIsDirtyList();
@@ -146,8 +148,7 @@ namespace SharpSql
 
             InitializePrimaryKeys(externalType);
             InitializeMutableTableSchema(externalType);
-            DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
-            UpdateIsDirtyList();
+            DirtyTracker = new DirtyTracker(MutableTableScheme);
         }
 
         /// <summary>
@@ -159,8 +160,7 @@ namespace SharpSql
 
             InitializePrimaryKeys();
             InitializeMutableTableSchema();
-            DirtyTracker = new DirtyTracker(MutableTableScheme.Count);
-            UpdateIsDirtyList();
+            DirtyTracker = new DirtyTracker(MutableTableScheme);
         }
 
         /// <summary>
@@ -388,15 +388,6 @@ namespace SharpSql
                     else if ((this[relation.GetType().Name] as SharpSqlEntity).IsDirty)
                     {
                         (this[relation.GetType().Name] as SharpSqlEntity).Save();
-
-                        for (int i = 0; i < relation.PrimaryKey.Count; i++)
-                        {
-                            var entityRelationId = (int)(this[relation.GetType().Name] as SharpSqlEntity)[relation.PrimaryKey.Keys[i].ColumnName];
-                            var entityJoin = this[relation.GetType().Name];
-
-                            entityJoin.GetType().GetProperty(relation.PrimaryKey.Keys[i].ColumnName).SetValue(entityJoin, entityRelationId);
-                            entityJoin.GetType().GetProperty(nameof(ExecutedQuery)).SetValue(entityJoin, (this[relation.GetType().Name] as SharpSqlEntity).ExecutedQuery);
-                        }
                     }
                 }
 
@@ -422,7 +413,31 @@ namespace SharpSql
                 }
 
                 ExecutedQuery = queryBuilder.GeneratedQuery;
+                OverrideOriginalFetchedValue();
+
+                // We want to set the state after the override.
+                ObjectState = ObjectState.Saved;
+
+                // The changes to the object have been saved, therefore the IsDirtyTracker can be reset.
+                DirtyTracker.Reset();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void OverrideOriginalFetchedValue()
+        {
+            // Cases:
+            // -> Update:
+            // Changes have been saved to the database, therefore the original fetched value
+            // can be overriden by the new record, so it can track changes again.
+
+            // -> Insert:
+            // Since the new object has been saved, it should have a original fetched value
+            // to track its changes. But with the state NewRecord since it isn't fetched
+            // from the database.
+
+            GetType().GetProperty(nameof(OriginalFetchedValue), NonPublicFlags)
+                     .SetValue(this, ShallowCopy(ObjectState.NewRecord));
         }
 
         internal void NonQuery<EntityType>(NonQueryType nonQueryType, object primaryKey, params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
@@ -447,6 +462,11 @@ namespace SharpSql
                 {
                     var columnName = QueryBuilder.ParseUpdateExpression(columnValuePair.Expression);
                     this[columnName] = columnValuePair.Value;
+
+                    if (ObjectState == ObjectState.ExternalRecord)
+                    {
+                        MarkDirtyTrackerFieldsAs(true, columnName);
+                    }
                 }
             }
             if (nonQueryType == NonQueryType.Delete)
@@ -595,20 +615,24 @@ namespace SharpSql
 
         public void MarkFieldsAsDirty(params string[] fields)
         {
-            MarkDirtyFieldsAs(true, fields);
+            MarkDirtyTrackerFieldsAs(true, fields);
         }
 
-        internal void MarkDirtyFieldsAs(bool isDirty, params string[] fields)
+        internal void MarkDirtyTrackerFieldsAs(bool isDirty, params string[] fields)
         {
-            if (ObjectState == ObjectState.ExternalRecord || (!DisableChangeTracking))
+            foreach (var field in fields)
             {
-                foreach (var field in fields)
+                if (this[field] is SharpSqlEntity join)
+                {
+                    throw new InvalidOperationException($"You can't mark the {GetType()}.{join.GetType().Name} as dirty, you have to mark the fields in {GetType()}.{join.GetType().Name} as dirty.");
+                }
+                else if (ObjectState == ObjectState.ExternalRecord || DisableChangeTracking)
                 {
                     DirtyTracker.Update(field, isDirty);
                 }
+                else
+                    throw new InvalidOperationException("ObjectState must be ExternalRecord or DisableChangeTracking must be set to true to mark fields as dirty. When the ObjectState is New, fields do not have to be marked as dirty.");
             }
-            else
-                throw new InvalidOperationException("ObjectState must be ExternalRecord or DisableChangeTracking must be set to true to mark fields as dirty.");
         }
 
         /// <summary>
@@ -622,11 +646,12 @@ namespace SharpSql
         /// </summary>
         public SharpSqlEntity Left() => default;
 
-        internal SharpSqlEntity ShallowCopy()
+        internal SharpSqlEntity ShallowCopy(ObjectState objectState = ObjectState.OriginalFetchedValue)
         {
             var copy = MemberwiseClone() as SharpSqlEntity;
 
             copy.Relations = new List<SharpSqlEntity>(Relations);
+            copy.ObjectState = objectState;
 
             return copy;
         }
@@ -759,15 +784,14 @@ namespace SharpSql
         {
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
-                // When an object is new, or change tracking is disabled everything is 'dirty' by default.
-                if (ObjectState == ObjectState.New || DisableChangeTracking)
+                // When the mutable field is a join that's new, while the parent has change tracking disabled
+                // it should not be skipped.
+                bool hasJoinThatsNew = (this[MutableTableScheme[i]] as SharpSqlEntity)?.IsNew ?? false;
+
+                if (IsNew                                                                           // When an object is new everything is 'dirty' by default.
+                 || DisableChangeTracking && !hasJoinThatsNew                                       // When changetracking is disabeld, dirty fields have to be set manually.
+                 || (ObjectState == ObjectState.ExternalRecord && OriginalFetchedValue == null))    // Because the source is exteral there is no original fetched value. Therefore the dirty fields have to be set manually
                 {
-                    DirtyTracker.Update(MutableTableScheme[i], true);
-                    continue;
-                }
-                else if (ObjectState == ObjectState.ExternalRecord)
-                {
-                    DirtyTracker.Update(MutableTableScheme[i], false);
                     continue;
                 }
 

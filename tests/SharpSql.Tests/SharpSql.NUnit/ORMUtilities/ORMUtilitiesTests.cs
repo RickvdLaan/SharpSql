@@ -9,7 +9,7 @@ namespace SharpSql.NUnit
     {
         [Test, SharpSqlUnitTest("BasicSelectUsers")]
         [TestCaseSource(nameof(ConvertTo_Data))]
-        public void ConvertTo(string username, string password, bool disableChangeTracking, int index)
+        public void ConvertTo(string username, string password, bool disableChangeTracking, int index, string newPassword)
         {
             var dataTable = SharpSqlUtilities.MemoryCollectionDatabase.Fetch(UnitTestUtilities.GetMemoryTableName());
 
@@ -36,7 +36,18 @@ namespace SharpSql.NUnit
 
             if (disableChangeTracking)
             {
-                Assert.IsTrue(users.All(x => x.IsDirty == true));
+                if (!string.IsNullOrEmpty(newPassword))
+                {
+                    Assert.IsTrue(users.All(x => x.IsDirty == false));
+                    user.Password = newPassword;
+                    Assert.IsTrue(users.All(x => x.IsDirty == false));
+                    user.MarkFieldsAsDirty(nameof(user.Password));
+                    Assert.IsTrue(user.IsDirty == true);
+                }
+                else
+                {
+                    Assert.IsFalse(users.All(x => x.IsDirty == true));
+                }
                 Assert.IsNull(user.OriginalFetchedValue);
                 Assert.IsTrue(users.All(x => x.OriginalFetchedValue == null));
             }
