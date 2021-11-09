@@ -765,6 +765,10 @@ namespace SharpSql
             // Fetches the data.
             collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(SharpSqlEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, 1, null });
 
+            // When nothing is found, it returns an empty and therefore 'new' object.
+            if (IsNew)
+                return null;
+
             ObjectState = ObjectState.Fetched;
 
             if (!UnitTestUtilities.IsUnitTesting && IsNew)
