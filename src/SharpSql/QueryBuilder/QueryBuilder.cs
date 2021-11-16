@@ -728,9 +728,17 @@ namespace SharpSql
 
         private ConstantExpression ReconstructConstantExpressionFromMemberExpression(MemberExpression memberExpression)
         {
+            // Local variables
             if (memberExpression.Expression is ConstantExpression constantExpression)
             {
                 var value = GetValue(memberExpression.Member, constantExpression.Value);
+
+                return Expression.Constant(value, value.GetType());
+            }
+            // Local properties
+            else if (memberExpression.Expression is MemberExpression subMemberExpression) 
+            {
+                var value = GetValue(memberExpression.Member, ReconstructConstantExpressionFromMemberExpression(subMemberExpression).Value);
 
                 return Expression.Constant(value, value.GetType());
             }
