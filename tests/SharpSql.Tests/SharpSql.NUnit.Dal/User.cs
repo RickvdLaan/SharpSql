@@ -23,7 +23,7 @@ namespace SharpSql.NUnit
         public DateTime? DateLastModified { get; internal set; }
 
         [SharpSqlManyToMany]
-        public Roles Roles { get; set; }
+        public Roles Roles2 { get; set; }
 
         public User() { }
 

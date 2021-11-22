@@ -24,8 +24,11 @@
     <None Remove="MemoryCollectionTables\ComplexJoinD.xml" />
     <None Remove="MemoryCollectionTables\ComplexJoinE.xml" />
     <None Remove="MemoryCollectionTables\ComplexWhereLike.xml" />
+    <None Remove="MemoryCollectionTables\FetchCompareOutsideScope.xml" />
+    <None Remove="MemoryCollectionTables\JoinAndManyToMany.xml" />
     <None Remove="MemoryCollectionTables\ManyToManyRoles.xml" />
     <None Remove="MemoryCollectionTables\ManyToManyUserRoles.xml" />
+    <None Remove="MemoryCollectionTables\ManyToManyUsers.xml" />
     <None Remove="MemoryEntityTables\ORGANISATIONS.xml" />
     <None Remove="MemoryEntityTables\ROLES.xml" />
     <None Remove="MemoryEntityTables\USERROLES.xml" />
@@ -33,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="MemoryCollectionTables\FetchCompareOutsideScope.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicFetchTopUsers.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicFetchUsers.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicJoinInner.xml" />
@@ -45,6 +49,7 @@
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinB.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\JoinAndManyToMany.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ManyToManyRoles.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ManyToManyUserRoles.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinE.xml" />
@@ -52,6 +57,7 @@
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinC.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinA.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexWhereLike.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ManyToManyUsers.xml" />
     <EmbeddedResource Include="MemoryEntityTables\ORGANISATIONS.xml" />
     <EmbeddedResource Include="MemoryEntityTables\ROLES.xml" />
     <EmbeddedResource Include="MemoryEntityTables\USERROLES.xml" />

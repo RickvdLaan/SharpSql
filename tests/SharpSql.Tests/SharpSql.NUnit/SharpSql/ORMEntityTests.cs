@@ -654,7 +654,7 @@ namespace SharpSql.NUnit
             Assert.IsNull(user.DateCreated);
             Assert.IsNull(user.DateLastModified);
             Assert.IsNull(user.OriginalFetchedValue);
-            Assert.IsNull(user.Roles);
+            Assert.IsNull(user.Roles2);
 
             Assert.IsTrue(user.IsNew);
             Assert.IsTrue(user.DisableChangeTracking);
@@ -698,7 +698,7 @@ namespace SharpSql.NUnit
             Assert.IsNotNull(user.DateLastModified);
             Assert.IsNotNull(user.OriginalFetchedValue);
 
-            Assert.IsNull(user.Roles);
+            Assert.IsNull(user.Roles2);
 
             Assert.IsTrue(user.DisableChangeTracking);
             Assert.IsTrue(user.IsAutoIncrement);
@@ -734,7 +734,7 @@ namespace SharpSql.NUnit
             Assert.IsNotNull(user.OriginalFetchedValue.ValueAs<User>().DateLastModified);
 
             Assert.IsNull(user.OriginalFetchedValue.OriginalFetchedValue);
-            Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Roles);
+            Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Roles2);
 
             Assert.IsTrue(user.OriginalFetchedValue.DisableChangeTracking);
             Assert.IsTrue(user.OriginalFetchedValue.IsAutoIncrement);
@@ -1096,7 +1096,7 @@ namespace SharpSql.NUnit
         {
             var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[USERROLES] AS [UU] ON [U].[ID] = [UU].[USERID] LEFT JOIN [DBO].[ROLES] AS [R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = @PARAM1);";
 
-            var user = new User(1, x => x.Roles.Left());
+            var user = new User(1, x => x.Roles2.Left());
 
             // User object
             Assert.AreEqual(false, user.IsDirty);
@@ -1110,10 +1110,10 @@ namespace SharpSql.NUnit
             Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation);
 
             // Roles (many-to-many)
-            Assert.IsNotNull(user.Roles);
-            Assert.IsTrue(user.Roles.Count == 2);
-            Assert.IsTrue(user.Roles[0].Description == "Admin");
-            Assert.IsTrue(user.Roles[1].Description == "Moderator");
+            Assert.IsNotNull(user.Roles2);
+            Assert.IsTrue(user.Roles2.Count == 2);
+            Assert.IsTrue(user.Roles2[0].Description == "Admin");
+            Assert.IsTrue(user.Roles2[1].Description == "Moderator");
 
             Assert.AreEqual(expectedQuery, user.ExecutedQuery);
         }

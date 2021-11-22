@@ -28,6 +28,8 @@ namespace SharpSql
 
                 PopulateEntity(entity, reader, queryBuilder);
 
+                entity.ExecutedQuery = "Initialised through collection";
+
                 collection.Add(entity);
             }
         }
@@ -156,6 +158,31 @@ namespace SharpSql
             }
         }
 
+
+
+        //SELECT U.Id, U.Username, U.Organisation, U.DateCreated, U.DateLastModified, R.Id, R.Name FROM [DBO].[USERS] AS [U]
+        //LEFT JOIN[DBO].[USERROLES] AS[UU] ON [U].[ID] = [UU].[USERID]
+        //LEFT JOIN [DBO].[ROLES] AS[R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = 1);
+
+
+        //SELECT U.Id, U.Username, U.Organisation, U.DateCreated, U.DateLastModified, O.Id, O.Name, R.Id, R.Name FROM [DBO].[USERS] AS [U]
+        //LEFT JOIN[DBO].[Organisations] AS[O] ON [U].[ID] = [O].[Id]
+        //LEFT JOIN [DBO].[USERROLES] AS[UU] ON [U].[ID] = [UU].[USERID]
+        //LEFT JOIN [DBO].[ROLES] AS[R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = 1);
+
+
+        //SELECT* FROM [DBO].[USERS] AS[U]
+        //LEFT JOIN[DBO].[USERROLES] AS[UU] ON[U].[ID] = [UU].[USERID]
+        //LEFT JOIN[DBO].[ROLES] AS[R] ON[UU].[ROLEID] = [R].[ID] WHERE([U].[ID] = 1);
+
+
+        //SELECT* FROM [DBO].[USERS] AS[U]
+        //LEFT JOIN[DBO].[Organisations] AS[O] ON[U].[ID] = [O].[Id]
+        //LEFT JOIN[DBO].[USERROLES] AS[UU] ON[U].[ID] = [UU].[USERID]
+        //LEFT JOIN[DBO].[ROLES] AS[R] ON[UU].[ROLEID] = [R].[ID] WHERE([U].[ID] = 1);
+
+        // ALSO make unit tests for INNER variants!!!!!!!!!!!
+
         private static void PopulateManyToManyCollection<CollectionType, EntityType>(CollectionType collection, IDataReader reader, QueryBuilder queryBuilder)
             where CollectionType : SharpSqlCollection<EntityType>
             where EntityType : SharpSqlEntity
@@ -167,21 +194,22 @@ namespace SharpSql
             var manyToManyJoinTypes = new Dictionary<string, Type>();
 
             var tableIndex = 0;
-            foreach (var (name, _) in queryBuilder.TableOrder)
+            foreach (var (name, tableType) in queryBuilder.TableOrder)
             {
                 var objectPath = queryBuilder.TableNameResolvePaths.ContainsKey(name) ? queryBuilder.TableNameResolvePaths[name] : string.Empty;
                 var tableColumnCount = queryBuilder.TableNameColumnCount[name];
 
                 foreach (var join in queryBuilder.Joins)
                 {
-                    if (join.IsManyToMany)
+                    if (join.LeftTableAttribute.EntityType == tableType && join.IsManyToMany)
                     {
                         var indexes = new List<int>();
                         for (int i = 0; i < tableColumnCount; i++)
                         {
                             indexes.Add(tableIndex + i);
                         }
-                        manyToManyJoinIndexes.Add((objectPath.Split('.')[1], indexes.ToArray()));
+                        manyToManyJoinIndexes.Add((join.LeftPropertyInfo.Name, indexes.ToArray()));
+
                     }
                 }
 
@@ -276,7 +304,7 @@ namespace SharpSql
                     foreach (var (fieldName, _) in manyToManyJoinIndexes)
                     {
                         var type = entity.GetType().GetProperty(fieldName, entity.PublicFlags).PropertyType;
-                        if (!typeof(SharpSqlEntity).IsAssignableFrom(type.GetType()))
+                        if (typeof(SharpSqlEntity).IsAssignableFrom(type.GetType()))
                         {
                             type = SharpSqlUtilities.CollectionEntityRelations[type];
                         }
@@ -460,6 +488,10 @@ namespace SharpSql
                 }
             }
         }
+
+
+
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetEntityProperty(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder, int iteration, bool isEntityManyTomany = false)

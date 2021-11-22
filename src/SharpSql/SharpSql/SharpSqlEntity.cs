@@ -237,6 +237,8 @@ namespace SharpSql
                 {
                     foreach (var property in GetType().GetProperties())
                     {
+                        // It's possible to have a different property name than sql column name. But it
+                        // does come at a small performance cost.
                         var columnAttribute = property.GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).FirstOrDefault() as SharpSqlColumnAttribute;
 
                         if (columnAttribute?.ColumnName == columnName)
@@ -244,6 +246,8 @@ namespace SharpSql
                             return GetType().GetProperty(property.Name, PublicIgnoreCaseFlags | NonPublicFlags).GetValue(this);
                         }
                     }
+
+                    throw new NotImplementedException($"The property [{columnName}] was not found in entity [{GetType().Name}].");
                 }
 
                 return propertyInfo.GetValue(this);
@@ -256,12 +260,14 @@ namespace SharpSql
                 {
                     foreach (var property in GetType().GetProperties())
                     {
+                        // It's possible to have a different property name than sql column name. But it
+                        // does come at a small performance cost.
                         var columnAttribute = property.GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).FirstOrDefault() as SharpSqlColumnAttribute;
 
                         if (columnAttribute?.ColumnName == columnName)
                         {
                             GetType().GetProperty(property.Name, PublicIgnoreCaseFlags | NonPublicFlags).SetValue(this, value);
-                            // @Todo: this takes a performance hit, needs an improved (light) version.
+
                             UpdateIsDirtyList();
 
                             return;
@@ -272,7 +278,7 @@ namespace SharpSql
                 }
 
                 propertyInfo.SetValue(this, value);
-                // @Todo: this takes a performance hit, needs an improved (light) version.
+
                 UpdateIsDirtyList();
             }
         }
@@ -699,7 +705,7 @@ namespace SharpSql
                 }
 
                 // Contains the id represented as a MemberExpression: {x.InternalPrimaryKeyName}.
-                var memberExpression = Expression.Property(Expression.Parameter(GetType(), $"x"), GetPrimaryKeyPropertyInfo()[i]);
+                var memberExpression = Expression.Property(Expression.Parameter(GetType(), "x"), GetPrimaryKeyPropertyInfo()[i]);
 
                 // Contains the actual id represented as a ConstantExpression: {id_value}.
                 var constantExpression = Expression.Constant(primaryKey.Keys[i].Value, primaryKey.Keys[i].Value.GetType());
@@ -748,7 +754,7 @@ namespace SharpSql
                 throw new IllegalUniqueConstraintException(columnName);
 
             // Contains the UC represented as a MemberExpression: {x.columnName}.
-            var memberExpression = Expression.Property(Expression.Parameter(GetType(), $"x"), GetType().GetProperty(columnName, PublicIgnoreCaseFlags | NonPublicFlags));
+            var memberExpression = Expression.Property(Expression.Parameter(GetType(), "x"), GetType().GetProperty(columnName, PublicIgnoreCaseFlags | NonPublicFlags));
 
             // Contains the actual UC represented as a ConstantExpression: {value}.
             var constantExpression = Expression.Constant(value, value.GetType());
@@ -786,6 +792,8 @@ namespace SharpSql
 
         private void UpdateIsDirtyList()
         {
+            // @Todo: needs a light and improved version for certain cases.
+
             for (int i = 0; i < MutableTableScheme.Count; i++)
             {
                 // When the mutable field is a join that's new, while the parent has change tracking disabled

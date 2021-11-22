@@ -140,7 +140,7 @@ namespace SharpSql
                                                 continue;
 
                                             // Contains the id represented as a MemberExpression: {x.InternalPropertyName}.
-                                            var memberExpression = Expression.Property(Expression.Parameter(childEntity.GetType(), $"x"), childEntity.GetPrimaryKeyPropertyInfo()[i]);
+                                            var memberExpression = Expression.Property(Expression.Parameter(childEntity.GetType(), "x"), childEntity.GetPrimaryKeyPropertyInfo()[i]);
 
                                             // Contains the actual id represented as a ConstantExpression: {id_value}.
                                             var constantExpression = Expression.Constant(entity.PrimaryKey.Keys[i].Value, entity.PrimaryKey.Keys[i].Value.GetType());
@@ -171,7 +171,7 @@ namespace SharpSql
                                             continue;
 
                                         // Contains the id represented as a MemberExpression: {x.InternalPropertyName}.
-                                        var memberExpressionRight = Expression.Property(Expression.Parameter(childEntityRight.GetType(), $"x"), childEntityRight.GetPrimaryKeyPropertyInfo()[0]);
+                                        var memberExpressionRight = Expression.Property(Expression.Parameter(childEntityRight.GetType(), "x"), childEntityRight.GetPrimaryKeyPropertyInfo()[0]);
 
                                         // Contains the actual id represented as a ConstantExpression: {id_value}.
                                         var constantExpressionRight = Expression.Constant(childEntityLeft.PrimaryKey.Keys[i].Value, childEntityLeft.PrimaryKey.Keys[i].Value.GetType());

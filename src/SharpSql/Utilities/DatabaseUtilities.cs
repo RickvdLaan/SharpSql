@@ -197,6 +197,8 @@ namespace SharpSql
             return command.ExecuteNonQuery();
         }
 
+        private static readonly Regex ParamRegexCompiled = new Regex(@"\@[^ |\))]\w+", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+
         private static T ExecuteQuery<T>(Func<SqlCommand, T> method, string query, params object[] parameters)
         {
             using SqlConnection connection = new SqlConnection(ConnectionString);
@@ -208,7 +210,7 @@ namespace SharpSql
                 command.Connection.Open();
             }
 
-            var regexMatches = Regex.Matches(query, @"\@[^ |\))]\w+")
+            var regexMatches = ParamRegexCompiled.Matches(query)
                 .OfType<Match>()
                 .Select(m => m.Groups[0].Value)
                 .Distinct()
@@ -266,7 +268,7 @@ namespace SharpSql
                 foreach (var constraint in constraints)
                 {
                     using SqlConnection connection = new SqlConnection(ConnectionString);
-                    // Todo: column names
+                    // @Todo: column names
                     using var command = new SqlCommand(new QueryBuilder().CreateUniqueConstraint(collectionType.Name, "columnNames"), connection);
 
                     if (!UnitTestUtilities.IsUnitTesting)

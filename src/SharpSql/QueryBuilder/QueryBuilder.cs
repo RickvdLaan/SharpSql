@@ -155,7 +155,7 @@ namespace SharpSql
             var parsedExpression = ParseExpression(selectExpression);
             foreach (var (name, _) in TableOrder)
             {
-                var matches = Regex.Matches(parsedExpression, $"\\[{name}\\]", RegexOptions.IgnoreCase);
+                var matches = Regex.Matches(parsedExpression, $"\\[{name}\\]", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromMilliseconds(250));
                 TableNameColumnCount[name] = matches.Count;
             }
 
@@ -200,10 +200,12 @@ namespace SharpSql
 
                     for (int i = 0; i < newArrayExpression.Expressions.Count; i++)
                     {
+                        // Joins without a call
                         if (newArrayExpression.Expressions[i].Type.IsSubclassOf(typeof(SharpSqlEntity)))
                         {
                             expressions.Add(Expression.Call(newArrayExpression.Expressions[i], typeof(SharpSqlEntity).GetMethod(nameof(SharpSqlEntity.Left))));
                         }
+                        // Joins with a call
                         else if (newArrayExpression.Expressions[i] is MethodCallExpression methodCallExpression)
                         {
                             if (methodCallExpression.Method.Name != nameof(SharpSqlEntity.Left)
@@ -213,6 +215,23 @@ namespace SharpSql
                             }
 
                             expressions.Add(methodCallExpression);
+                        }
+                        // ManyToMany without a call
+                        else if (newArrayExpression.Expressions[i].Type.BaseType.GenericTypeArguments.Length > 0)
+                        {
+
+
+                            //foreach (var type in newArrayExpression.Expressions[i].Type.BaseType.GenericTypeArguments)
+                            //{
+                            //    var result = SharpSqlUtilities.ManyToManyRelations.Keys.FirstOrDefault(x => x.CollectionTypeLeft == SharpSqlUtilities.CollectionEntityRelations[type]);
+                            //    var attribute = SharpSqlUtilities.ManyToManyRelations[result];
+
+                            //    var parameterExpression = Expression.Parameter(attribute.CollectionType, "x");
+
+
+
+
+                            //}
                         }
                         else
                         {
@@ -296,7 +315,7 @@ namespace SharpSql
 
                 for (int i = 0; i < propertyInfo.Length; i++)
                 {
-                    var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), $"x"), propertyInfo[i]);
+                    var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), "x"), propertyInfo[i]);
                     var constantExpression = Expression.Constant(propertyInfo[i].GetValue(entity), propertyInfo[i].GetValue(entity).GetType());
 
                     stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
@@ -546,9 +565,23 @@ namespace SharpSql
                     }
                 case NewExpression newExpression:
                     {
-                        // @Todo: this crashes: "users.Join(x => new { x.Organisation });".
-                        // -Rick, 6 October 2020
-                        throw new NotImplementedException();
+                        var query = string.Empty;
+
+                        for (int i = 0; i < newExpression.Arguments.Count; i++)
+                        {
+                            if (newExpression.Arguments[i] is MemberExpression memberExpression)
+                            {
+                                var addon = (newExpression.Arguments.Count - 1 == i) ? string.Empty : ", ";
+
+                                query += $"{ ParseExpression(newExpression.Arguments[i]) }{ addon }";
+
+                                continue;
+                            }
+
+                            throw new NotImplementedException();
+                        }
+
+                        return query;
                     }
                 default:
                     throw new NotImplementedException(body.NodeType.ToString());
@@ -617,21 +650,21 @@ namespace SharpSql
         {
             var targetProperty = expression.Member.DeclaringType.GetProperty(expression.Member.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
 
-            var relations = SharpSqlUtilities.ManyToManyRelations.GetValueOrDefault((SharpSqlUtilities.CollectionEntityRelations[expression.Member.DeclaringType], targetProperty.PropertyType));
+            var manyToManyRelations = SharpSqlUtilities.ManyToManyRelations.GetValueOrDefault((SharpSqlUtilities.CollectionEntityRelations[expression.Member.DeclaringType], targetProperty.PropertyType));
             var stringBuilder = new StringBuilder();
 
-            if (relations != null)
+            if (manyToManyRelations != null)
             {
                 ContainsToManyJoins = true;
 
-                var properties = relations.EntityType.GetProperties();
+                var properties = manyToManyRelations.EntityType.GetProperties();
 
                 RelationalJoin firstJoin = new RelationalJoin()
                 {
                     IsManyToMany = true,
                     LeftTableAttribute = TableAttribute,
                     LeftPropertyInfo = TableAttribute.EntityType.GetProperties().Where(x => (x.GetCustomAttributes(typeof(SharpSqlPrimaryKeyAttribute), true).FirstOrDefault() as SharpSqlPrimaryKeyAttribute) != null).First(),
-                    RightTableAttribute = relations.CollectionType.GetCustomAttribute<SharpSqlTableAttribute>(),
+                    RightTableAttribute = manyToManyRelations.CollectionType.GetCustomAttribute<SharpSqlTableAttribute>(),
                     RightPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(SharpSqlForeignKeyAttribute), true).FirstOrDefault() as SharpSqlForeignKeyAttribute)?.Relation == expression.Member.DeclaringType).ToArray()
                 };
 
@@ -647,7 +680,7 @@ namespace SharpSql
                 RelationalJoin secondJoin = new RelationalJoin()
                 {
                     IsManyToMany = true,
-                    LeftTableAttribute = relations.CollectionType.GetCustomAttribute<SharpSqlTableAttribute>(),
+                    LeftTableAttribute = manyToManyRelations.CollectionType.GetCustomAttribute<SharpSqlTableAttribute>(),
                     LeftPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(SharpSqlForeignKeyAttribute), true).FirstOrDefault() as SharpSqlForeignKeyAttribute)?.Relation == SharpSqlUtilities.CollectionEntityRelations[targetProperty.PropertyType]).FirstOrDefault(),
                     RightTableAttribute = targetProperty.PropertyType.GetCustomAttribute<SharpSqlTableAttribute>(),
                     RightPropertyInfo = SharpSqlUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties().Where(x => (x.GetCustomAttributes(typeof(SharpSqlPrimaryKeyAttribute), true).FirstOrDefault() as SharpSqlPrimaryKeyAttribute) != null).ToArray()
@@ -736,7 +769,7 @@ namespace SharpSql
                 return Expression.Constant(value, value.GetType());
             }
             // Local properties
-            else if (memberExpression.Expression is MemberExpression subMemberExpression) 
+            else if (memberExpression.Expression is MemberExpression subMemberExpression && !subMemberExpression.Member.DeclaringType.IsSubclassOf(typeof(SharpSqlEntity)))
             {
                 var value = GetValue(memberExpression.Member, ReconstructConstantExpressionFromMemberExpression(subMemberExpression).Value);
 

@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DATA>
+  <JOINANDMANYTOMANY Id="1" Username="Imaani" Password="qwerty" Organisation="1" DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" Organisation_Id="1" Organisation_Name="The Boring Company" UserRoles_UserId="1" UserRoles_RoleId="1" Role_Id="1" Role_Name="Admin" />
+</DATA>

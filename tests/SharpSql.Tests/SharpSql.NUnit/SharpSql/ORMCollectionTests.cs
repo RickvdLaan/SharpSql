@@ -706,6 +706,14 @@ namespace SharpSql.NUnit
             Assert.AreEqual(thirdExpectedQuery, users.ExecutedQuery);
         }
 
+        [Test, SharpSqlUnitTest("ManyToManyUsers")]
+        public void ManyTomany()
+        {
+            var users = (new Users()
+                .Join(x => new object[] { x.Roles2.Left() })
+                .Fetch() as Users);
+        }
+
 
         [Test, SharpSqlUnitTest("ComplexWhereLike")]
         public void Complex_Where_Like()
