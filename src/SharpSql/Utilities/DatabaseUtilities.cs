@@ -197,11 +197,11 @@ namespace SharpSql
             return command.ExecuteNonQuery();
         }
 
-        private static readonly Regex ParamRegexCompiled = new Regex(@"\@[^ |\))]\w+", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex ParamRegexCompiled = new(@"\@[^ |\))]\w+", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         private static T ExecuteQuery<T>(Func<SqlCommand, T> method, string query, params object[] parameters)
         {
-            using SqlConnection connection = new SqlConnection(ConnectionString);
+            using SqlConnection connection = new(ConnectionString);
             QueryExecuter.CurrentConnection.Value = connection;
 
             using var command = new SqlCommand(query, connection);
@@ -243,13 +243,13 @@ namespace SharpSql
 
         public static bool DoesTableHaveUC(string tableName)
         {
-            return IfExists(new QueryBuilder().ColumnConstraintInformation(tableName));
+            return IfExists(QueryBuilder.ColumnConstraintInformation(tableName));
         }
 
         public static bool IfExists(string query)
         {
-            using SqlConnection connection = new SqlConnection(ConnectionString);
-            using var command = new SqlCommand(new QueryBuilder().IfExists(query), connection);
+            using SqlConnection connection = new(ConnectionString);
+            using var command = new SqlCommand(QueryBuilder.IfExists(query), connection);
 
             if (!UnitTestUtilities.IsUnitTesting)
             {
@@ -267,7 +267,7 @@ namespace SharpSql
 
                 foreach (var constraint in constraints)
                 {
-                    using SqlConnection connection = new SqlConnection(ConnectionString);
+                    using SqlConnection connection = new(ConnectionString);
                     // @Todo: column names
                     using var command = new SqlCommand(new QueryBuilder().CreateUniqueConstraint(collectionType.Name, "columnNames"), connection);
 
@@ -289,7 +289,7 @@ namespace SharpSql
 
         public static List<string> GetDatabaseList()
         {
-            var dataTable = ExecuteDirectQuery(new QueryBuilder().ServerDatabaseList());
+            var dataTable = ExecuteDirectQuery(QueryBuilder.ServerDatabaseList());
             var databases = new List<string>(dataTable.Rows.Count);
             var excludedDatabases = new List<string>(4)
             {

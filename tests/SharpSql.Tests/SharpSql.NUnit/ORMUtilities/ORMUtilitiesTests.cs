@@ -11,7 +11,7 @@ namespace SharpSql.NUnit
         [TestCaseSource(nameof(ConvertTo_Data))]
         public void ConvertTo(string username, string password, bool disableChangeTracking, int index, string newPassword)
         {
-            var dataTable = SharpSqlUtilities.MemoryCollectionDatabase.Fetch(UnitTestUtilities.GetMemoryTableName());
+            var dataTable = MemoryCollectionDatabase.Fetch(UnitTestUtilities.GetMemoryTableName());
 
             var users = SharpSqlUtilities.ConvertTo<Users, User>(dataTable, disableChangeTracking);
 

@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 namespace SharpSql.UnitTests
 {
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public sealed class SharpSqlUnitTestAttribute : Attribute
     {
-        internal List<SharpSqlUnitTestParameter> MemoryTables = new List<SharpSqlUnitTestParameter>();
+        internal List<SharpSqlUnitTestParameter> MemoryTables = new();
 
         public SharpSqlUnitTestAttribute() { }
 

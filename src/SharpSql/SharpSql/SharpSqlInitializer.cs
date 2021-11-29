@@ -18,10 +18,10 @@ namespace SharpSql
             SharpSqlUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase(Assembly.GetCallingAssembly());
             SharpSqlUtilities.MemoryCollectionDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlCollectionFilePath));
 
-            new SharpSqlInitializer(configuration: null, loadAllReferencedAssemblies: true);
+            _ = new SharpSqlInitializer(configuration: null, loadAllReferencedAssemblies: true);
         }
 
-        private List<string> LoadMemoryDatabase(Assembly callingAssembly, string folder)
+        private static List<string> LoadMemoryDatabase(Assembly callingAssembly, string folder)
         {
             var files = new List<string>();
 
@@ -33,7 +33,7 @@ namespace SharpSql
             return files;
         }
 
-        private void LoadAllReferencedAssemblies()
+        private static void LoadAllReferencedAssemblies()
         {
             var referencedPaths = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll");
 
@@ -58,7 +58,9 @@ namespace SharpSql
                     var assemblyBytes = File.ReadAllBytes(referencedPath);
 
                     // .NET Core only: This member is not supported.
+#pragma warning disable SYSLIB0018 // Type or member is obsolete
                     var assembly = Assembly.ReflectionOnlyLoad(assemblyBytes);
+#pragma warning restore SYSLIB0018 // Type or member is obsolete
 
                     if (assembly.GetReferencedAssemblies().Contains(Assembly.GetAssembly(typeof(SharpSqlEntity)).GetName()))
                     {
@@ -76,8 +78,8 @@ namespace SharpSql
 
         public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false)
         {
-            new DatabaseUtilities(configuration);
-            new SharpSqlUtilities();
+            _ = new DatabaseUtilities(configuration);
+            _ = new SharpSqlUtilities();
 
             if (loadAllReferencedAssemblies)
             {
@@ -121,7 +123,7 @@ namespace SharpSql
                                   .GetSchemaTable()
                                   .Rows;
 
-                            var uniqueConstraints = DatabaseUtilities.ExecuteDirectQuery(queryBuilder.ColumnConstraintInformation(tableAttribute.TableName));
+                            var uniqueConstraints = DatabaseUtilities.ExecuteDirectQuery(QueryBuilder.ColumnConstraintInformation(tableAttribute.TableName));
 
                             var columns = new List<string>(rows.Count);
 
@@ -144,7 +146,7 @@ namespace SharpSql
                         }
                         else
                         {
-                            var columns = SharpSqlUtilities.MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
+                            var columns = MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
 
                             if (columns != null)
                             {

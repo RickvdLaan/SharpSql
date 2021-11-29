@@ -158,7 +158,7 @@ namespace SharpSql
         /// <returns>The record count in the database for the current table</returns>
         public static int Records()
         {
-            return (int)DatabaseUtilities.ExecuteDirectQuery(new QueryBuilder().Count(new SharpSqlTableAttribute(SharpSqlUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
+            return (int)DatabaseUtilities.ExecuteDirectQuery(QueryBuilder.Count(new SharpSqlTableAttribute(SharpSqlUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
         }
 
         #region IEnumerable<SharpSqlEntity>
@@ -188,7 +188,7 @@ namespace SharpSql
         /// <returns>Returns the current instance of <see cref="SharpSqlCollection{EntityType}"/>.</returns>
         public SharpSqlCollection<EntityType> Select(Expression<Func<EntityType, object>> expression)
         {
-            SelectExpression = expression ?? throw new ArgumentNullException();
+            SelectExpression = expression ?? throw new ArgumentNullException(nameof(expression));
 
             return this;
         }
@@ -201,7 +201,7 @@ namespace SharpSql
         /// <returns>Returns the current instance of <see cref="SharpSqlCollection{EntityType}"/>.</returns>
         public SharpSqlCollection<EntityType> Join(Expression<Func<EntityType, object>> expression)
         {
-            JoinExpression = expression ?? throw new ArgumentNullException();
+            JoinExpression = expression ?? throw new ArgumentNullException(nameof(expression));
 
             return this;
         }
@@ -214,7 +214,7 @@ namespace SharpSql
         /// <returns>Returns the current instance of <see cref="SharpSqlCollection{EntityType}"/>.</returns>
         public SharpSqlCollection<EntityType> Where(Expression<Func<EntityType, bool>> expression)
         {
-            WhereExpression = expression ?? throw new ArgumentNullException();
+            WhereExpression = expression ?? throw new ArgumentNullException(nameof(expression));
 
             return this;
         }
@@ -227,7 +227,7 @@ namespace SharpSql
         /// <returns>Returns the current instance of <see cref="SharpSqlCollection{EntityType}"/>.</returns>
         public SharpSqlCollection<EntityType> OrderBy(Expression<Func<EntityType, object>> expression)
         {
-            SortExpression = expression ?? throw new ArgumentNullException();
+            SortExpression = expression ?? throw new ArgumentNullException(nameof(expression));
 
             return this;
         }
@@ -253,14 +253,14 @@ namespace SharpSql
 
         internal SharpSqlCollection<EntityType> InternalJoin(Expression expression)
         {
-            InternalJoinExpression = expression ?? throw new ArgumentNullException();
+            InternalJoinExpression = expression ?? throw new ArgumentNullException(nameof(expression));
 
             return this;
         }
 
         internal SharpSqlCollection<EntityType> InternalWhere(BinaryExpression expression)
         {
-            InternalWhereExpression = expression ?? throw new ArgumentNullException();
+            InternalWhereExpression = expression ?? throw new ArgumentNullException(nameof(expression));
 
             return this;
         }

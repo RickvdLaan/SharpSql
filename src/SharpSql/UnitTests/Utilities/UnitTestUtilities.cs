@@ -83,11 +83,11 @@ namespace SharpSql
             {
                 var tableName = unitTestAttribute.MemoryTables.Where(x => x.EntityType == collection.TableAttribute.EntityType).First().MemoryTableName;
 
-                table = SharpSqlUtilities.MemoryCollectionDatabase.Fetch(tableName);
+                table = MemoryCollectionDatabase.Fetch(tableName);
             }
             else
             {
-                table = SharpSqlUtilities.MemoryCollectionDatabase.Fetch(unitTestAttribute.MemoryTables[0].MemoryTableName);
+                table = MemoryCollectionDatabase.Fetch(unitTestAttribute.MemoryTables[0].MemoryTableName);
             }
 
             using var reader = table.CreateDataReader();
@@ -123,7 +123,7 @@ namespace SharpSql
                                 var childEntity = Activator.CreateInstance(join.RightTableAttribute.EntityType, true) as SharpSqlEntity;
                                 var childCollection = Activator.CreateInstance(join.RightTableAttribute.CollectionType) as IEnumerable<SharpSqlEntity>;
 
-                                foreach (var childProperty in childEntity.GetType().GetProperties(childEntity.PublicFlags))
+                                foreach (var childProperty in childEntity.GetType().GetProperties(SharpSqlEntity.PublicFlags))
                                 {
                                     var executedQuery = (string)childCollection.GetType().GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.ExecutedQuery)).GetValue(childCollection);
 
@@ -151,10 +151,10 @@ namespace SharpSql
                                         }
 
                                         // Sets the InternalWhere with the WhereExpression.
-                                        childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.InternalWhere), entity.NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(childCollection, new object[] { whereExpression });
+                                        childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.InternalWhere), SharpSqlEntity.NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(childCollection, new object[] { whereExpression });
 
                                         // Fetches the data.
-                                        childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Fetch), childEntity.NonPublicFlags, null, new Type[] { typeof(SharpSqlEntity), typeof(long), typeof(Expression) }, null).Invoke(childCollection, new object[] { null, -1, null });
+                                        childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Fetch), SharpSqlEntity.NonPublicFlags, null, new Type[] { typeof(SharpSqlEntity), typeof(long), typeof(Expression) }, null).Invoke(childCollection, new object[] { null, -1, null });
                                     }
                                 }
 
@@ -188,10 +188,10 @@ namespace SharpSql
                                 childCollection = Activator.CreateInstance(join.RightTableAttribute.CollectionTypeRight) as IEnumerable<SharpSqlEntity>;
 
                                 // Sets the InternalWhere with the WhereExpression.
-                                childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.InternalWhere), entity.NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(childCollection, new object[] { whereExpressionRight });
+                                childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.InternalWhere), SharpSqlEntity.NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(childCollection, new object[] { whereExpressionRight });
 
                                 // Fetches the data.
-                                childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Fetch), entity.NonPublicFlags, null, new Type[] { typeof(SharpSqlEntity), typeof(long), typeof(Expression) }, null).Invoke(childCollection, new object[] { null, -1, null });
+                                childCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Fetch), SharpSqlEntity.NonPublicFlags, null, new Type[] { typeof(SharpSqlEntity), typeof(long), typeof(Expression) }, null).Invoke(childCollection, new object[] { null, -1, null });
 
                                 // Sets the ManyToMany collection.
                                 property.SetValue(entity, childCollection);

@@ -17,11 +17,11 @@ namespace SharpSql
     {
         #region Reflection helpers
 
-        internal BindingFlags PublicFlags => BindingFlags.Instance | BindingFlags.Public;
+        internal static BindingFlags PublicFlags => BindingFlags.Instance | BindingFlags.Public;
 
-        internal BindingFlags PublicIgnoreCaseFlags => PublicFlags | BindingFlags.IgnoreCase;
+        internal static BindingFlags PublicIgnoreCaseFlags => PublicFlags | BindingFlags.IgnoreCase;
 
-        internal BindingFlags NonPublicFlags => BindingFlags.Instance | BindingFlags.NonPublic;
+        internal static BindingFlags NonPublicFlags => BindingFlags.Instance | BindingFlags.NonPublic; 
 
         #endregion
 

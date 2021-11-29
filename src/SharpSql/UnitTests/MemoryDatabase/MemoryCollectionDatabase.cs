@@ -20,7 +20,7 @@ namespace SharpSql
     {
         public MemoryCollectionDatabase(Assembly externalAssembly) : base(externalAssembly) { }
 
-        public DataTable Fetch(string memoryTableName)
+        public static DataTable Fetch(string memoryTableName)
         {
             var path = BasePath + memoryTableName.ToUpperInvariant();
             var tableRecords = SharpSqlUtilities.MemoryCollectionDatabase.MemoryTables.DocumentElement.SelectNodes(path);

@@ -91,7 +91,7 @@ namespace SharpSql
             return null;
         }
 
-        internal List<string> FetchTableColumns(string tableName)
+        internal static List<string> FetchTableColumns(string tableName)
         {
             if (string.IsNullOrEmpty(tableName))
                 throw new ArgumentNullException();
@@ -145,7 +145,7 @@ namespace SharpSql
                     }
 
                     // When nullable field is null in the xml we need to insert at i.
-                    DataColumn missingColumn = new DataColumn(columns[i]);
+                    DataColumn missingColumn = new(columns[i]);
                     dataSet.Tables[0].Columns.Add(missingColumn);
                     missingColumn.SetOrdinal(i);
                 }

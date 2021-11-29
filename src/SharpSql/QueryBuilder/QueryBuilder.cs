@@ -16,9 +16,9 @@ namespace SharpSql
     {
         public string GeneratedQuery { get; private set; }
 
-        public readonly Dictionary<string, string> _queryTableNames = new Dictionary<string, string>(5);
+        public readonly Dictionary<string, string> _queryTableNames = new(5);
 
-        private readonly Dictionary<char, int> _tableCharCounts = new Dictionary<char, int>(5);
+        private readonly Dictionary<char, int> _tableCharCounts = new(5);
 
         internal NonQueryType NonQueryType { get; private set; }
 
@@ -121,7 +121,7 @@ namespace SharpSql
                 stringBuilder.Append(addon);
             }
 
-            stringBuilder.Append(")");
+            stringBuilder.Append(')');
             stringBuilder.Append(Constants.Semicolon);
 
             if (!entity.PrimaryKey.IsCombinedPrimaryKey)
@@ -135,7 +135,7 @@ namespace SharpSql
             return stringBuilder.ToString();
         }
 
-        private string Select(long top = -1)
+        private static string Select(long top = -1)
         {
             return top >= 0 ? $"SELECT TOP ({top}) * " : "SELECT * ";
         }
@@ -182,16 +182,34 @@ namespace SharpSql
         {
             if (expression is LambdaExpression lambdaExpression)
             {
-                if (lambdaExpression.Body is MemberExpression memberExpression)
+                // Anonymous types
+                if (lambdaExpression.Body is NewExpression newExpression)
                 {
-                    return ParseJoinExpression(memberExpression);
-                }
-                if (lambdaExpression.Body is MethodCallExpression methodCallExpression1)
-                {
-                    if (methodCallExpression1.Method.Name != nameof(SharpSqlEntity.Left)
-                     && methodCallExpression1.Method.Name != nameof(SharpSqlEntity.Inner))
+                    if (newExpression.Arguments.Count > 1)
                     {
-                        InvalidJoinException(methodCallExpression1.Method);
+                        throw new NotImplementedException();
+                        //var expressions = new List<MemberExpression>(newExpression.Arguments.Count);
+
+                        //for (int i = 0; i < newExpression.Arguments.Count; i++)
+                        //{
+                        //    expressions.Add(newExpression.Arguments[i] as MemberExpression);
+                        //}
+
+                        //return Expression.NewArrayInit(typeof(object), expressions);
+                    }
+
+                    return ParseJoinExpression(newExpression.Arguments[0]);
+                }
+                else if (lambdaExpression.Body is MemberExpression memberExpression)
+                {
+                    return ParseJoinExpression(memberExpression);  
+                }
+                else if (lambdaExpression.Body is MethodCallExpression methodCallExpression)
+                {
+                    if (methodCallExpression.Method.Name != nameof(SharpSqlEntity.Left)
+                     && methodCallExpression.Method.Name != nameof(SharpSqlEntity.Inner))
+                    {
+                        InvalidJoinException(methodCallExpression.Method);
                     }
                 }
                 else if (lambdaExpression.Body is NewArrayExpression newArrayExpression)
@@ -206,15 +224,15 @@ namespace SharpSql
                             expressions.Add(Expression.Call(newArrayExpression.Expressions[i], typeof(SharpSqlEntity).GetMethod(nameof(SharpSqlEntity.Left))));
                         }
                         // Joins with a call
-                        else if (newArrayExpression.Expressions[i] is MethodCallExpression methodCallExpression)
+                        else if (newArrayExpression.Expressions[i] is MethodCallExpression methodCallExpression2)
                         {
-                            if (methodCallExpression.Method.Name != nameof(SharpSqlEntity.Left)
-                             && methodCallExpression.Method.Name != nameof(SharpSqlEntity.Inner))
+                            if (methodCallExpression2.Method.Name != nameof(SharpSqlEntity.Left)
+                             && methodCallExpression2.Method.Name != nameof(SharpSqlEntity.Inner))
                             {
                                 InvalidJoinException((newArrayExpression.Expressions[i] as MethodCallExpression).Method);
                             }
 
-                            expressions.Add(methodCallExpression);
+                            expressions.Add(methodCallExpression2);
                         }
                         // ManyToMany without a call
                         else if (newArrayExpression.Expressions[i].Type.BaseType.GenericTypeArguments.Length > 0)
@@ -289,12 +307,12 @@ namespace SharpSql
             }
         }
 
-        private void InvalidJoinException(PropertyInfo propertyInfo)
+        private static void InvalidJoinException(PropertyInfo propertyInfo)
         {
             throw new InvalidJoinException(propertyInfo);
         }
 
-        private void InvalidJoinException(MethodInfo methodInfo)
+        private static void InvalidJoinException(MethodInfo methodInfo)
         {
             throw new InvalidJoinException(methodInfo);
         }
@@ -415,22 +433,22 @@ namespace SharpSql
             return stringBuilder.ToString();
         }
 
-        internal string Count(SharpSqlTableAttribute tableAttribute)
+        internal static string Count(SharpSqlTableAttribute tableAttribute)
         {
             return $"SELECT COUNT(*) FROM { tableAttribute.TableName } AS INT;";
         }
 
-        internal string ColumnConstraintInformation(string tableName)
+        internal static string ColumnConstraintInformation(string tableName)
         {
             return $"SELECT * FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE WHERE CONSTRAINT_NAME = 'UC_{ tableName }' AND TABLE_NAME = '{ tableName }'";
         }
 
-        internal string IfExists(string query)
+        internal static string IfExists(string query)
         {
             return $"IF EXISTS({ query }) BEGIN SELECT 1 END ELSE BEGIN SELECT 0 END;";
         }
 
-        internal string ServerDatabaseList()
+        internal static string ServerDatabaseList()
         {
             return "SELECT D.NAME FROM SYS.DATABASES AS D;";
         }
@@ -452,7 +470,7 @@ namespace SharpSql
             return stringBuilder.ToString();
         }
 
-        internal string DropUniqueConstraint<EntityType>(EntityType entity) where EntityType : SharpSqlEntity
+        internal static string DropUniqueConstraint<EntityType>(EntityType entity) where EntityType : SharpSqlEntity
         {
             string tableName = SharpSqlUtilities.GetTableNameFromEntity(entity);
 
@@ -467,29 +485,18 @@ namespace SharpSql
                     var left = binaryExpression.Left;
                     var right = binaryExpression.Right;
 
-                    switch (binaryExpression.NodeType)
+                    return binaryExpression.NodeType switch
                     {
-                        case ExpressionType.Equal:
-                            return $"({ParseExpression(left)} = {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        case ExpressionType.NotEqual:
-                            return $"({ParseExpression(left)} <> {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        case ExpressionType.LessThan:
-                            return $"({ParseExpression(left)} < {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        case ExpressionType.GreaterThan:
-                            return $"({ParseExpression(left)} > {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        case ExpressionType.LessThanOrEqual:
-                            return $"({ParseExpression(left)} <= {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        case ExpressionType.GreaterThanOrEqual:
-                            return $"({ParseExpression(left)} >= {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        case ExpressionType.Or:
-                        case ExpressionType.OrElse:
-                            return $"({ParseExpression(left)} OR {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        case ExpressionType.And:
-                        case ExpressionType.AndAlso:
-                            return $"({ParseExpression(left)} AND {ParseExpression(right, GetMemberExpressionFromExpression(left))})";
-                        default:
-                            throw new NotImplementedException(body.NodeType.ToString());
-                    }
+                        ExpressionType.Equal => $"({ParseExpression(left)} = {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        ExpressionType.NotEqual => $"({ParseExpression(left)} <> {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        ExpressionType.LessThan => $"({ParseExpression(left)} < {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        ExpressionType.GreaterThan => $"({ParseExpression(left)} > {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        ExpressionType.LessThanOrEqual => $"({ParseExpression(left)} <= {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        ExpressionType.GreaterThanOrEqual => $"({ParseExpression(left)} >= {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        ExpressionType.Or or ExpressionType.OrElse => $"({ParseExpression(left)} OR {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        ExpressionType.And or ExpressionType.AndAlso => $"({ParseExpression(left)} AND {ParseExpression(right, GetMemberExpressionFromExpression(left))})",
+                        _ => throw new NotImplementedException(body.NodeType.ToString()),
+                    };
                 case MemberExpression memberExpression:
                     {
                         if (ReconstructConstantExpressionFromMemberExpression(memberExpression) is ConstantExpression constantExpression)
@@ -629,7 +636,7 @@ namespace SharpSql
 
             var rightInstance = (SharpSqlEntity)Activator.CreateInstance(propertyInfo.PropertyType);
 
-            RelationalJoin join = new RelationalJoin()
+            RelationalJoin join = new()
             {
                 LeftTableAttribute = tableAttribute,
                 LeftPropertyInfo = propertyInfo,
@@ -659,7 +666,7 @@ namespace SharpSql
 
                 var properties = manyToManyRelations.EntityType.GetProperties();
 
-                RelationalJoin firstJoin = new RelationalJoin()
+                RelationalJoin firstJoin = new()
                 {
                     IsManyToMany = true,
                     LeftTableAttribute = TableAttribute,
@@ -677,7 +684,7 @@ namespace SharpSql
                     throw new ForeignKeyAttributeNotImplementedException(propertyInfo, firstJoin.RightTableAttribute.CollectionType);
                 }
 
-                RelationalJoin secondJoin = new RelationalJoin()
+                RelationalJoin secondJoin = new()
                 {
                     IsManyToMany = true,
                     LeftTableAttribute = manyToManyRelations.CollectionType.GetCustomAttribute<SharpSqlTableAttribute>(),
@@ -779,7 +786,7 @@ namespace SharpSql
             return null;
         }
 
-        private object GetValue(MemberInfo member, object instance)
+        private static object GetValue(MemberInfo member, object instance)
         {
             if (member is PropertyInfo propertyInfo)
             {

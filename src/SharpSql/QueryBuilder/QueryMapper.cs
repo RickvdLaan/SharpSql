@@ -34,7 +34,7 @@ namespace SharpSql
             }
         }
 
-        private static readonly Dictionary<SharpSqlPrimaryKey, bool> PrimaryKeyCache = new Dictionary<SharpSqlPrimaryKey, bool>(8);
+        private static readonly Dictionary<SharpSqlPrimaryKey, bool> PrimaryKeyCache = new(8);
 
         internal static void DataReader<EntityType>(EntityType entity, IDataReader reader, QueryBuilder queryBuilder)
             where EntityType : SharpSqlEntity
@@ -135,7 +135,7 @@ namespace SharpSql
             if (!entity.DisableChangeTracking)
             {
                 entity.GetType()
-                      .GetProperty(nameof(SharpSqlEntity.OriginalFetchedValue), entity.NonPublicFlags)
+                      .GetProperty(nameof(SharpSqlEntity.OriginalFetchedValue), SharpSqlEntity.NonPublicFlags)
                       .SetValue(entity, entity.ShallowCopy());
 
                 foreach (var relation in entity.Relations.Where(x => x != null && !x.IsNew))
@@ -187,8 +187,8 @@ namespace SharpSql
             where CollectionType : SharpSqlCollection<EntityType>
             where EntityType : SharpSqlEntity
         {
-            Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>> manyToManyData = new Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>>(new SharpSqlPrimaryKey());
-            Dictionary<SharpSqlPrimaryKey, EntityType> knownEntities = new Dictionary<SharpSqlPrimaryKey, EntityType>(new SharpSqlPrimaryKey());
+            Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>> manyToManyData = new(new SharpSqlPrimaryKey());
+            Dictionary<SharpSqlPrimaryKey, EntityType> knownEntities = new(new SharpSqlPrimaryKey());
 
             var manyToManyJoinIndexes = new List<(string, int[])>();
             var manyToManyJoinTypes = new Dictionary<string, Type>();
@@ -303,7 +303,7 @@ namespace SharpSql
 
                     foreach (var (fieldName, _) in manyToManyJoinIndexes)
                     {
-                        var type = entity.GetType().GetProperty(fieldName, entity.PublicFlags).PropertyType;
+                        var type = entity.GetType().GetProperty(fieldName, SharpSqlEntity.PublicFlags).PropertyType;
                         if (typeof(SharpSqlEntity).IsAssignableFrom(type.GetType()))
                         {
                             type = SharpSqlUtilities.CollectionEntityRelations[type];
@@ -326,11 +326,11 @@ namespace SharpSql
                 var entity = knownEntities[kvPair.Key];
                 foreach (var data in kvPair.Value)
                 {
-                    var property = entity.GetType().GetProperty(data.Key, entity.PublicFlags);
+                    var property = entity.GetType().GetProperty(data.Key, SharpSqlEntity.PublicFlags);
                     if (typeof(ISharpSqlCollection<EntityType>).IsAssignableFrom(property.PropertyType))
                     {
                         var subcollection = Activator.CreateInstance(property.PropertyType);
-                        var collectionProperty = property.PropertyType.GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.MutableEntityCollection), entity.NonPublicFlags);
+                        var collectionProperty = property.PropertyType.GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.MutableEntityCollection), SharpSqlEntity.NonPublicFlags);
                         var list = collectionProperty.GetValue(subcollection) as IList;
                         foreach (var item in data.Value)
                         {
@@ -350,7 +350,7 @@ namespace SharpSql
 
         private static void PopulateManyToManyEntity(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)
         {
-            Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>> manyToManyData = new Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>>(new SharpSqlPrimaryKey());
+            Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>> manyToManyData = new(new SharpSqlPrimaryKey());
 
             var manyToManyJoinIndexes = new List<(string, int[])>();
             var manyToManyJoinTypes = new Dictionary<string, Type>();
@@ -448,7 +448,7 @@ namespace SharpSql
                 manyToManyJoinTypes.Add(fieldName, type);
             }
 
-            SharpSqlPrimaryKey pk = new SharpSqlPrimaryKey(reader, primaryKeyIndexes);
+            SharpSqlPrimaryKey pk = new(reader, primaryKeyIndexes);
 
             AddManyToManyObject(pk, reader);
 
@@ -456,16 +456,16 @@ namespace SharpSql
             {
                 foreach (var data in kvPair.Value)
                 {
-                    var property = entity.GetType().GetProperty(data.Key, entity.PublicFlags);
+                    var property = entity.GetType().GetProperty(data.Key, SharpSqlEntity.PublicFlags);
                     if (typeof(ISharpSqlCollection<SharpSqlEntity>).IsAssignableFrom(property.PropertyType))
                     {
-                        var propertyValue = entity.GetType().GetProperty(data.Key, entity.PublicFlags).GetValue(entity);
+                        var propertyValue = entity.GetType().GetProperty(data.Key, SharpSqlEntity.PublicFlags).GetValue(entity);
 
                         if (propertyValue == null)
                         {
                             var subcollection = Activator.CreateInstance(property.PropertyType);
 
-                            var collectionProperty = property.PropertyType.GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.MutableEntityCollection), entity.NonPublicFlags);
+                            var collectionProperty = property.PropertyType.GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.MutableEntityCollection), SharpSqlEntity.NonPublicFlags);
                             var list = collectionProperty.GetValue(subcollection) as IList;
                             foreach (var item in data.Value)
                             {
@@ -477,7 +477,7 @@ namespace SharpSql
                         {
                             foreach (var item in data.Value)
                             {
-                                propertyValue.GetType().GetMethod(nameof(IList.Add), entity.PublicFlags).Invoke(propertyValue, new object[] { item });
+                                propertyValue.GetType().GetMethod(nameof(IList.Add), SharpSqlEntity.PublicFlags).Invoke(propertyValue, new object[] { item });
                             }
                         }
                     }
