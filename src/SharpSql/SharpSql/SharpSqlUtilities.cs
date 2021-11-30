@@ -24,6 +24,8 @@ namespace SharpSql
 
         internal static Dictionary<Type, List<string>> CachedMutableColumns { get; private set; }
 
+        internal static Dictionary<Type, byte> CachedManyToMany { get; private set; }
+
         public SharpSqlUtilities()
         {
             UnitTestUtilities.IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(SharpSqlUnitTestAttribute), false).Any());
@@ -32,6 +34,7 @@ namespace SharpSql
             UniqueConstraints = new HashSet<(Type EntityType, string ColumnName)>();
             CachedColumns = new Dictionary<Type, List<string>>();
             CachedMutableColumns = new Dictionary<Type, List<string>>();
+            CachedManyToMany = new Dictionary<Type, byte>();
         }
 
         public static CollectionType ConvertTo<CollectionType, EntityType>(DataTable dataTable, bool disableChangeTracking)

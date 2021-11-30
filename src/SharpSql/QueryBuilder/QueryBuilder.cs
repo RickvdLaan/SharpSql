@@ -175,6 +175,7 @@ namespace SharpSql
         private string Join(Expression expression)
         {
             // If no join type has been provided, it'll automatically use a left join.
+            // Anonymous types cannot provide a join type, it's automatically a left join.
             return ParseExpression(ParseJoinExpression(expression));
         }
 

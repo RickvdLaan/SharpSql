@@ -110,6 +110,8 @@ namespace SharpSql
                         SharpSqlUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
                         SharpSqlUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight), tableAttribute);
                         SharpSqlUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeRight, tableAttribute.CollectionTypeLeft), tableAttribute);
+                        SharpSqlUtilities.CachedManyToMany.Add(tableAttribute.CollectionTypeRight, default);
+                        SharpSqlUtilities.CachedManyToMany.Add(SharpSqlUtilities.CollectionEntityRelations[tableAttribute.CollectionTypeRight], default);
                     }
                     if (!SharpSqlUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
                      && !SharpSqlUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))

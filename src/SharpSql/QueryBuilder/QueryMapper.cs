@@ -183,169 +183,278 @@ namespace SharpSql
 
         // ALSO make unit tests for INNER variants!!!!!!!!!!!
 
-        private static void PopulateManyToManyCollection<CollectionType, EntityType>(CollectionType collection, IDataReader reader, QueryBuilder queryBuilder)
-            where CollectionType : SharpSqlCollection<EntityType>
-            where EntityType : SharpSqlEntity
+        private static DataTable CopyDataTableSection(DataTable rootDataTable, DataTable dataTable, ref int tableIndex, QueryBuilder queryBuilder, ref int tableOrderIndex)
         {
-            Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>> manyToManyData = new(new SharpSqlPrimaryKey());
-            Dictionary<SharpSqlPrimaryKey, EntityType> knownEntities = new(new SharpSqlPrimaryKey());
+            var tableName = queryBuilder.TableOrder[tableOrderIndex].name;
+            var tableType = queryBuilder.TableOrder[tableOrderIndex].type;
+            var tableColumnCount = queryBuilder.TableNameColumnCount[tableName];
+            Type m2mTableType = null;
 
-            var manyToManyJoinIndexes = new List<(string, int[])>();
-            var manyToManyJoinTypes = new Dictionary<string, Type>();
-
-            var tableIndex = 0;
-            foreach (var (name, tableType) in queryBuilder.TableOrder)
+            foreach (var m2m in SharpSqlUtilities.ManyToManyRelations)
             {
-                var objectPath = queryBuilder.TableNameResolvePaths.ContainsKey(name) ? queryBuilder.TableNameResolvePaths[name] : string.Empty;
-                var tableColumnCount = queryBuilder.TableNameColumnCount[name];
-
-                foreach (var join in queryBuilder.Joins)
+                if (m2m.Value.EntityType == tableType) 
                 {
-                    if (join.LeftTableAttribute.EntityType == tableType && join.IsManyToMany)
-                    {
-                        var indexes = new List<int>();
-                        for (int i = 0; i < tableColumnCount; i++)
-                        {
-                            indexes.Add(tableIndex + i);
-                        }
-                        manyToManyJoinIndexes.Add((join.LeftPropertyInfo.Name, indexes.ToArray()));
+                    var m2mTableOrder = queryBuilder.TableOrder[++tableOrderIndex];
 
-                    }
-                }
+                    var m2mTableName = m2mTableOrder.name;
+                    m2mTableType = m2mTableOrder.type;
+                    tableColumnCount += queryBuilder.TableNameColumnCount[tableName];
 
-                tableIndex += tableColumnCount;
-            }
+                    dataTable.TableName = SharpSqlUtilities.CollectionEntityRelations[m2mTableType].Name;
 
-            void AddManyToManyObject(SharpSqlPrimaryKey key, IDataReader reader)
-            {
-                Dictionary<string, List<SharpSqlEntity>> relations;
-                if (manyToManyData.ContainsKey(key))
-                {
-                    relations = manyToManyData[key];
-                }
-                else
-                {
-                    relations = new Dictionary<string, List<SharpSqlEntity>>();
-                    manyToManyData[key] = relations;
-                }
-
-                foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
-                {
-                    bool IsRowEmpty(List<(string, int[])> manyToManyJoinIndexes, IDataReader reader)
-                    {
-                        foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
-                        {
-                            for (int i = 0; i < indexes.Length; i++)
-                            {
-                                if (reader.GetValue(indexes[i]) == DBNull.Value)
-                                {
-                                    if ((i + 1) == indexes.Length)
-                                    {
-                                        return true;
-                                    }
-                                }
-                                else
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-
-                        return true;
-                    }
-
-                    if (!IsRowEmpty(manyToManyJoinIndexes, reader))
-                    {
-                        var instance = (SharpSqlEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
-                        foreach (var index in indexes)
-                        {
-                            SetEntityProperty(instance, reader, queryBuilder, index, true);
-                        }
-
-                        if (relations.ContainsKey(fieldName))
-                        {
-                            relations[fieldName].Add(instance);
-                        }
-                        else
-                        {
-                            relations[fieldName] = new List<SharpSqlEntity>()
-                        {
-                            instance
-                        };
-                        }
-                    }
+                    break;
                 }
             }
 
-            int[] primaryKeyIndexes = null;
-
-            bool isFirst = true;
-            while (reader.Read())
+            if (m2mTableType == null)
             {
-                SharpSqlPrimaryKey pk = default;
-                if (!isFirst)
+                dataTable.TableName = SharpSqlUtilities.CollectionEntityRelations[tableType].Name;
+            }
+            else
+            {
+                dataTable.TableName = SharpSqlUtilities.CollectionEntityRelations[m2mTableType].Name;
+            }
+
+            
+
+            // Since rootDataTable is read-only (at least, it should be) we can safely use the indexes without losing data.
+            for (int i = tableIndex; i < tableColumnCount + tableIndex; i++)
+            {
+                dataTable.Columns.Add(rootDataTable.Columns[i].ColumnName, rootDataTable.Columns[i].DataType);
+            }
+
+            for (int i = 0; i < rootDataTable.Rows.Count; i++)
+            {
+                if (i > 0 && !SharpSqlUtilities.CachedManyToMany.ContainsKey(tableType) // todo vervangen naar m2mTableType null check
+                || (i > 0 && !SharpSqlUtilities.CachedManyToMany.ContainsKey(m2mTableType)))
                 {
-                    pk = new SharpSqlPrimaryKey(reader, primaryKeyIndexes);
-                    if (knownEntities.ContainsKey(pk))
+                    // We check if the current rows equals the previous rows, because we only want to add duplicates
+                    // if its a many-to-many record.
+                    if (Enumerable.SequenceEqual(rootDataTable.Rows[i - 1].ItemArray[tableIndex..(tableColumnCount + tableIndex)],
+                                                 rootDataTable.Rows[i    ].ItemArray[tableIndex..(tableColumnCount + tableIndex)]))
                     {
-                        // Only do to many linking here
-                        AddManyToManyObject(pk, reader);
                         continue;
                     }
                 }
 
-                var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
-                entity.DisableChangeTracking = collection.DisableChangeTracking;
-
-                if (isFirst)
-                {
-                    primaryKeyIndexes = SharpSqlPrimaryKey.DeterminePrimaryKeyIndexes(reader, entity);
-
-                    foreach (var (fieldName, _) in manyToManyJoinIndexes)
-                    {
-                        var type = entity.GetType().GetProperty(fieldName, SharpSqlEntity.PublicFlags).PropertyType;
-                        if (typeof(SharpSqlEntity).IsAssignableFrom(type.GetType()))
-                        {
-                            type = SharpSqlUtilities.CollectionEntityRelations[type];
-                        }
-                        manyToManyJoinTypes.Add(fieldName, type);
-                    }
-
-                    pk = new SharpSqlPrimaryKey(reader, primaryKeyIndexes);
-                    isFirst = false;
-                }
-
-                PopulateEntity(entity, reader, queryBuilder);
-                AddManyToManyObject(pk, reader);
-
-                knownEntities.Add(pk, entity);
+                dataTable.Rows.Add(rootDataTable.Rows[i].ItemArray[tableIndex..(tableColumnCount + tableIndex)]);
             }
 
-            foreach (var kvPair in manyToManyData)
+            tableIndex += tableColumnCount;
+
+            return dataTable;
+        }
+
+        private static void PopulateManyToManyCollection<CollectionType, EntityType>(CollectionType collection, IDataReader reader, QueryBuilder queryBuilder)
+            where CollectionType : SharpSqlCollection<EntityType>
+            where EntityType : SharpSqlEntity
+        {
+            // Immutable!
+            var parentDataTable = new DataTable();
+            parentDataTable.Load(reader);
+
+            DataTable[] dataTables = new DataTable[(queryBuilder.TableOrder.Count)];
+
+            // Array.Fill creates a singleton from "new DataTable", therefore they all have the same reference.
+            //Array.Fill(dataTables, new DataTable(), 0, queryBuilder.TableOrder.Count);
+
+            for (int i = 0; i < queryBuilder.TableOrder.Count; i++)
             {
-                var entity = knownEntities[kvPair.Key];
-                foreach (var data in kvPair.Value)
+                dataTables[i] = new DataTable();
+            }
+            
+
+            var tableIndex = 0;
+            for (int j = 0; j < dataTables.Length; j++)
+            {
+                for (int tableOrderIndex = 0; tableOrderIndex < queryBuilder.TableOrder.Count; tableOrderIndex++)
                 {
-                    var property = entity.GetType().GetProperty(data.Key, SharpSqlEntity.PublicFlags);
-                    if (typeof(ISharpSqlCollection<EntityType>).IsAssignableFrom(property.PropertyType))
+                    if (tableIndex >= parentDataTable.Columns.Count)
                     {
-                        var subcollection = Activator.CreateInstance(property.PropertyType);
-                        var collectionProperty = property.PropertyType.GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.MutableEntityCollection), SharpSqlEntity.NonPublicFlags);
-                        var list = collectionProperty.GetValue(subcollection) as IList;
-                        foreach (var item in data.Value)
-                        {
-                            list.Add(item);
-                        }
-                        property.SetValue(entity, subcollection);
+                        tableOrderIndex++;
+                        continue;
                     }
-                    else
-                    {
-                        throw new Exception("Something went wrong trying to cast to a subcollection");
-                    }
+
+                    dataTables[tableOrderIndex] = CopyDataTableSection(parentDataTable, dataTables[tableOrderIndex], ref tableIndex, queryBuilder, ref tableOrderIndex);
                 }
+            }
+
+
+            // Copy from above, we should make a method for this.
+            // Splitting data tables seem to work, lets hope the existing code
+            // works like this.
+            while (reader.Read())
+            {
+                var entity = (EntityType)Activator.CreateInstance(typeof(EntityType), true);
+                entity.DisableChangeTracking = collection.DisableChangeTracking;
+
+                PopulateEntity(entity, reader, queryBuilder);
+
+                entity.ExecutedQuery = "Initialised through collection";
 
                 collection.Add(entity);
             }
+
+
+            //Dictionary<SharpSqlPrimaryKey, Dictionary<string, List<SharpSqlEntity>>> manyToManyData = new(new SharpSqlPrimaryKey());
+            //Dictionary<SharpSqlPrimaryKey, EntityType> knownEntities = new(new SharpSqlPrimaryKey());
+
+            //var manyToManyJoinIndexes = new List<(string, int[])>();
+            //var manyToManyJoinTypes = new Dictionary<string, Type>();
+
+            //var tableIndex = 0;
+            //foreach (var (name, tableType) in queryBuilder.TableOrder)
+            //{
+            //    var objectPath = queryBuilder.TableNameResolvePaths.ContainsKey(name) ? queryBuilder.TableNameResolvePaths[name] : string.Empty;
+            //    var tableColumnCount = queryBuilder.TableNameColumnCount[name];
+
+            //    foreach (var join in queryBuilder.Joins)
+            //    {
+            //        if (join.LeftTableAttribute.EntityType == tableType && join.IsManyToMany)
+            //        {
+            //            var indexes = new List<int>();
+            //            for (int i = 0; i < tableColumnCount; i++)
+            //            {
+            //                indexes.Add(tableIndex + i);
+            //            }
+            //            manyToManyJoinIndexes.Add((join.LeftPropertyInfo.Name, indexes.ToArray()));
+
+            //        }
+            //    }
+
+            //    tableIndex += tableColumnCount;
+            //}
+
+            //void AddManyToManyObject(SharpSqlPrimaryKey key, IDataReader reader)
+            //{
+            //    Dictionary<string, List<SharpSqlEntity>> relations;
+            //    if (manyToManyData.ContainsKey(key))
+            //    {
+            //        relations = manyToManyData[key];
+            //    }
+            //    else
+            //    {
+            //        relations = new Dictionary<string, List<SharpSqlEntity>>();
+            //        manyToManyData[key] = relations;
+            //    }
+
+            //    foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
+            //    {
+            //        bool IsRowEmpty(List<(string, int[])> manyToManyJoinIndexes, IDataReader reader)
+            //        {
+            //            foreach (var (fieldName, indexes) in manyToManyJoinIndexes)
+            //            {
+            //                for (int i = 0; i < indexes.Length; i++)
+            //                {
+            //                    if (reader.GetValue(indexes[i]) == DBNull.Value)
+            //                    {
+            //                        if ((i + 1) == indexes.Length)
+            //                        {
+            //                            return true;
+            //                        }
+            //                    }
+            //                    else
+            //                    {
+            //                        return false;
+            //                    }
+            //                }
+            //            }
+
+            //            return true;
+            //        }
+
+            //        if (!IsRowEmpty(manyToManyJoinIndexes, reader))
+            //        {
+            //            var instance = (SharpSqlEntity)Activator.CreateInstance(manyToManyJoinTypes[fieldName]);
+            //            foreach (var index in indexes)
+            //            {
+            //                SetEntityProperty(instance, reader, queryBuilder, index, true);
+            //            }
+
+            //            if (relations.ContainsKey(fieldName))
+            //            {
+            //                relations[fieldName].Add(instance);
+            //            }
+            //            else
+            //            {
+            //                relations[fieldName] = new List<SharpSqlEntity>()
+            //            {
+            //                instance
+            //            };
+            //            }
+            //        }
+            //    }
+            //}
+
+            //int[] primaryKeyIndexes = null;
+
+            //bool isFirst = true;
+            //while (reader.Read())
+            //{
+            //    SharpSqlPrimaryKey pk = default;
+            //    if (!isFirst)
+            //    {
+            //        pk = new SharpSqlPrimaryKey(reader, primaryKeyIndexes);
+            //        if (knownEntities.ContainsKey(pk))
+            //        {
+            //            // Only do to many linking here
+            //            AddManyToManyObject(pk, reader);
+            //            continue;
+            //        }
+            //    }
+
+            //    var entity = (EntityType)Activator.CreateInstance(typeof(EntityType));
+            //    entity.DisableChangeTracking = collection.DisableChangeTracking;
+
+            //    if (isFirst)
+            //    {
+            //        primaryKeyIndexes = SharpSqlPrimaryKey.DeterminePrimaryKeyIndexes(reader, entity);
+
+            //        foreach (var (fieldName, _) in manyToManyJoinIndexes)
+            //        {
+            //            var type = entity.GetType().GetProperty(fieldName, SharpSqlEntity.PublicFlags).PropertyType;
+            //            if (typeof(SharpSqlEntity).IsAssignableFrom(type.GetType()))
+            //            {
+            //                type = SharpSqlUtilities.CollectionEntityRelations[type];
+            //            }
+            //            manyToManyJoinTypes.Add(fieldName, type);
+            //        }
+
+            //        pk = new SharpSqlPrimaryKey(reader, primaryKeyIndexes);
+            //        isFirst = false;
+            //    }
+
+            //    PopulateEntity(entity, reader, queryBuilder);
+            //    AddManyToManyObject(pk, reader);
+
+            //    knownEntities.Add(pk, entity);
+            //}
+
+            //foreach (var kvPair in manyToManyData)
+            //{
+            //    var entity = knownEntities[kvPair.Key];
+            //    foreach (var data in kvPair.Value)
+            //    {
+            //        var property = entity.GetType().GetProperty(data.Key, SharpSqlEntity.PublicFlags);
+            //        if (typeof(ISharpSqlCollection<EntityType>).IsAssignableFrom(property.PropertyType))
+            //        {
+            //            var subcollection = Activator.CreateInstance(property.PropertyType);
+            //            var collectionProperty = property.PropertyType.GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.MutableEntityCollection), SharpSqlEntity.NonPublicFlags);
+            //            var list = collectionProperty.GetValue(subcollection) as IList;
+            //            foreach (var item in data.Value)
+            //            {
+            //                list.Add(item);
+            //            }
+            //            property.SetValue(entity, subcollection);
+            //        }
+            //        else
+            //        {
+            //            throw new Exception("Something went wrong trying to cast to a subcollection");
+            //        }
+            //    }
+
+            //    collection.Add(entity);
+            //}
         }
 
         private static void PopulateManyToManyEntity(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)
