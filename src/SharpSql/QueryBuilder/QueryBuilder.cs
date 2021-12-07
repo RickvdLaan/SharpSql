@@ -22,7 +22,7 @@ namespace SharpSql
 
         internal NonQueryType NonQueryType { get; private set; }
 
-        public List<(string name, Type type)> TableOrder { get; private set; } = new List<(string name, Type type)>(10);
+        public List<(string Name, Type Type)> TableOrder { get; private set; } = new List<(string name, Type type)>(10);
 
         public Dictionary<string, int> TableNameColumnCount { get; private set; } = new Dictionary<string, int>();
 
@@ -359,7 +359,7 @@ namespace SharpSql
 
             AddQueryTableName(new SharpSqlTableAttribute(SharpSqlUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType()));
 
-            var tableAlias = TableOrder.First(x => x.type == entity.GetType()).name;
+            var tableAlias = TableOrder.First(x => x.Type == entity.GetType()).Name;
 
             if (entity.DirtyTracker.Any
             || !entity.DirtyTracker.AnyDirtyRelations(entity))

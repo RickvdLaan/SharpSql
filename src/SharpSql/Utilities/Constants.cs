@@ -16,5 +16,8 @@
 
         internal const string OrderByAsc    = "ASC";
         internal const string OrderByDesc   = "DESC";
+
+        internal const string IsManyToMany  = "IsManyToMany";
+        internal const string ManyToMany    = "ManyToMany";
     }
 }

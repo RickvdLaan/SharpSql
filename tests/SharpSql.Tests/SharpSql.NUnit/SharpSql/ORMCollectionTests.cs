@@ -707,11 +707,13 @@ namespace SharpSql.NUnit
         }
 
         [Test, SharpSqlUnitTest("ManyToManyUsers")]
-        public void ManyTomany()
+        public void ManyToMany()
         {
             var users = (new Users()
                 .Join(x => new object[] { x.Roles2.Left() })
                 .Fetch() as Users);
+
+            Assert.IsTrue(false);
         }
 
 
