@@ -161,7 +161,7 @@ namespace SharpSql
         {
             var dataTable = new DataTable();
             dataTable.ExtendedProperties.Add(Constants.IsManyToMany, false);
-            dataTable.ExtendedProperties.Add(Constants.ManyToMany, new List<Type>(4)); //@Performance: calculate capacity based on many-to-many
+            dataTable.ExtendedProperties.Add(Constants.ManyToMany, new List<(Type Left, Type Right)>(4)); //@Performance: calculate capacity based on many-to-many
             var tableName = queryBuilder.TableOrder[tableOrderIndex].Name;
             var tableType = queryBuilder.TableOrder[tableOrderIndex].Type;
             var tableColumnCount = queryBuilder.TableNameColumnCount[tableName];
@@ -213,13 +213,18 @@ namespace SharpSql
             {
                 if (m2m.Value.EntityType == tableType)
                 {
-                    var tableOrder = queryBuilder.TableOrder[++tableOrderIndex];
-                    var m2mColumnCount = queryBuilder.TableNameColumnCount[tableOrder.Name];
-                    m2mTableType = tableOrder.Type;
+                    var tableOrderLeft = queryBuilder.TableOrder[tableOrderIndex++];
+                    var tableOrderRight = queryBuilder.TableOrder[tableOrderIndex];
+                    var m2mColumnCount = queryBuilder.TableNameColumnCount[tableOrderLeft.Name];
+
+                    m2mTableType = tableOrderLeft.Type;
                     tableIndex += tableColumnCount;
                     tableColumnCount += m2mColumnCount;
+
                     dataTable.ExtendedProperties[Constants.IsManyToMany] = true;
-                    ((List<Type>)dataTable.ExtendedProperties[Constants.ManyToMany]).Add(SharpSqlUtilities.CollectionEntityRelations[tableOrder.Type]);
+                    ((List<(Type, Type)>)dataTable.ExtendedProperties[Constants.ManyToMany])
+                        .Add((SharpSqlUtilities.CollectionEntityRelations[tableOrderLeft.Type], 
+                              SharpSqlUtilities.CollectionEntityRelations[tableOrderRight.Type]));
 
                     break;
                 }
@@ -249,28 +254,28 @@ namespace SharpSql
                 // ManyToMany relation
                 if ((bool)dataTable.ExtendedProperties[Constants.IsManyToMany])
                 {
-                    var manyToManyRelations = (List<Type>)dataTable.ExtendedProperties[Constants.ManyToMany];
-                    var entityManyToManyProperties = new List<PropertyInfo>(manyToManyRelations.Count);
+                    var manyToManyRelations = (List<(Type Left, Type Right)>)dataTable.ExtendedProperties[Constants.ManyToMany];
+                    var entityManyToManyProperties = new List<(Type Left, PropertyInfo Property)>(manyToManyRelations.Count);
 
                     foreach (EntityType entity in collection)
                     {
                         if (entityManyToManyProperties.Count != manyToManyRelations.Count)
                         {
-                            foreach (Type manyToManyRelation in manyToManyRelations)
+                            foreach ((Type Left, Type Right) manyToManyRelation in manyToManyRelations)
                             {
-                                var properties = entity.GetType().GetProperties().Where(x => x.PropertyType == manyToManyRelation && x.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlManyToMany)));
+                                var properties = entity.GetType().GetProperties().Where(x => x.PropertyType == manyToManyRelation.Right && x.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlManyToMany)));
 
                                 if (!properties.Any())
                                 {
                                     // Somebody is trying to spawn a many-to-many collection without an existing property on the entity?
-                                    throw new IllegalColumnNameException($"The entity of type {entity.GetType().Name} does not have a property for the many-to-many relation of type {manyToManyRelation.Name}.");
+                                    throw new IllegalColumnNameException($"The entity of type {entity.GetType().Name} does not have a property for the many-to-many relation of type {manyToManyRelation.Right.Name}.");
                                 }
                                 else if (properties.Count() > 1) 
                                 {
-                                    throw new InvalidJoinException($"Multiple properties found with the attribute {typeof(SharpSqlManyToMany).Name} for type {manyToManyRelation.Name}.");
+                                    throw new InvalidJoinException($"Multiple properties found with the attribute {typeof(SharpSqlManyToMany).Name} for type {manyToManyRelation.Right.Name}.");
                                 }
 
-                                entityManyToManyProperties.Add(properties.FirstOrDefault());
+                                entityManyToManyProperties.Add((manyToManyRelation.Left, properties.FirstOrDefault()));
                             }
                         }
 
@@ -283,9 +288,7 @@ namespace SharpSql
                 // Default columns
                 else
                 {
-                    reader = dataTable.CreateDataReader();
-
-                    PopulateCollectionFromDataReader<CollectionType, EntityType>(collection, reader, queryBuilder);
+                    PopulateCollectionFromDataReader<CollectionType, EntityType>(collection, dataTable.CreateDataReader(), queryBuilder);
                 }
             }
         }
@@ -310,8 +313,19 @@ namespace SharpSql
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetManyToManyProperty(SharpSqlEntity entity, DataTable dataTable, PropertyInfo propertyInfo)
+        internal static void SetManyToManyProperty(SharpSqlEntity entity, DataTable dataTable, (Type Left, PropertyInfo Property) manyToManyProperty)
         {
+            var attribute = manyToManyProperty.Left.GetCustomAttribute<SharpSqlTableAttribute>();
+            var foreignKeyProperties = attribute.EntityType.GetProperties().Where(property => property.IsDefined(typeof(SharpSqlForeignKeyAttribute), false));
+
+            foreach (var property in foreignKeyProperties)
+            {
+                
+            }
+
+            //SharpSqlForeignKey(SharpSqlUtilities.CollectionEntityRelations[attribute.CollectionTypeLeft])
+            // SharpSqlForeignKey(typeof(Role))
+
             // Todo:
             // Spawn UserRole(s) to have access to the following data:
             //  [SharpSqlPrimaryKey, SharpSqlForeignKey(typeof(User)), SharpSqlColumn("UserId")]
@@ -328,12 +342,10 @@ namespace SharpSql
             //var manyToManyCollection = Activator.CreateInstance(propertyInfo.PropertyType);
             //var columnToSet = SharpSqlUtilities.CachedColumns[propertyInfo.PropertyType];
 
-            using (var reader = dataTable.CreateDataReader())
+            using var reader = dataTable.CreateDataReader();
+            while (reader.Read())
             {
-                while (reader.Read())
-                {
-                    
-                }    
+
             }
         }
 
