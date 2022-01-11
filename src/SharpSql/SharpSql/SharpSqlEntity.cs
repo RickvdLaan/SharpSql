@@ -128,7 +128,7 @@ namespace SharpSql
         /// Gets the table scheme from the current <see cref="SharpSqlEntity"/>.
         /// </summary>
         [JsonIgnore]
-        public ReadOnlyCollection<string> TableScheme { get { return SharpSqlUtilities.CachedColumns[GetType()].AsReadOnly(); } }
+        public ReadOnlyCollection<string> TableScheme { get { return SharpSqlUtilities.CachedColumns[GetType()].Keys.ToList().AsReadOnly(); } } // Ouch performance!
 
         internal List<SharpSqlEntity> Relations { get; private set; } = new List<SharpSqlEntity>();
 

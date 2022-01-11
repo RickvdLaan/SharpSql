@@ -145,5 +145,23 @@ namespace SharpSql.NUnit.QueryBuilder
 
             Assert.AreEqual(user.ExecutedQuery, expectedQuery);
         }
+
+
+        [Test]
+        public void ToQuery()
+        {
+            // Tests the ToQuery functionality.
+            var expectedQuery = "SELECT [U].[Username], [U].[Organisation] FROM [DBO].[Users] AS [U] LEFT JOIN [DBO].[Organisations] AS [O] ON [U].[Organisation] = [O].[Id] WHERE ([U].[Username] LIKE @PARAM1 + '%') ORDER BY [U].[Username] ASC;";
+
+            var queryBuilder = new Users()
+                .Select(x => new { x.Username, x.Organisation })
+                .Join(x => new { x.Organisation })
+                .Where(x => x.Username.StartsWith('T'))
+                .OrderBy(x => x.Username.Ascending())
+                .ToQuery();
+
+            Assert.AreEqual(expectedQuery, queryBuilder.GeneratedQuery);
+            Assert.AreEqual(expectedQuery, queryBuilder.ToString());
+        }
     }
 }

@@ -105,7 +105,7 @@ namespace SharpSql
 
         private static IDataReader ApplyEntityJoinsToReader(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)
         {
-            foreach (var join in queryBuilder.Joins)
+            foreach (var join in queryBuilder.AllJoins)
             {
 
                 if (!join.IsManyToMany)

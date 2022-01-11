@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace SharpSql
@@ -34,7 +35,7 @@ namespace SharpSql
         /// <summary>
         /// Gets the table scheme of the current collection of <see cref="SharpSqlEntity"/> objects.
         /// </summary>
-        public ReadOnlyCollection<string> TableScheme => SharpSqlUtilities.CachedColumns[GetType()].AsReadOnly();
+        public ReadOnlyCollection<string> TableScheme => SharpSqlUtilities.CachedColumns[GetType()].Keys.ToList().AsReadOnly(); // Ouch performance!
 
         /// <summary>
         /// Gets a read-only collection of fetched <see cref="SharpSqlEntity"/> entities.
@@ -92,6 +93,20 @@ namespace SharpSql
             return Fetch(null, maxNumberOfItemsToReturn);
         }
 
+        /// <summary>
+        /// Returns the query for the current expression.
+        /// </summary>
+        /// <param name="maxNumberOfItemsToReturn">The maximum number of records to return.</param>
+        /// <returns></returns>
+        public QueryBuilder ToQuery(long maxNumberOfItemsToReturn = -1)
+        {
+            var queryBuilder = new QueryBuilder();
+
+            queryBuilder.BuildQuery(TableAttribute, SelectExpression, JoinExpression ?? InternalJoinExpression, WhereExpression ?? InternalWhereExpression, SortExpression, maxNumberOfItemsToReturn);
+            
+            return queryBuilder;
+        }
+       
         /// <summary>
         /// Saves the changes made to the database.
         /// </summary>

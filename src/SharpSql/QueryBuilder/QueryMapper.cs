@@ -15,7 +15,7 @@ namespace SharpSql
            where CollectionType : SharpSqlCollection<EntityType>
            where EntityType : SharpSqlEntity
         {
-            if (queryBuilder?.ContainsToManyJoins == true)
+            if (queryBuilder?.HasManyToManyJoins == true)
             {
                 PopulateManyToManyCollection<CollectionType, EntityType>(collection, reader, queryBuilder);
                 return;
@@ -170,16 +170,62 @@ namespace SharpSql
 
             ProcessManyToManySection(dataTable, queryBuilder, ref tableIndex, ref tableOrderIndex, tableType, ref tableColumnCount, out Type m2mTableType);
 
+            var removeIndices = new HashSet<int>(queryBuilder.AllJoins.Count);
+
             // Since rootDataTable is read-only (at least, it should be) we can safely use the indexes without losing/overriding data.
             for (int i = tableIndex; i < tableColumnCount + tableIndex; i++)
             {
+                var columnName = rootDataTable.Columns[i].ColumnName;
+
+                if (UnitTestUtilities.IsUnitTesting && columnName.Contains('_'))
+                {
+                    columnName = columnName.Split('_').Last();
+                }
+
+                if (SharpSqlUtilities.CachedColumns[tableType][columnName] == ColumnType.ManyToMany)
+                {
+                    if (queryBuilder.HasManyToManyJoins)
+                    {
+                        // @Todo
+                        throw new NotImplementedException();
+                        // if it does have many-to-many joins, check if the current join exists, skip or add based on it.
+                    }
+
+                    removeIndices.Add(i);
+                }
+                else if (SharpSqlUtilities.CachedColumns[tableType][columnName] == ColumnType.Join)
+                {
+                    if (queryBuilder.HasJoins)
+                    {
+                        // @Todo
+                        throw new NotImplementedException();
+                        // if it does have joins, check if the current join exists, skip or add based on it.
+                    }
+                    // ManyToMany joins aren't all many-to-many joins, because the right side is a regular table.
+                    // We need to check if the current table isn't actually a companion of a many-to-many.
+                    else if (queryBuilder.HasManyToManyJoins)
+                    { 
+                        // If one is found, it's actually a many-to-many.
+                        if (queryBuilder.AllJoins.Where(x => x.LeftTableAttribute.EntityType == tableType && x.IsManyToMany == false).Count() > 0)
+                        {    
+                            // rootDataTable.Columns[i].ColumnName or columnName
+                            // ColumnName_UserId <-> UserId? Welke? 
+                            dataTable.Columns.Add(rootDataTable.Columns[i].ColumnName, rootDataTable.Columns[i].DataType);
+                            continue;
+                        }
+                    }
+
+                    removeIndices.Add(i);
+                }
+                // rootDataTable.Columns[i].ColumnName or columnName
+                // ColumnName_UserId <-> UserId? Welke? 
                 dataTable.Columns.Add(rootDataTable.Columns[i].ColumnName, rootDataTable.Columns[i].DataType);
             }
 
             for (int i = 0; i < rootDataTable.Rows.Count; i++)
             {
-                if (i > 0 && !SharpSqlUtilities.CachedManyToMany.ContainsKey(tableType) // todo vervangen naar m2mTableType null check
-                || (i > 0 && !SharpSqlUtilities.CachedManyToMany.ContainsKey(m2mTableType)))
+                if (i > 0 && tableType    != null && SharpSqlUtilities.CachedManyToMany.ContainsKey(tableType) // todo vervangen naar m2mTableType null check
+                || (i > 0 && m2mTableType != null && SharpSqlUtilities.CachedManyToMany.ContainsKey(m2mTableType)))
                 {
                     // We check if the current rows equals the previous rows, because we only want to add duplicates
                     // if its a many-to-many record.
@@ -202,6 +248,12 @@ namespace SharpSql
 
             tableIndex += tableColumnCount;
 
+            // Maybe someday we can think of something nicer ¯\_(ツ)_/¯
+            foreach (var removeIndice in removeIndices)
+            {
+                dataTable.Columns.RemoveAt(removeIndice);
+            }
+
             return dataTable;
         }
 
@@ -209,6 +261,7 @@ namespace SharpSql
         {
             m2mTableType = null;
 
+            // Misschien versimpeling door te kijken naar tableType in cache?
             foreach (var m2m in SharpSqlUtilities.ManyToManyRelations)
             {
                 if (m2m.Value.EntityType == tableType)
@@ -218,7 +271,7 @@ namespace SharpSql
                     var m2mColumnCount = queryBuilder.TableNameColumnCount[tableOrderLeft.Name];
 
                     m2mTableType = tableOrderLeft.Type;
-                    tableIndex += tableColumnCount;
+                    //tableIndex += tableColumnCount;
                     tableColumnCount += m2mColumnCount;
 
                     dataTable.ExtendedProperties[Constants.IsManyToMany] = true;
@@ -226,6 +279,7 @@ namespace SharpSql
                         .Add((SharpSqlUtilities.CollectionEntityRelations[tableOrderLeft.Type], 
                               SharpSqlUtilities.CollectionEntityRelations[tableOrderRight.Type]));
 
+                    // We break because we process many-to-many in sections.
                     break;
                 }
             }
@@ -239,6 +293,7 @@ namespace SharpSql
             var parentDataTable = new DataTable();
             parentDataTable.Load(reader);
 
+            // @Todo: count all joins with ManyToMany true and divide by 2 and substract that from TableOrder.Count.
             var dataTables = new List<DataTable>(queryBuilder.TableOrder.Count);
 
             var tableIndex = 0;
@@ -261,21 +316,21 @@ namespace SharpSql
                     {
                         if (entityManyToManyProperties.Count != manyToManyRelations.Count)
                         {
-                            foreach ((Type Left, Type Right) manyToManyRelation in manyToManyRelations)
+                            foreach ((Type Left, Type Right) in manyToManyRelations)
                             {
-                                var properties = entity.GetType().GetProperties().Where(x => x.PropertyType == manyToManyRelation.Right && x.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlManyToMany)));
+                                var properties = entity.GetType().GetProperties().Where(x => x.PropertyType == Right && x.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlManyToManyAttribute)));
 
                                 if (!properties.Any())
                                 {
                                     // Somebody is trying to spawn a many-to-many collection without an existing property on the entity?
-                                    throw new IllegalColumnNameException($"The entity of type {entity.GetType().Name} does not have a property for the many-to-many relation of type {manyToManyRelation.Right.Name}.");
+                                    throw new IllegalColumnNameException($"The entity of type {entity.GetType().Name} does not have a property for the many-to-many relation of type {Right.Name}.");
                                 }
                                 else if (properties.Count() > 1) 
                                 {
-                                    throw new InvalidJoinException($"Multiple properties found with the attribute {typeof(SharpSqlManyToMany).Name} for type {manyToManyRelation.Right.Name}.");
+                                    throw new InvalidJoinException($"Multiple properties found with the attribute {typeof(SharpSqlManyToManyAttribute).Name} for type {Right.Name}.");
                                 }
 
-                                entityManyToManyProperties.Add((manyToManyRelation.Left, properties.FirstOrDefault()));
+                                entityManyToManyProperties.Add((Left, properties.FirstOrDefault()));
                             }
                         }
 
@@ -407,13 +462,13 @@ namespace SharpSql
                     }
                     // If there are no joins provided or none matched the current type we don't want
                     // to fetch the child-object.
-                    if (queryBuilder.Joins.Count == 0 || !queryBuilder.Joins.Any(x => x.LeftPropertyInfo.PropertyType == type))
+                    if (queryBuilder.AllJoins.Count == 0 || !queryBuilder.AllJoins.Any(x => x.LeftPropertyInfo.PropertyType == type))
                     {
                         value = null;
                         break;
                     }
 
-                    foreach (var join in queryBuilder.Joins)
+                    foreach (var join in queryBuilder.AllJoins)
                     {
                         if (join.LeftPropertyInfo.PropertyType == type)
                         {

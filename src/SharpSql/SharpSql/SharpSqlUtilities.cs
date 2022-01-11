@@ -10,6 +10,8 @@ namespace SharpSql
 {
     public sealed class SharpSqlUtilities
     {
+        internal static bool AllowAnonymouseTypes { get; set; }
+
         internal static MemoryEntityDatabase MemoryEntityDatabase { get; set; }
 
         internal static MemoryCollectionDatabase MemoryCollectionDatabase { get; set; }
@@ -20,7 +22,7 @@ namespace SharpSql
 
         internal static HashSet<(Type EntityType, string ColumnName)> UniqueConstraints { get; private set; }
 
-        internal static Dictionary<Type, List<string>> CachedColumns { get; private set; }
+        internal static Dictionary<Type, Dictionary<string, ColumnType>> CachedColumns { get; private set; }
 
         internal static Dictionary<Type, List<string>> CachedMutableColumns { get; private set; }
 
@@ -32,7 +34,7 @@ namespace SharpSql
             CollectionEntityRelations = new Dictionary<Type, Type>();
             ManyToManyRelations = new Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), SharpSqlTableAttribute>();
             UniqueConstraints = new HashSet<(Type EntityType, string ColumnName)>();
-            CachedColumns = new Dictionary<Type, List<string>>();
+            CachedColumns = new Dictionary<Type, Dictionary<string, ColumnType>>();
             CachedMutableColumns = new Dictionary<Type, List<string>>();
             CachedManyToMany = new Dictionary<Type, byte>();
         }

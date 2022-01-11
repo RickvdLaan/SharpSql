@@ -18,7 +18,7 @@ namespace SharpSql
             SharpSqlUtilities.MemoryCollectionDatabase = new MemoryCollectionDatabase(Assembly.GetCallingAssembly());
             SharpSqlUtilities.MemoryCollectionDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlCollectionFilePath));
 
-            _ = new SharpSqlInitializer(configuration: null, loadAllReferencedAssemblies: true);
+            _ = new SharpSqlInitializer(configuration: null, loadAllReferencedAssemblies: true, allowAnonymousTypes: true);
         }
 
         private static List<string> LoadMemoryDatabase(Assembly callingAssembly, string folder)
@@ -76,7 +76,7 @@ namespace SharpSql
             }
         }
 
-        public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false)
+        public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false, bool allowAnonymousTypes = false)
         {
             _ = new DatabaseUtilities(configuration);
             _ = new SharpSqlUtilities();
@@ -85,6 +85,8 @@ namespace SharpSql
             {
                 LoadAllReferencedAssemblies();
             }
+
+            SharpSqlUtilities.AllowAnonymouseTypes = allowAnonymousTypes;
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -110,8 +112,8 @@ namespace SharpSql
                         SharpSqlUtilities.CollectionEntityRelations.Add(tableAttribute.EntityType, tableAttribute.CollectionType);
                         SharpSqlUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeLeft, tableAttribute.CollectionTypeRight), tableAttribute);
                         SharpSqlUtilities.ManyToManyRelations.Add((tableAttribute.CollectionTypeRight, tableAttribute.CollectionTypeLeft), tableAttribute);
-                        SharpSqlUtilities.CachedManyToMany.Add(tableAttribute.CollectionTypeRight, default);
-                        SharpSqlUtilities.CachedManyToMany.Add(SharpSqlUtilities.CollectionEntityRelations[tableAttribute.CollectionTypeRight], default);
+                        SharpSqlUtilities.CachedManyToMany.Add(tableAttribute.CollectionType, default);
+                        SharpSqlUtilities.CachedManyToMany.Add(SharpSqlUtilities.CollectionEntityRelations[tableAttribute.CollectionType], default);
                     }
                     if (!SharpSqlUtilities.CachedColumns.ContainsKey(tableAttribute.CollectionType)
                      && !SharpSqlUtilities.CachedColumns.ContainsKey(tableAttribute.EntityType))
@@ -127,7 +129,7 @@ namespace SharpSql
 
                             var uniqueConstraints = DatabaseUtilities.ExecuteDirectQuery(QueryBuilder.ColumnConstraintInformation(tableAttribute.TableName));
 
-                            var columns = new List<string>(rows.Count);
+                            var columns = new List<(string, ColumnType)>(rows.Count);
 
                             for (int i = 0; i < rows.Count; i++)
                             {
@@ -140,20 +142,54 @@ namespace SharpSql
                                     }
                                 }
 
-                                columns.Add((string)rows[i][0]);
+                                // @Todo: implement
+                                columns.Add(((string)rows[i][0], ColumnType.Default));
                             }
 
-                            SharpSqlUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
-                            SharpSqlUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
+                            //SharpSqlUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
+                            //SharpSqlUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
                         }
                         else
                         {
-                            var columns = MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
+                            var columnNames = MemoryEntityDatabase.FetchTableColumns(tableAttribute.TableName);
 
-                            if (columns != null)
+                            if (columnNames != null)
                             {
-                                SharpSqlUtilities.CachedColumns.Add(tableAttribute.CollectionType, columns);
-                                SharpSqlUtilities.CachedColumns.Add(tableAttribute.EntityType, columns);
+                                var columns = new Dictionary<(SharpSqlEntity EntityType, string ColumnName), ColumnType>(columnNames.Count);
+
+                                foreach (var columnName in columnNames)
+                                {
+                                    foreach (var property in tableAttribute.EntityType.GetProperties())
+                                    {
+                                        var columnAttribute = property.GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).FirstOrDefault() as SharpSqlColumnAttribute;
+
+                                        var columnNameToUse = columnName;
+
+                                        if (columnAttribute != null)
+                                        {
+                                            columnNameToUse = columnAttribute.ColumnName;
+                                        }
+
+                                        if (property.Name == columnName || columnAttribute?.ColumnName == columnName)
+                                        {
+                                            if (property.GetCustomAttributes(typeof(SharpSqlForeignKeyAttribute), false).FirstOrDefault() is SharpSqlForeignKeyAttribute)
+                                            {
+                                                SharpSqlUtilities.CachedColumns.AddColumnCache(tableAttribute.EntityType, columnNameToUse, ColumnType.Join);
+                                                break;
+                                            }
+                                            else if (property.GetCustomAttributes(typeof(SharpSqlManyToManyAttribute), false).FirstOrDefault() is SharpSqlManyToManyAttribute)
+                                            {
+                                                SharpSqlUtilities.CachedColumns.AddColumnCache(tableAttribute.EntityType, columnNameToUse, ColumnType.ManyToMany);
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                SharpSqlUtilities.CachedColumns.AddColumnCache(tableAttribute.EntityType, columnNameToUse, ColumnType.Default);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

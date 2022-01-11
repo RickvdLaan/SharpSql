@@ -3,6 +3,7 @@ using SharpSql.Attributes;
 using SharpSql.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -12,36 +13,52 @@ using System.Text.RegularExpressions;
 
 namespace SharpSql
 {
-    internal class QueryBuilder
+    public sealed class QueryBuilder
     {
+        /// <summary>
+        /// Gets the generated query or <see cref="string.Empty"/>.
+        /// </summary>
         public string GeneratedQuery { get; private set; }
 
-        public readonly Dictionary<string, string> _queryTableNames = new(5);
+        /// <summary>
+        /// Gets whether the current <see cref="QueryBuilder"/> has one or more many-to-many joins.
+        /// </summary>
+        public bool HasManyToManyJoins { get; private set; } = false;
+
+        /// <summary>
+        /// Gets whether the current <see cref="QueryBuilder"/> has one or more joins.
+        /// </summary>
+        public bool HasJoins { get; private set; } = false;
+
+        /// <summary>
+        /// Gets a <see cref="ReadOnlyCollection{SqlParameter}" /> of <see cref="SqlParameter"/> objects for the generated query.
+        /// </summary>
+        public ReadOnlyCollection<SqlParameter> Parameters => SqlParameters.AsReadOnly();
+
+        private readonly Dictionary<string, string> _queryTableNames = new(5);
 
         private readonly Dictionary<char, int> _tableCharCounts = new(5);
 
         internal NonQueryType NonQueryType { get; private set; }
 
-        public List<(string Name, Type Type)> TableOrder { get; private set; } = new List<(string name, Type type)>(10);
+        internal List<(string Name, Type Type)> TableOrder { get; private set; } = new List<(string name, Type type)>(10);
 
-        public Dictionary<string, int> TableNameColumnCount { get; private set; } = new Dictionary<string, int>();
+        internal Dictionary<string, int> TableNameColumnCount { get; private set; } = new Dictionary<string, int>();
 
-        public Dictionary<string, string> TableNameResolvePaths { get; private set; } = new Dictionary<string, string>();
-
-        public bool ContainsToManyJoins { get; private set; } = false;
+        internal Dictionary<string, string> TableNameResolvePaths { get; private set; } = new Dictionary<string, string>();
 
         internal SharpSqlTableAttribute TableAttribute { get; set; }
 
         internal List<SqlParameter> SqlParameters { get; private set; } = new List<SqlParameter>(16);
 
-        internal List<RelationalJoin> Joins { get; set; } = new List<RelationalJoin>();
+        internal List<RelationalJoin> AllJoins { get; set; } = new List<RelationalJoin>();
 
         public override string ToString()
         {
             return GeneratedQuery;
         }
 
-        public void BuildQuery(SharpSqlTableAttribute tableAttribute, Expression selectExpression, Expression joinExpression, Expression whereExpression, Expression sortExpression, long maxNumberOfItemsToReturn)
+        internal void BuildQuery(SharpSqlTableAttribute tableAttribute, Expression selectExpression, Expression joinExpression, Expression whereExpression, Expression sortExpression, long maxNumberOfItemsToReturn)
         {
             TableAttribute = tableAttribute;
 
@@ -73,7 +90,7 @@ namespace SharpSql
             GeneratedQuery = stringBuilder.ToString();
         }
 
-        public void BuildNonQuery(SharpSqlEntity entity, NonQueryType nonQueryType)
+        internal void BuildNonQuery(SharpSqlEntity entity, NonQueryType nonQueryType)
         {
             GeneratedQuery = (NonQueryType = nonQueryType) switch
             {
@@ -573,23 +590,29 @@ namespace SharpSql
                     }
                 case NewExpression newExpression:
                     {
-                        var query = string.Empty;
+                        if (SharpSqlUtilities.AllowAnonymouseTypes)
+                        {               
+                            var query = string.Empty;
 
-                        for (int i = 0; i < newExpression.Arguments.Count; i++)
-                        {
-                            if (newExpression.Arguments[i] is MemberExpression memberExpression)
+                            for (int i = 0; i < newExpression.Arguments.Count; i++)
                             {
-                                var addon = (newExpression.Arguments.Count - 1 == i) ? string.Empty : ", ";
+                                if (newExpression.Arguments[i] is MemberExpression memberExpression)
+                                {
+                                    var addon = (newExpression.Arguments.Count - 1 == i) ? string.Empty : ", ";
 
-                                query += $"{ ParseExpression(newExpression.Arguments[i]) }{ addon }";
+                                    query += $"{ ParseExpression(newExpression.Arguments[i]) }{ addon }";
 
-                                continue;
+                                    continue;
+                                }
+
+                                throw new NotImplementedException();
                             }
 
-                            throw new NotImplementedException();
+                            return query;
                         }
 
-                        return query;
+                        // @Todo: create exception AnonymouseTypeException();
+                        throw new Exception("AllowAnonymouseTypes is set to false, to enable anonymouse types set allowAnonymouseTypes to true in the initializer. Read the documentation for more information.");
                     }
                 default:
                     throw new NotImplementedException(body.NodeType.ToString());
@@ -663,7 +686,7 @@ namespace SharpSql
 
             if (manyToManyRelations != null)
             {
-                ContainsToManyJoins = true;
+                HasManyToManyJoins = true;
 
                 var properties = manyToManyRelations.EntityType.GetProperties();
 
@@ -707,8 +730,8 @@ namespace SharpSql
                 AddQueryTableName(firstJoin.RightTableAttribute);
                 AddQueryTableName(secondJoin.RightTableAttribute);
 
-                Joins.Add(firstJoin);
-                Joins.Add(secondJoin);
+                AllJoins.Add(firstJoin);
+                AllJoins.Add(secondJoin);
 
                 GenerateJoinSql(joinType, stringBuilder, firstJoin);
                 GenerateJoinSql(joinType, stringBuilder, secondJoin);
@@ -725,7 +748,8 @@ namespace SharpSql
             }
 
             var join = CalculateJoins(TableAttribute, expression.Member.Name);
-            Joins.Add(join);
+            HasJoins = true;
+            AllJoins.Add(join);
             GenerateJoinSql(joinType, stringBuilder, join);
             return stringBuilder.ToString();
         }

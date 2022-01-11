@@ -8,6 +8,9 @@ namespace SharpSql.Attributes
 
         public SharpSqlColumnAttribute(string columnName)
         {
+            if (string.IsNullOrEmpty(columnName))
+                throw new ArgumentNullException();
+
             ColumnName = columnName;
         }
     }

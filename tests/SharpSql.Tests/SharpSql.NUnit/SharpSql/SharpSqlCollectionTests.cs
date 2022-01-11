@@ -716,6 +716,16 @@ namespace SharpSql.NUnit
             Assert.IsTrue(false);
         }
 
+        // @Todo
+        //[Test, SharpSqlUnitTest("JoinWithManyToManyUsers")]
+        //public void JoinWithManyToMany()
+        //{
+        //    var users = (new Users()
+        //        .Join(x => new object[] { x.Organisation.Left(), x.Roles2.Left() })
+        //        .Fetch() as Users);
+
+        //    Assert.IsTrue(false);
+        //}
 
         [Test, SharpSqlUnitTest("ComplexWhereLike")]
         public void Complex_Where_Like()
