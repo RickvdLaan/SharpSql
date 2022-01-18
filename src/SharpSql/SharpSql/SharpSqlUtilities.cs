@@ -26,6 +26,7 @@ namespace SharpSql
 
         internal static Dictionary<Type, List<string>> CachedMutableColumns { get; private set; }
 
+        // Todo make private and a internal bool to check for key
         internal static Dictionary<Type, byte> CachedManyToMany { get; private set; }
 
         public SharpSqlUtilities()

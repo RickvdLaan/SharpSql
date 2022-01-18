@@ -168,7 +168,7 @@ namespace SharpSql
 
             dataTable.TableName = SharpSqlUtilities.CollectionEntityRelations[tableType].Name;
 
-            ProcessManyToManySection(dataTable, queryBuilder, ref tableIndex, ref tableOrderIndex, tableType, ref tableColumnCount, out Type m2mTableType);
+            ProcessManyToManySection(dataTable, queryBuilder, ref tableOrderIndex, tableType, out Type m2mTableType);
 
             var removeIndices = new HashSet<int>(queryBuilder.AllJoins.Count);
 
@@ -206,11 +206,10 @@ namespace SharpSql
                     else if (queryBuilder.HasManyToManyJoins)
                     { 
                         // If one is found, it's actually a many-to-many.
-                        if (queryBuilder.AllJoins.Where(x => x.LeftTableAttribute.EntityType == tableType && x.IsManyToMany == false).Count() > 0)
+                        if (queryBuilder.AllJoins.Where(x => x.LeftTableAttribute.EntityType == tableType && x.IsManyToMany == false).Count() > 0
+                         || SharpSqlUtilities.CachedManyToMany.ContainsKey(tableType))
                         {    
-                            // rootDataTable.Columns[i].ColumnName or columnName
-                            // ColumnName_UserId <-> UserId? Welke? 
-                            dataTable.Columns.Add(rootDataTable.Columns[i].ColumnName, rootDataTable.Columns[i].DataType);
+                            dataTable.Columns.Add(columnName, rootDataTable.Columns[i].DataType);
                             continue;
                         }
                     }
@@ -219,12 +218,12 @@ namespace SharpSql
                 }
                 // rootDataTable.Columns[i].ColumnName or columnName
                 // ColumnName_UserId <-> UserId? Welke? 
-                dataTable.Columns.Add(rootDataTable.Columns[i].ColumnName, rootDataTable.Columns[i].DataType);
+                dataTable.Columns.Add(columnName, rootDataTable.Columns[i].DataType);
             }
 
             for (int i = 0; i < rootDataTable.Rows.Count; i++)
             {
-                if (i > 0 && tableType    != null && SharpSqlUtilities.CachedManyToMany.ContainsKey(tableType) // todo vervangen naar m2mTableType null check
+                if (i > 0 && tableType    != null
                 || (i > 0 && m2mTableType != null && SharpSqlUtilities.CachedManyToMany.ContainsKey(m2mTableType)))
                 {
                     // We check if the current rows equals the previous rows, because we only want to add duplicates
@@ -234,10 +233,8 @@ namespace SharpSql
                     {
                         continue;
                     }
-                    // When the current table is m2m and the results are all null, skip it.
-                    else if (m2mTableType != null
-                          && SharpSqlUtilities.CachedManyToMany.ContainsKey(m2mTableType)
-                          && rootDataTable.Rows[i].ItemArray[tableIndex..(tableColumnCount + tableIndex)].All(x => x == DBNull.Value))
+                    // When all results are all null, skip it.
+                    else if (rootDataTable.Rows[i].ItemArray[tableIndex..(tableColumnCount + tableIndex)].All(x => x == DBNull.Value))
                     {
                         continue;
                     }
@@ -257,7 +254,7 @@ namespace SharpSql
             return dataTable;
         }
 
-        private static void ProcessManyToManySection(DataTable dataTable, QueryBuilder queryBuilder, ref int tableIndex, ref int tableOrderIndex, Type tableType, ref int tableColumnCount, out Type m2mTableType)
+        private static void ProcessManyToManySection(DataTable dataTable, QueryBuilder queryBuilder, ref int tableOrderIndex, Type tableType, out Type m2mTableType)
         {
             m2mTableType = null;
 
@@ -266,13 +263,11 @@ namespace SharpSql
             {
                 if (m2m.Value.EntityType == tableType)
                 {
-                    var tableOrderLeft = queryBuilder.TableOrder[tableOrderIndex++];
-                    var tableOrderRight = queryBuilder.TableOrder[tableOrderIndex];
+                    var tableOrderLeft = queryBuilder.TableOrder[tableOrderIndex];
+                    var tableOrderRight = queryBuilder.TableOrder[tableOrderIndex + 1];
                     var m2mColumnCount = queryBuilder.TableNameColumnCount[tableOrderLeft.Name];
 
                     m2mTableType = tableOrderLeft.Type;
-                    //tableIndex += tableColumnCount;
-                    tableColumnCount += m2mColumnCount;
 
                     dataTable.ExtendedProperties[Constants.IsManyToMany] = true;
                     ((List<(Type, Type)>)dataTable.ExtendedProperties[Constants.ManyToMany])
@@ -304,12 +299,12 @@ namespace SharpSql
 
             reader.Dispose();
 
-            foreach (DataTable dataTable in dataTables)
+            for (int i = 0; i < dataTables.Count; i++)
             {
                 // ManyToMany relation
-                if ((bool)dataTable.ExtendedProperties[Constants.IsManyToMany])
+                if ((bool)dataTables[i].ExtendedProperties[Constants.IsManyToMany])
                 {
-                    var manyToManyRelations = (List<(Type Left, Type Right)>)dataTable.ExtendedProperties[Constants.ManyToMany];
+                    var manyToManyRelations = (List<(Type Left, Type Right)>)dataTables[i].ExtendedProperties[Constants.ManyToMany];
                     var entityManyToManyProperties = new List<(Type Left, PropertyInfo Property)>(manyToManyRelations.Count);
 
                     foreach (EntityType entity in collection)
@@ -336,14 +331,15 @@ namespace SharpSql
 
                         foreach (var manyToManyProperty in entityManyToManyProperties)
                         {
-                            SetManyToManyProperty(entity, dataTable, manyToManyProperty);
+                            // we only need property from manyToManyProperty
+                            SetManyToManyProperty(entity, dataTables[i], dataTables[++i], manyToManyProperty);
                         }
                     }
                 }
                 // Default columns
                 else
                 {
-                    PopulateCollectionFromDataReader<CollectionType, EntityType>(collection, dataTable.CreateDataReader(), queryBuilder);
+                    PopulateCollectionFromDataReader<CollectionType, EntityType>(collection, dataTables[i].CreateDataReader(), queryBuilder);
                 }
             }
         }
@@ -368,40 +364,48 @@ namespace SharpSql
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetManyToManyProperty(SharpSqlEntity entity, DataTable dataTable, (Type Left, PropertyInfo Property) manyToManyProperty)
+        internal static void SetManyToManyProperty(SharpSqlEntity entity, DataTable dataTableLeft, DataTable dataTableRight, (Type Left, PropertyInfo Property) manyToManyProperty)
         {
             var attribute = manyToManyProperty.Left.GetCustomAttribute<SharpSqlTableAttribute>();
             var foreignKeyProperties = attribute.EntityType.GetProperties().Where(property => property.IsDefined(typeof(SharpSqlForeignKeyAttribute), false));
 
             foreach (var property in foreignKeyProperties)
+            {                
+                if (property.GetCustomAttribute<SharpSqlForeignKeyAttribute>()?.Relation == entity.GetType())
+                {
+                    var actualColumnName = property.GetCustomAttribute<SharpSqlColumnAttribute>().ColumnName ?? property.Name;
+            
+                    var collection = Activator.CreateInstance(manyToManyProperty.Property.PropertyType);
+                    
+                    for (int i = 0; i < dataTableLeft.Rows.Count; i++)
+                    {
+                        var subEntity = Activator.CreateInstance(SharpSqlUtilities.CollectionEntityRelations[manyToManyProperty.Property.PropertyType]) as SharpSqlEntity;
+
+                        PopulateEntity(subEntity, GetManyToManyEntityReader(entity, actualColumnName, dataTableLeft, dataTableRight), null);
+
+                        collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Add), SharpSqlEntity.PublicFlags).Invoke(collection, new object[] { subEntity });
+                    }
+
+                    entity[manyToManyProperty.Property.Name] = collection;
+                }
+            }
+        }
+
+        internal static IDataReader GetManyToManyEntityReader(SharpSqlEntity entity, string foreignKey, DataTable dataTableLeft, DataTable dataTableRight)
+        {
+            // create dataReader from dataTableLeft and dataTableRight based on entity.PrimaryKey and pass it to PopulateChildEntity
+            for (int i = 0; i < dataTableLeft.Rows.Count; i++)
             {
-                
+                if (entity.PrimaryKey.IsCombinedPrimaryKey)
+                    throw new NotImplementedException();
+
+                if (entity.PrimaryKey.Keys.Any(x => x.Value.ToString().Equals(dataTableLeft.Rows[i][foreignKey].ToString())))
+                {
+                    // Todo 396
+                }
             }
 
-            //SharpSqlForeignKey(SharpSqlUtilities.CollectionEntityRelations[attribute.CollectionTypeLeft])
-            // SharpSqlForeignKey(typeof(Role))
-
-            // Todo:
-            // Spawn UserRole(s) to have access to the following data:
-            //  [SharpSqlPrimaryKey, SharpSqlForeignKey(typeof(User)), SharpSqlColumn("UserId")]
-            //  [SharpSqlPrimaryKey, SharpSqlForeignKey(typeof(Role)), SharpSqlColumn("RoleId")]
-            //
-            // Then we know the connection between the current dataTable and entity
-            //
-            // From there we can populate the roles based on:
-            // var columnToSet = SharpSqlUtilities.CachedColumns[propertyInfo.PropertyType];
-            //
-            // Then we can go through the dataTable to start setting the entity m2m property
-            // Each time a record has been set, it can be removed from the dataTable.
-
-            //var manyToManyCollection = Activator.CreateInstance(propertyInfo.PropertyType);
-            //var columnToSet = SharpSqlUtilities.CachedColumns[propertyInfo.PropertyType];
-
-            using var reader = dataTable.CreateDataReader();
-            while (reader.Read())
-            {
-
-            }
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
