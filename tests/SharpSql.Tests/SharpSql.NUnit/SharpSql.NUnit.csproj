@@ -32,6 +32,7 @@
     <None Remove="MemoryCollectionTables\ManyToManyUsers.xml" />
     <None Remove="MemoryEntityTables\ORGANISATIONS.xml" />
     <None Remove="MemoryEntityTables\ROLES.xml" />
+    <None Remove="MemoryEntityTables\TOKENS.xml" />
     <None Remove="MemoryEntityTables\USERROLES.xml" />
     <None Remove="MemoryEntityTables\USERS.xml" />
   </ItemGroup>
@@ -61,6 +62,7 @@
     <EmbeddedResource Include="MemoryCollectionTables\JoinWithManyToManyUsers.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ManyToManyUsers.xml" />
     <EmbeddedResource Include="MemoryEntityTables\ORGANISATIONS.xml" />
+    <EmbeddedResource Include="MemoryEntityTables\TOKENS.xml" />
     <EmbeddedResource Include="MemoryEntityTables\ROLES.xml" />
     <EmbeddedResource Include="MemoryEntityTables\USERROLES.xml" />
     <EmbeddedResource Include="MemoryEntityTables\USERS.xml" />

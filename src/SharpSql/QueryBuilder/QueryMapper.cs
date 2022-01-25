@@ -216,8 +216,7 @@ namespace SharpSql
 
                     removeIndices.Add(i);
                 }
-                // rootDataTable.Columns[i].ColumnName or columnName
-                // ColumnName_UserId <-> UserId? Welke? 
+
                 dataTable.Columns.Add(columnName, rootDataTable.Columns[i].DataType);
             }
 
@@ -271,10 +270,9 @@ namespace SharpSql
 
                     dataTable.ExtendedProperties[Constants.IsManyToMany] = true;
                     ((List<(Type, Type)>)dataTable.ExtendedProperties[Constants.ManyToMany])
-                        .Add((SharpSqlUtilities.CollectionEntityRelations[tableOrderLeft.Type], 
+                        .Add((SharpSqlUtilities.CollectionEntityRelations[tableOrderLeft.Type],
                               SharpSqlUtilities.CollectionEntityRelations[tableOrderRight.Type]));
 
-                    // We break because we process many-to-many in sections.
                     break;
                 }
             }
@@ -373,17 +371,11 @@ namespace SharpSql
             {                
                 if (property.GetCustomAttribute<SharpSqlForeignKeyAttribute>()?.Relation == entity.GetType())
                 {
-                    var actualColumnName = property.GetCustomAttribute<SharpSqlColumnAttribute>().ColumnName ?? property.Name;
-            
                     var collection = Activator.CreateInstance(manyToManyProperty.Property.PropertyType);
                     
                     for (int i = 0; i < dataTableLeft.Rows.Count; i++)
                     {
-                        var subEntity = Activator.CreateInstance(SharpSqlUtilities.CollectionEntityRelations[manyToManyProperty.Property.PropertyType]) as SharpSqlEntity;
-
-                        PopulateEntity(subEntity, GetManyToManyEntityReader(entity, actualColumnName, dataTableLeft, dataTableRight), null);
-
-                        collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Add), SharpSqlEntity.PublicFlags).Invoke(collection, new object[] { subEntity });
+                        GetManyToManyEntityReader(entity, collection, attribute, dataTableLeft, dataTableRight, manyToManyProperty);
                     }
 
                     entity[manyToManyProperty.Property.Name] = collection;
@@ -391,21 +383,56 @@ namespace SharpSql
             }
         }
 
-        internal static IDataReader GetManyToManyEntityReader(SharpSqlEntity entity, string foreignKey, DataTable dataTableLeft, DataTable dataTableRight)
+        // @todo Rename this
+        internal static void GetManyToManyEntityReader(SharpSqlEntity entity, object entityCollection, SharpSqlTableAttribute manyToManyTableAttribute, DataTable dataTableLeft, DataTable dataTableRight, (Type Left, PropertyInfo Property) manyToManyProperty)
         {
+            DataTable correctData = dataTableRight.Clone();
+
             // create dataReader from dataTableLeft and dataTableRight based on entity.PrimaryKey and pass it to PopulateChildEntity
             for (int i = 0; i < dataTableLeft.Rows.Count; i++)
             {
                 if (entity.PrimaryKey.IsCombinedPrimaryKey)
                     throw new NotImplementedException();
 
-                if (entity.PrimaryKey.Keys.Any(x => x.Value.ToString().Equals(dataTableLeft.Rows[i][foreignKey].ToString())))
+                // Rename variables
+                var users       = manyToManyTableAttribute.CollectionTypeLeft;
+                var userRoles   = manyToManyTableAttribute.CollectionType;
+                var roles       = manyToManyTableAttribute.CollectionTypeRight;
+
+                // Rename variables
+                // @Todo: implement proper multiple primary key usage, and refactor primary key on entity level.
+                var usersPk             = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[users]].Keys[0];
+                var userRolesPkLeft     = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[userRoles]].Keys[0];
+                var userRolesPkRight    = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[userRoles]].Keys[1];
+                var rolesPk             = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[roles]].Keys[0];
+    
+                foreach (DataRow row in dataTableLeft.Rows)
                 {
-                    // Todo 396
+                    if (row[userRolesPkLeft.ColumnName].ToString().Equals(entity[usersPk.ColumnName].ToString()))
+                    {
+                        foreach (DataRow rightRow in dataTableRight.Rows)
+                        {
+                            if (rightRow[rolesPk.ColumnName].ToString().Equals(row[userRolesPkRight.ColumnName].ToString()))
+                            {
+                                correctData.ImportRow(rightRow);
+                            }
+                        }
+                    }
                 }
             }
 
-            return null;
+
+            // pseudo code:
+            //entityCollection = PopulateCollection(correctData.CreateDataReader);
+
+
+            // Old stuff:
+            // This is on entity level, but we currently are planning on working on correctData (collection level).
+            //var subEntity = Activator.CreateInstance(SharpSqlUtilities.CollectionEntityRelations[manyToManyProperty.Property.PropertyType]) as SharpSqlEntity;
+
+            //PopulateEntity(subEntity, correctData.CreateDataReader(), null);
+
+            //entityCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Add), SharpSqlEntity.PublicFlags).Invoke(entityCollection, new object[] { subEntity });
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

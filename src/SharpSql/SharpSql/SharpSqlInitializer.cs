@@ -76,6 +76,7 @@ namespace SharpSql
             }
         }
 
+        // @Todo: refactor to a smaller method, in which each cache type has its own method.
         public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false, bool allowAnonymousTypes = false)
         {
             _ = new DatabaseUtilities(configuration);
@@ -194,6 +195,18 @@ namespace SharpSql
                         }
                     }
                 }
+            }
+
+            CreatePrimaryKeyCache();
+        }
+
+        private void CreatePrimaryKeyCache()
+        {
+            var entityTypes = SharpSqlUtilities.CollectionEntityRelations.Where(x => x.Key.IsAssignableTo(typeof(SharpSqlEntity)));
+
+            foreach (var entityType in entityTypes)
+            {
+                SharpSqlUtilities.CachedPrimaryKeys.Add(entityType.Key, (Activator.CreateInstance(entityType.Key, true) as SharpSqlEntity).PrimaryKey);
             }
         }
     }
