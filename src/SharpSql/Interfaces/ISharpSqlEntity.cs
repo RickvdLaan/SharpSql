@@ -2,48 +2,47 @@
 using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 
-namespace SharpSql.Interfaces
+namespace SharpSql.Interfaces;
+
+public interface ISharpSqlEntity
 {
-    public interface ISharpSqlEntity
-    {
-        public string ExecutedQuery { get; }
+    public string ExecutedQuery { get; }
 
-        public bool DisableChangeTracking { get; }
+    public bool DisableChangeTracking { get; }
 
-        public bool IsAutoIncrement { get; }
+    public bool IsAutoIncrement { get; }
 
-        public bool IsNew { get; }
+    public bool IsNew { get; }
 
-        public bool IsDirty { get; }
+    public bool IsDirty { get; }
 
-        public bool IsMarkedAsDeleted { get; }
+    public bool IsMarkedAsDeleted { get; }
 
-        public ObjectState ObjectState { get; }
+    public ObjectState ObjectState { get; }
 
-        public SharpSqlPrimaryKey PrimaryKey { get; }
+    public SharpSqlPrimaryKey PrimaryKey { get; }
 
-        public ReadOnlyCollection<string> TableScheme { get; }
+    public ReadOnlyCollection<string> TableScheme { get; }
 
-        void Save();
+    void Save();
 
-        void Delete();
+    void Delete();
 
-        bool IsFieldDirty(string field);
+    bool IsFieldDirty(string field);
 
-        void MarkFieldsAsDirty(params string[] fields);
+    void MarkFieldsAsDirty(params string[] fields);
 
-        SharpSqlEntity Inner();
+    SharpSqlEntity Inner();
 
-        SharpSqlEntity Left();
+    SharpSqlEntity Left();
 
-        SharpSqlEntity FetchUsingUC(string columnName, string value);
+    SharpSqlEntity FetchUsingUC(string columnName, string value);
 
-        SharpSqlEntity FetchEntityByPrimaryKey(object primaryKey);
+    SharpSqlEntity FetchEntityByPrimaryKey(object primaryKey);
 
-        SharpSqlEntity FetchEntityByPrimaryKey(params object[] primaryKeys);
+    SharpSqlEntity FetchEntityByPrimaryKey(params object[] primaryKeys);
 
-        SharpSqlEntity FetchEntityByPrimaryKey<EntityType>(object primaryKey, Expression<Func<EntityType, object>> joins) where EntityType : SharpSqlEntity;
+    SharpSqlEntity FetchEntityByPrimaryKey<EntityType>(object primaryKey, Expression<Func<EntityType, object>> joins) where EntityType : SharpSqlEntity;
 
-        SharpSqlEntity FetchEntityByPrimaryKey<EntityType>(Expression<Func<EntityType, object>> joins, params object[] primaryKeys) where EntityType : SharpSqlEntity;
-    }
+    SharpSqlEntity FetchEntityByPrimaryKey<EntityType>(Expression<Func<EntityType, object>> joins, params object[] primaryKeys) where EntityType : SharpSqlEntity;
 }

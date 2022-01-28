@@ -3,20 +3,19 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace SharpSql
+namespace SharpSql;
+
+public class EntityDeserializer : CustomCreationConverter<SharpSqlEntity>
 {
-    public class EntityDeserializer : CustomCreationConverter<SharpSqlEntity>
+    public override SharpSqlEntity Create(Type objectType)
     {
-        public override SharpSqlEntity Create(Type objectType)
-        {
-            var externalEntity = Activator.CreateInstance(objectType) as SharpSqlEntity;
+        var externalEntity = Activator.CreateInstance(objectType) as SharpSqlEntity;
 
-            var constructorInfo = typeof(SharpSqlEntity).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).First();
-            var entity = constructorInfo.Invoke(new object[] { objectType }) as SharpSqlEntity;
+        var constructorInfo = typeof(SharpSqlEntity).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).First();
+        var entity = constructorInfo.Invoke(new object[] { objectType }) as SharpSqlEntity;
 
-            entity.CloneToChild(externalEntity);
+        entity.CloneToChild(externalEntity);
 
-            return externalEntity;
-        }
+        return externalEntity;
     }
 }

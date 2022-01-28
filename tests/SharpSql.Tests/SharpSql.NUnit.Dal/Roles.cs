@@ -1,10 +1,9 @@
 ﻿using SharpSql.Attributes;
 
-namespace SharpSql.NUnit
+namespace SharpSql.NUnit;
+
+[SharpSqlTable(typeof(Roles), typeof(Role))]
+public class Roles : SharpSqlCollection<Role>
 {
-    [SharpSqlTable(typeof(Roles), typeof(Role))]
-    public class Roles : SharpSqlCollection<Role>
-    {
-        public Roles() { }
-    }
+    public Roles() { }
 }

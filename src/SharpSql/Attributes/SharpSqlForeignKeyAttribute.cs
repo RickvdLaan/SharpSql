@@ -1,14 +1,14 @@
 ﻿using System;
 
-namespace SharpSql.Attributes
-{
-    public sealed class SharpSqlForeignKeyAttribute : Attribute
-    {
-        internal Type Relation { get; set; }
+namespace SharpSql.Attributes;
 
-        public SharpSqlForeignKeyAttribute(Type relation)
-        {
-            Relation = relation;
-        }
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class SharpSqlForeignKeyAttribute : Attribute
+{
+    internal Type Relation { get; set; }
+
+    public SharpSqlForeignKeyAttribute(Type relation)
+    {
+        Relation = relation;
     }
 }

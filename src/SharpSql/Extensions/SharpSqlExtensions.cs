@@ -1,8 +1,9 @@
-﻿using SharpSql;
-using SharpSql.Attributes;
+﻿using SharpSql.Attributes;
 using System;
 using System.Linq;
 using System.Reflection;
+
+namespace SharpSql;
 
 public static class SharpSqlExtensions
 {

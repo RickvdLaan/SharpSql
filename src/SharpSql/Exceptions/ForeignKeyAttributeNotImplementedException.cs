@@ -2,13 +2,12 @@
 using System;
 using System.Reflection;
 
-namespace SharpSql.Exceptions
+namespace SharpSql.Exceptions;
+
+[Serializable]
+public class ForeignKeyAttributeNotImplementedException : Exception
 {
-    [Serializable]
-    public class ForeignKeyAttributeNotImplementedException : Exception
-    {
-        public ForeignKeyAttributeNotImplementedException(PropertyInfo propertyInfo, Type type)
-            : base($"{nameof(SharpSqlForeignKeyAttribute)} is not implemented on property { propertyInfo.Name } in { type.Name }.")
-        { }
-    }
+    public ForeignKeyAttributeNotImplementedException(PropertyInfo propertyInfo, Type type)
+        : base($"{nameof(SharpSqlForeignKeyAttribute)} is not implemented on property { propertyInfo.Name } in { type.Name }.")
+    { }
 }

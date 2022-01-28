@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace SharpSql.Exceptions
+namespace SharpSql.Exceptions;
+
+[Serializable]
+public class IllegalUniqueConstraintException : Exception
 {
-    [Serializable]
-    public class IllegalUniqueConstraintException : Exception
-    {
-        public IllegalUniqueConstraintException(string columnName)
-           : base($"Column [{ columnName }] is not a unique constraint.")
-        { }
-    }
+    public IllegalUniqueConstraintException(string columnName)
+       : base($"Column [{ columnName }] is not a unique constraint.")
+    { }
 }

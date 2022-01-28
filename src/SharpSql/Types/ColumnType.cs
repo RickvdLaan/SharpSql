@@ -1,9 +1,8 @@
-﻿namespace SharpSql
+﻿namespace SharpSql;
+
+internal enum ColumnType
 {
-    internal enum ColumnType
-    {
-        Default,
-        Join,
-        ManyToMany
-    }
+    Default,
+    Join,
+    ManyToMany
 }

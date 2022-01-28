@@ -1,21 +1,20 @@
 ﻿using SharpSql.Attributes;
 using System.Reflection;
 
-namespace SharpSql
+namespace SharpSql;
+
+public static class PropertyInfoExtensions
 {
-    public static class PropertyInfoExtensions
+    public static string Name(this PropertyInfo propertyInfo)
     {
-        public static string Name(this PropertyInfo propertyInfo)
+        if (typeof(SharpSqlEntity).IsAssignableFrom(propertyInfo.DeclaringType))
         {
-            if (typeof(SharpSqlEntity).IsAssignableFrom(propertyInfo.DeclaringType))
+            var customAttribute = propertyInfo.GetCustomAttribute<SharpSqlColumnAttribute>(true);
+            if (customAttribute != null)
             {
-                var customAttribute =  propertyInfo.GetCustomAttribute<SharpSqlColumnAttribute>(true);
-                if (customAttribute != null)
-                {
-                    return customAttribute.ColumnName;
-                }
+                return customAttribute.ColumnName;
             }
-            return propertyInfo.Name;
         }
+        return propertyInfo.Name;
     }
 }

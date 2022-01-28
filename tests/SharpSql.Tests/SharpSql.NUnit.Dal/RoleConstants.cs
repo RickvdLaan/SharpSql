@@ -1,8 +1,7 @@
-﻿namespace SharpSql.NUnit
+﻿namespace SharpSql.NUnit;
+
+internal class RoleConstants
 {
-    internal class RoleConstants
-    {
-        internal const string ColumnId   = "Id";
-        internal const string ColumnName = "Name";
-    }
+    internal const string ColumnId = "Id";
+    internal const string ColumnName = "Name";
 }

@@ -1,9 +1,8 @@
-﻿namespace SharpSql
+﻿namespace SharpSql;
+
+internal enum NonQueryType
 {
-    internal enum NonQueryType
-    {
-        Insert,
-        Update,
-        Delete
-    }
+    Insert,
+    Update,
+    Delete
 }

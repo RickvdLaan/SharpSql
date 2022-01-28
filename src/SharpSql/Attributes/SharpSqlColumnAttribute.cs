@@ -1,17 +1,17 @@
 ﻿using System;
 
-namespace SharpSql.Attributes
+namespace SharpSql.Attributes;
+
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class SharpSqlColumnAttribute : Attribute
 {
-    public sealed class SharpSqlColumnAttribute : Attribute
+    public string ColumnName { get; private set; }
+
+    public SharpSqlColumnAttribute(string columnName)
     {
-        public string ColumnName { get; private set; }
+        if (string.IsNullOrEmpty(columnName))
+            throw new ArgumentNullException(nameof(columnName));
 
-        public SharpSqlColumnAttribute(string columnName)
-        {
-            if (string.IsNullOrEmpty(columnName))
-                throw new ArgumentNullException();
-
-            ColumnName = columnName;
-        }
+        ColumnName = columnName;
     }
 }
