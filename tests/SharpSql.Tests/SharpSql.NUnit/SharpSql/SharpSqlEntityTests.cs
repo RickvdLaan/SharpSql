@@ -1124,13 +1124,16 @@ public class SharpSqlEntityTests
 
     // Write a unit tests to check the PK's for both Organisations as Tokens.
 
-    //[Test]
-    //public void InsertDirectById() {}
-    //[Test]
-    //public void InsertDirectByEntity() {}
+    // [Test]
+    // public void InsertDirectById() {}
+    // [Test]
+    // public void InsertDirectByEntity() {}
 
-    //[Test]
+    // [Test]
     // JsonDeserializeTest
-    //[Test]
+    // [Test]
     // JsonSerializeTest
+
+    // [Test]
+    // TableSchemaTest
 }

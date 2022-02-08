@@ -711,9 +711,26 @@ public class SharpSqlCollectionTests
     {
         var users = (new Users()
             .Join(x => new object[] { x.Roles2.Left() })
+            // @Todo: Check if object states are correct.
+            // @Todo: Figure out how to make this work
+            // @Todo: Test -.Left() to see what happens.
+            //.Join(x => new { x.Roles2 })
             .Fetch() as Users);
 
-        Assert.IsTrue(false);
+        Assert.AreEqual(1, users[0].Id);
+        Assert.AreEqual(2, users[1].Id);
+
+        Assert.IsTrue(users[0].Roles2.Count > 0);
+        Assert.IsNull(users[1].Roles2);
+
+        Assert.AreEqual(1, users[0].Roles2[0].RoleId);
+        Assert.AreEqual("Admin", users[0].Roles2[0].Description);
+
+        Assert.AreEqual(2, users[0].Roles2[1].RoleId);
+        Assert.AreEqual("Moderator", users[0].Roles2[1].Description);
+
+        Assert.AreEqual(false, users.DisableChangeTracking);
+        Assert.AreEqual(false, users[0].Roles2.DisableChangeTracking);
     }
 
     // @Todo
@@ -726,6 +743,9 @@ public class SharpSqlCollectionTests
 
     //    Assert.IsTrue(false);
     //}
+
+    // [Test]
+    // TableSchemaTest
 
     [Test, SharpSqlUnitTest("ComplexWhereLike")]
     public void Complex_Where_Like()

@@ -35,7 +35,7 @@ public class SharpSqlCollection<EntityType> : ISharpSqlCollection<EntityType>, I
     /// <summary>
     /// Gets the table scheme of the current collection of <see cref="SharpSqlEntity"/> objects.
     /// </summary>
-    public ReadOnlyCollection<string> TableScheme => SharpSqlUtilities.CachedColumns[GetType()].Keys.ToList().AsReadOnly(); // Ouch performance!
+    public ReadOnlyCollection<string> TableScheme => SharpSqlUtilities.CachedColumns[SharpSqlUtilities.CollectionEntityRelations[GetType()]].Keys.ToList().AsReadOnly(); // Ouch performance!
 
     /// <summary>
     /// Gets a read-only collection of fetched <see cref="SharpSqlEntity"/> entities.

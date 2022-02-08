@@ -4,12 +4,34 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 
 namespace SharpSql;
 
 internal sealed class UnitTestUtilities
 {
     internal static bool IsUnitTesting { get; set; }
+
+    internal static void ChangeDataTableType(SharpSqlEntity entity, string columnName, ref object value)
+    {
+        ChangeDataTableType(entity.GetPropertyInfo(columnName), ref value);
+    }
+
+    internal static void ChangeDataTableType(PropertyInfo entityPropertyInfo, ref object value)
+    {
+        if (IsUnitTesting)
+        {
+            // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
+            if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null && value != DBNull.Value)
+            {
+                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType));
+            }
+            else if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(SharpSqlEntity)) && value != DBNull.Value)
+            {
+                value = Convert.ChangeType(value, entityPropertyInfo.PropertyType);
+            }
+        }
+    }
 
     internal static void PopulateChildEntity(ref string propertyName, ref object value, SharpSqlEntity childEntity)
     {

@@ -330,9 +330,11 @@ internal class QueryMapper
                     foreach (var manyToManyProperty in entityManyToManyProperties)
                     {
                         // we only need property from manyToManyProperty
-                        SetManyToManyProperty(entity, dataTables[i], dataTables[++i], manyToManyProperty);
+                        SetManyToManyProperty(entity, dataTables[i], dataTables[i + 1], manyToManyProperty);
                     }
                 }
+                // When a many-to-many section is complete, the next table in the list can be skipped since it has been processed.
+                i++;
             }
             // Default columns
             else
@@ -349,13 +351,30 @@ internal class QueryMapper
         while (reader.Read())
         {
             var entity = (EntityType)Activator.CreateInstance(typeof(EntityType), true);
+            entity.ExecutedQuery = "Initialised through collection";
             entity.DisableChangeTracking = collection.DisableChangeTracking;
 
             PopulateEntity(entity, reader, queryBuilder);
 
+            collection.Add(entity);
+ 
+        }
+
+        reader.Dispose();
+    }
+
+    private static void PopulateManyToManyCollectionFromDataReader(object collection, Type entityType, IDataReader reader, bool disableChangeTracking)
+    {
+        while (reader.Read())
+        {
+            var entity = Activator.CreateInstance(entityType, true) as SharpSqlEntity;
+            entity.DisableChangeTracking = disableChangeTracking;
+
+            PopulateEntity(entity, reader, null);
+
             entity.ExecutedQuery = "Initialised through collection";
 
-            collection.Add(entity);
+            collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Add), SharpSqlEntity.PublicFlags).Invoke(collection, new object[] { entity });
         }
 
         reader.Dispose();
@@ -373,12 +392,12 @@ internal class QueryMapper
             {
                 var collection = Activator.CreateInstance(manyToManyProperty.Property.PropertyType);
 
-                for (int i = 0; i < dataTableLeft.Rows.Count; i++)
-                {
-                    GetManyToManyEntityReader(entity, collection, attribute, dataTableLeft, dataTableRight, manyToManyProperty);
-                }
+                GetManyToManyEntityReader(entity, collection, attribute, dataTableLeft, dataTableRight, manyToManyProperty);
 
-                entity[manyToManyProperty.Property.Name] = collection;
+                if ((collection as IEnumerable<SharpSqlEntity>).Any())
+                {
+                    entity[manyToManyProperty.Property.Name] = collection;
+                }
             }
         }
     }
@@ -394,45 +413,36 @@ internal class QueryMapper
             if (entity.PrimaryKey.IsCombinedPrimaryKey)
                 throw new NotImplementedException();
 
-            // Rename variables
-            var users = manyToManyTableAttribute.CollectionTypeLeft;
-            var userRoles = manyToManyTableAttribute.CollectionType;
-            var roles = manyToManyTableAttribute.CollectionTypeRight;
-
-            // Rename variables
             // @Todo: implement proper multiple primary key usage, and refactor primary key on entity level.
-            var usersPk = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[users]].Keys[0];
-            var userRolesPkLeft = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[userRoles]].Keys[0];
-            var userRolesPkRight = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[userRoles]].Keys[1];
-            var rolesPk = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[roles]].Keys[0];
+            var leftPk = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionTypeLeft]].Keys[0];
+            var m2mPkLeft = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionType]].Keys[0];
+            var m2mPkRight = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionType]].Keys[1];
+            var rightPk = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionTypeRight]].Keys[0];
 
-            foreach (DataRow row in dataTableLeft.Rows)
+            foreach (DataRow rightRow in dataTableRight.Rows)
             {
-                if (row[userRolesPkLeft.ColumnName].ToString().Equals(entity[usersPk.ColumnName].ToString()))
+                if (UnitTestUtilities.IsUnitTesting)
                 {
-                    foreach (DataRow rightRow in dataTableRight.Rows)
+                    var left = dataTableLeft.Rows[i][m2mPkLeft.ColumnName];
+
+                    // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
+                    UnitTestUtilities.ChangeDataTableType(Activator.CreateInstance(manyToManyTableAttribute.EntityType, true) as SharpSqlEntity, m2mPkLeft.ColumnName, ref left);
+
+                    if (rightRow[rightPk.ColumnName].Equals(dataTableLeft.Rows[i][m2mPkRight.ColumnName])
+                     && left.Equals(entity[leftPk.ColumnName]))
                     {
-                        if (rightRow[rolesPk.ColumnName].ToString().Equals(row[userRolesPkRight.ColumnName].ToString()))
-                        {
-                            correctData.ImportRow(rightRow);
-                        }
+                        correctData.ImportRow(rightRow);
                     }
+                }
+                else if (rightRow[rightPk.ColumnName].Equals(dataTableLeft.Rows[i][m2mPkRight.ColumnName])
+                      && dataTableLeft.Rows[i][m2mPkLeft.ColumnName].Equals(entity[leftPk.ColumnName]))
+                {
+                    correctData.ImportRow(rightRow);
                 }
             }
         }
 
-
-        // pseudo code:
-        //entityCollection = PopulateCollection(correctData.CreateDataReader);
-
-
-        // Old stuff:
-        // This is on entity level, but we currently are planning on working on correctData (collection level).
-        //var subEntity = Activator.CreateInstance(SharpSqlUtilities.CollectionEntityRelations[manyToManyProperty.Property.PropertyType]) as SharpSqlEntity;
-
-        //PopulateEntity(subEntity, correctData.CreateDataReader(), null);
-
-        //entityCollection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Add), SharpSqlEntity.PublicFlags).Invoke(entityCollection, new object[] { subEntity });
+        PopulateManyToManyCollectionFromDataReader(entityCollection, SharpSqlUtilities.CollectionEntityRelations[manyToManyProperty.Property.PropertyType], correctData.CreateDataReader(), entity.DisableChangeTracking);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -448,27 +458,27 @@ internal class QueryMapper
             return;
         }
 
-        var propertyName = reader.GetName(iteration);
+        var columnName = reader.GetName(iteration);
 
         if (UnitTestUtilities.IsUnitTesting)
         {
-            propertyName = propertyName.Split('_').Last();
+            columnName = columnName.Split('_').Last();
         }
 
-        var entityPropertyInfo = entity.GetPropertyInfo(propertyName);
+        var entityPropertyInfo = entity.GetPropertyInfo(columnName);
 
         if (null == entityPropertyInfo)
         {
-            if (propertyName == entity.GetType().Name)
+            if (columnName == entity.GetType().Name)
             {
-                throw new IllegalColumnNameException($"The column [{propertyName}] has not been implemented in entity [{entity.GetType().Name}], but can't have the same name as its enclosing type.");
+                throw new IllegalColumnNameException($"The column [{columnName}] has not been implemented in entity [{entity.GetType().Name}], but can't have the same name as its enclosing type.");
             }
 
-            throw new NotImplementedException($"The column [{propertyName}] has not been implemented in entity [{entity.GetType().Name}].");
+            throw new NotImplementedException($"The column [{columnName}] has not been implemented in entity [{entity.GetType().Name}].");
         }
         else if (!entityPropertyInfo.CanWrite)
         {
-            throw new ReadOnlyException($"Property [{propertyName}] is read-only in [{entity.GetType().Name}].");
+            throw new ReadOnlyException($"Property [{columnName}] is read-only in [{entity.GetType().Name}].");
         }
 
         object value = null;
@@ -481,7 +491,7 @@ internal class QueryMapper
             case Type type when type == typeof(DateTime):
                 if (reader.GetValue(iteration) == DBNull.Value)
                 {
-                    throw new PropertyNotNullableException($"Property [{propertyName}] is not nullable, but the database column equivelant is.");
+                    throw new PropertyNotNullableException($"Property [{columnName}] is not nullable, but the database column equivelant is.");
                 }
 
                 value = reader.GetValue(iteration);
@@ -520,18 +530,8 @@ internal class QueryMapper
                 break;
         }
 
-        if (UnitTestUtilities.IsUnitTesting)
-        {
-            // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
-            if (Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType) != null && value != DBNull.Value)
-            {
-                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(entityPropertyInfo.PropertyType));
-            }
-            else if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(SharpSqlEntity)) && value != DBNull.Value)
-            {
-                value = Convert.ChangeType(value, entityPropertyInfo.PropertyType);
-            }
-        }
+        // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
+        UnitTestUtilities.ChangeDataTableType(entityPropertyInfo, ref value);
 
         if (reader.GetValue(iteration) == DBNull.Value)
         {
