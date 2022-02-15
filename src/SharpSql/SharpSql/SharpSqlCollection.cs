@@ -259,7 +259,7 @@ public class SharpSqlCollection<EntityType> : ISharpSqlCollection<EntityType>, I
         if (entity == null)
             QueryExecuter.ExecuteCollectionQuery(this, queryBuilder);
         else
-            QueryExecuter.ExecuteEntityQuery(entity, queryBuilder);
+            QueryExecuter.ExecuteEntityQuery<EntityType>(entity, queryBuilder);
 
         ExecutedQuery = queryBuilder.GeneratedQuery;
 

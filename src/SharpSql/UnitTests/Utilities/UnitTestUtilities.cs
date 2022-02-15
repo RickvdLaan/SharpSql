@@ -1,4 +1,5 @@
-﻿using SharpSql.UnitTests;
+﻿using SharpSql.Attributes;
+using SharpSql.UnitTests;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -50,7 +51,7 @@ internal sealed class UnitTestUtilities
         }
     }
 
-    internal static void ExecuteEntityQuery<EntityType>(EntityType entity, QueryBuilder queryBuilder)
+    internal static void ExecuteEntityQuery<EntityType>(SharpSqlEntity entity, QueryBuilder queryBuilder)
              where EntityType : SharpSqlEntity
     {
         if (!entity.PrimaryKey.IsCombinedPrimaryKey)
@@ -66,7 +67,12 @@ internal sealed class UnitTestUtilities
 
             reader = ApplyEntityJoinsToReader(entity, reader, queryBuilder);
 
-            QueryMapper.DataReader(entity, reader, queryBuilder);
+            entity = ApplyEntityManyToManyToReader<EntityType>(entity, reader, queryBuilder);
+
+            if (entity.ObjectState == ObjectState.New)
+            {
+                QueryMapper.DataReader(entity, reader, queryBuilder);
+            }
         }
         else
         {
@@ -99,11 +105,9 @@ internal sealed class UnitTestUtilities
         DataTable table = null;
 
         // IsManyToMany
-        if (unitTestAttribute.MemoryTables.Count > 1)
+        if (unitTestAttribute.MemoryTables[0].ColumnType == ColumnType.ManyToMany)
         {
-            var tableName = unitTestAttribute.MemoryTables.Where(x => x.EntityType == collection.TableAttribute.EntityType).First().MemoryTableName;
-
-            table = MemoryCollectionDatabase.Fetch(tableName);
+            table = MemoryCollectionDatabase.Fetch(unitTestAttribute.MemoryTables[0].MemoryTableName);
         }
         else
         {
@@ -112,7 +116,7 @@ internal sealed class UnitTestUtilities
 
         using var reader = table.CreateDataReader();
 
-        QueryMapper.DataReader<SharpSqlCollection<EntityType>, EntityType>(collection, reader, queryBuilder);
+        QueryMapper.DataReader<SharpSqlCollection<EntityType>, EntityType>(collection as SharpSqlCollection<EntityType>, reader, queryBuilder);
     }
 
     internal static string GetMemoryTableName()
@@ -121,6 +125,32 @@ internal sealed class UnitTestUtilities
         var unitTestAttribute = new StackTrace().GetFrames().Select(x => x.GetMethod().GetCustomAttributes(typeof(SharpSqlUnitTestAttribute), false)).Where(x => x.Any()).First().First() as SharpSqlUnitTestAttribute;
 
         return unitTestAttribute.MemoryTables[0].MemoryTableName;
+    }
+
+    private static SharpSqlEntity ApplyEntityManyToManyToReader<EntityType>(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)
+        where EntityType : SharpSqlEntity
+    {
+        foreach (var join in queryBuilder.AllJoins)
+        {
+            if (join.IsManyToMany)
+            {
+                var properties = entity.GetType().GetProperties().Where(x => x.PropertyType == join.RightTableAttribute.CollectionTypeRight && x.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlManyToManyAttribute)));
+
+                var parentDataTable = new DataTable();
+                parentDataTable.Load(reader);
+                
+                var m2mTableName = join.RightTableAttribute.EntityType.Name;
+                var m2mEntity = Activator.CreateInstance(join.RightTableAttribute.EntityType, true);
+
+                var collection = new SharpSqlCollection<EntityType>();
+
+                ExecuteCollectionQuery(collection, queryBuilder);
+
+                return collection.First();
+            }
+        }
+
+        return entity;
     }
 
     private static IDataReader ApplyEntityJoinsToReader(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)

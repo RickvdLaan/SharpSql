@@ -12,17 +12,11 @@ public sealed class SharpSqlUnitTestAttribute : Attribute
 
     public SharpSqlUnitTestAttribute(string memoryTable)
     {
-        MemoryTables.Add(new SharpSqlUnitTestParameter(memoryTable, null));
+        MemoryTables.Add(new SharpSqlUnitTestParameter(memoryTable));
     }
 
-    public SharpSqlUnitTestAttribute(string memoryTable, Type type)
+    internal SharpSqlUnitTestAttribute(string memoryTable, ColumnType columnType)
     {
-        MemoryTables.Add(new SharpSqlUnitTestParameter(memoryTable, type));
-    }
-
-    public SharpSqlUnitTestAttribute(string memoryTable1, Type type1, string memoryTable2, Type type2)
-    {
-        MemoryTables.Add(new SharpSqlUnitTestParameter(memoryTable1, type1));
-        MemoryTables.Add(new SharpSqlUnitTestParameter(memoryTable2, type2));
+        MemoryTables.Add(new SharpSqlUnitTestParameter(memoryTable, columnType));
     }
 }

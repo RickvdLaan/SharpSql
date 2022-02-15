@@ -65,12 +65,12 @@ internal class QueryExecuter
         return ExecuteNonQuery(queryBuilder, queryBuilder.SqlParameters);
     }
 
-    internal static void ExecuteEntityQuery<EntityType>(EntityType entity, QueryBuilder queryBuilder)
+    internal static void ExecuteEntityQuery<EntityType>(SharpSqlEntity entity, QueryBuilder queryBuilder)
         where EntityType : SharpSqlEntity
     {
         if (UnitTestUtilities.IsUnitTesting)
         {
-            UnitTestUtilities.ExecuteEntityQuery(entity, queryBuilder);
+            UnitTestUtilities.ExecuteEntityQuery<EntityType>(entity, queryBuilder);
             return;
         }
 

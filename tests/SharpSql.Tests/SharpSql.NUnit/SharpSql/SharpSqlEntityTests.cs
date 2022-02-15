@@ -1091,7 +1091,7 @@ public class SharpSqlEntityTests
         Assert.AreEqual(expectedQuery, userRole.ExecutedQuery);
     }
 
-    [Test, SharpSqlUnitTest("ManyToManyUserRoles", typeof(UserRole), "ManyToManyRoles", typeof(Role))]
+    [Test, SharpSqlUnitTest("ManyToManyEntityRoles", ColumnType.ManyToMany)]
     public void ManyToMany()
     {
         var expectedQuery = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[USERROLES] AS [UU] ON [U].[ID] = [UU].[USERID] LEFT JOIN [DBO].[ROLES] AS [R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = @PARAM1);";

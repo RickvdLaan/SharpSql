@@ -369,12 +369,13 @@ internal class QueryMapper
         {
             var entity = Activator.CreateInstance(entityType, true) as SharpSqlEntity;
             entity.DisableChangeTracking = disableChangeTracking;
+            entity.ExecutedQuery = "Initialised through collection";
 
             PopulateEntity(entity, reader, null);
 
-            entity.ExecutedQuery = "Initialised through collection";
 
             collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Add), SharpSqlEntity.PublicFlags).Invoke(collection, new object[] { entity });
+            collection.GetType().GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.ExecutedQuery), SharpSqlEntity.PublicFlags).SetValue(collection, "Initialised through parent");
         }
 
         reader.Dispose();

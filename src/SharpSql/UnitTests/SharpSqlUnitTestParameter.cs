@@ -4,13 +4,18 @@ namespace SharpSql.UnitTests;
 
 public sealed class SharpSqlUnitTestParameter
 {
-    internal string MemoryTableName { get; }
+    internal string MemoryTableName { get; init; }
 
-    internal Type EntityType { get; }
+    internal ColumnType ColumnType { get; init; }
 
-    public SharpSqlUnitTestParameter(string memoryTableName, Type entityType)
+    public SharpSqlUnitTestParameter(string memoryTableName)
     {
         MemoryTableName = memoryTableName;
-        EntityType = entityType;
+    }
+
+    internal SharpSqlUnitTestParameter(string memoryTableName, ColumnType columnType)
+    {
+        MemoryTableName = memoryTableName;
+        ColumnType = columnType;
     }
 }

@@ -720,7 +720,7 @@ public class SharpSqlCollectionTests
         Assert.AreEqual(1, users[0].Id);
         Assert.AreEqual(2, users[1].Id);
 
-        Assert.IsTrue(users[0].Roles2.Count > 0);
+        Assert.IsTrue(users[0].Roles2.Count == 2);
         Assert.IsNull(users[1].Roles2);
 
         Assert.AreEqual(1, users[0].Roles2[0].RoleId);
@@ -731,6 +731,8 @@ public class SharpSqlCollectionTests
 
         Assert.AreEqual(false, users.DisableChangeTracking);
         Assert.AreEqual(false, users[0].Roles2.DisableChangeTracking);
+
+        Assert.IsTrue(users.All(x => x.Organisation == null));
     }
 
     // @Todo

@@ -146,6 +146,26 @@ public class QueryBuilderTests
         Assert.AreEqual(user.ExecutedQuery, expectedQuery);
     }
 
+    [Test, SharpSqlUnitTest("ManyToManyUsers")]
+    public void ManyToMany()
+    {
+        var users = (new Users()
+            .Join(x => new object[] { x.Roles2.Left() })
+            .Fetch() as Users);
+
+        var query = "SELECT * FROM [DBO].[USERS] AS [U] LEFT JOIN [DBO].[USERROLES] AS [UU] ON [U].[ID] = [UU].[USERID] LEFT JOIN [DBO].[ROLES] AS [R] ON [UU].[ROLEID] = [R].[ID];";
+        var throughCollection = "INITIALISED THROUGH COLLECTION";
+        var throughParent = "INITIALISED THROUGH PARENT";
+
+        Assert.AreEqual(query, users.ExecutedQuery);
+        Assert.AreEqual(throughCollection, users[0].ExecutedQuery);
+        Assert.AreEqual(throughCollection, users[0].OriginalFetchedValue.ExecutedQuery);
+
+
+        Assert.AreEqual(throughParent, users[0].Roles2.ExecutedQuery);
+        Assert.AreEqual(throughCollection, users[0].Roles2[0].ExecutedQuery);
+        Assert.AreEqual(throughCollection, users[0].Roles2[0].OriginalFetchedValue.ExecutedQuery);
+    }
 
     [Test]
     public void ToQuery()

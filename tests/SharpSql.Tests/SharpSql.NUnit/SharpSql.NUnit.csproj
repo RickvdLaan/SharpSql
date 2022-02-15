@@ -27,8 +27,7 @@
     <None Remove="MemoryCollectionTables\FetchCompareOutsideScope.xml" />
     <None Remove="MemoryCollectionTables\JoinAndManyToMany.xml" />
     <None Remove="MemoryCollectionTables\JoinWithManyToManyUsers.xml" />
-    <None Remove="MemoryCollectionTables\ManyToManyRoles.xml" />
-    <None Remove="MemoryCollectionTables\ManyToManyUserRoles.xml" />
+    <None Remove="MemoryCollectionTables\ManyToManyEntityRoles.xml" />
     <None Remove="MemoryCollectionTables\ManyToManyUsers.xml" />
     <None Remove="MemoryEntityTables\ORGANISATIONS.xml" />
     <None Remove="MemoryEntityTables\ROLES.xml" />
@@ -52,8 +51,7 @@
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinB.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\JoinAndManyToMany.xml" />
-    <EmbeddedResource Include="MemoryCollectionTables\ManyToManyRoles.xml" />
-    <EmbeddedResource Include="MemoryCollectionTables\ManyToManyUserRoles.xml" />
+    <EmbeddedResource Include="MemoryCollectionTables\ManyToManyEntityRoles.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinE.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinD.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinC.xml" />
