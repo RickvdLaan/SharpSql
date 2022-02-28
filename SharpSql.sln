@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{4E4738D0-6562-461E-8C13-16A56DCA79DA}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpSql", "src\SharpSql\SharpSql.csproj", "{AFA17BE4-F6B4-41B0-8915-04B5CE091390}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpSql.Benchmarks", "benchmarks\SharpSql.Benchmarks\SharpSql.Benchmarks.csproj", "{A481C151-50FA-4583-B1A1-D8B040844531}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalDBTests", "LocalDBTests\LocalDBTests.csproj", "{00B58624-F957-4AFD-8220-D58FBC294D25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{A481C151-50FA-4583-B1A1-D8B040844531}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A481C151-50FA-4583-B1A1-D8B040844531}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A481C151-50FA-4583-B1A1-D8B040844531}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00B58624-F957-4AFD-8220-D58FBC294D25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00B58624-F957-4AFD-8220-D58FBC294D25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00B58624-F957-4AFD-8220-D58FBC294D25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00B58624-F957-4AFD-8220-D58FBC294D25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +54,7 @@ Global
 		{BF826202-317D-421E-9FCC-EB0093A28531} = {4E4738D0-6562-461E-8C13-16A56DCA79DA}
 		{AFA17BE4-F6B4-41B0-8915-04B5CE091390} = {291D5219-2315-488A-8ADC-0BD8E375C9AD}
 		{A481C151-50FA-4583-B1A1-D8B040844531} = {FEE804FB-A9D1-45D9-AFFB-4067BFB63221}
+		{00B58624-F957-4AFD-8220-D58FBC294D25} = {4E4738D0-6562-461E-8C13-16A56DCA79DA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8BEE0566-52C0-44F1-A710-1A21E9C42B54}

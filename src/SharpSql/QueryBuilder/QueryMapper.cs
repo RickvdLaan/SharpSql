@@ -171,17 +171,21 @@ internal class QueryMapper
         ProcessManyToManySection(dataTable, queryBuilder, ref tableOrderIndex, tableType, out Type m2mTableType);
 
         var removeIndices = new HashSet<int>(queryBuilder.AllJoins.Count);
+        
+        // @Memory
+        var cachedColumns = SharpSqlUtilities.CachedColumns[tableType].Keys.ToArray();
 
         // Since rootDataTable is read-only (at least, it should be) we can safely use the indexes without losing/overriding data.
         for (int i = tableIndex; i < tableColumnCount + tableIndex; i++)
         {
-            var columnName = rootDataTable.Columns[i].ColumnName;
+            var cacheIndex = i - tableIndex;
+            var columnName = cachedColumns[cacheIndex];
 
             if (UnitTestUtilities.IsUnitTesting && columnName.Contains('_'))
             {
                 columnName = columnName.Split('_').Last();
             }
-
+  
             if (SharpSqlUtilities.CachedColumns[tableType][columnName] == ColumnType.ManyToMany)
             {
                 if (queryBuilder.HasManyToManyJoins)
@@ -372,7 +376,6 @@ internal class QueryMapper
             entity.ExecutedQuery = "Initialised through collection";
 
             PopulateEntity(entity, reader, null);
-
 
             collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Add), SharpSqlEntity.PublicFlags).Invoke(collection, new object[] { entity });
             collection.GetType().GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.ExecutedQuery), SharpSqlEntity.PublicFlags).SetValue(collection, "Initialised through parent");

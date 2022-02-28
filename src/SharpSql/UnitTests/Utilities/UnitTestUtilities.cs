@@ -67,12 +67,9 @@ internal sealed class UnitTestUtilities
 
             reader = ApplyEntityJoinsToReader(entity, reader, queryBuilder);
 
-            entity = ApplyEntityManyToManyToReader<EntityType>(entity, reader, queryBuilder);
+            QueryMapper.DataReader(entity, reader, queryBuilder);
 
-            if (entity.ObjectState == ObjectState.New)
-            {
-                QueryMapper.DataReader(entity, reader, queryBuilder);
-            }
+            ApplyEntityManyToManyToReader<EntityType>(entity, reader, queryBuilder);  
         }
         else
         {
@@ -116,7 +113,7 @@ internal sealed class UnitTestUtilities
 
         using var reader = table.CreateDataReader();
 
-        QueryMapper.DataReader<SharpSqlCollection<EntityType>, EntityType>(collection as SharpSqlCollection<EntityType>, reader, queryBuilder);
+        QueryMapper.DataReader<SharpSqlCollection<EntityType>, EntityType>(collection, reader, queryBuilder);
     }
 
     internal static string GetMemoryTableName()
@@ -127,30 +124,38 @@ internal sealed class UnitTestUtilities
         return unitTestAttribute.MemoryTables[0].MemoryTableName;
     }
 
-    private static SharpSqlEntity ApplyEntityManyToManyToReader<EntityType>(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)
+    private static void ApplyEntityManyToManyToReader<EntityType>(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)
         where EntityType : SharpSqlEntity
     {
-        foreach (var join in queryBuilder.AllJoins)
+        for (int i = 0; i < queryBuilder.AllJoins.Count; i++)
         {
-            if (join.IsManyToMany)
+            if (queryBuilder.AllJoins[i].IsManyToMany)
             {
-                var properties = entity.GetType().GetProperties().Where(x => x.PropertyType == join.RightTableAttribute.CollectionTypeRight && x.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlManyToManyAttribute)));
+                var properties = entity.GetType().GetProperties().Where(x => x.PropertyType == queryBuilder.AllJoins[i].RightTableAttribute.CollectionTypeRight && x.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlManyToManyAttribute)));
 
                 var parentDataTable = new DataTable();
                 parentDataTable.Load(reader);
                 
-                var m2mTableName = join.RightTableAttribute.EntityType.Name;
-                var m2mEntity = Activator.CreateInstance(join.RightTableAttribute.EntityType, true);
+                var m2mTableName = queryBuilder.AllJoins[i].RightTableAttribute.EntityType.Name;
+                var m2mEntity = Activator.CreateInstance(queryBuilder.AllJoins[i].RightTableAttribute.EntityType, true);
 
                 var collection = new SharpSqlCollection<EntityType>();
 
+
                 ExecuteCollectionQuery(collection, queryBuilder);
 
-                return collection.First();
+                foreach (var property in typeof(EntityType).GetProperties())
+                {
+                    if (property.GetCustomAttributes(typeof(SharpSqlManyToManyAttribute), false).FirstOrDefault() is SharpSqlManyToManyAttribute)
+                    {
+                        entity[property.Name] = collection.First()[property.Name];
+                    }
+                }
+
+                // Many-to-many is always two joins, left and right. So skip the right join.
+                i++;
             }
         }
-
-        return entity;
     }
 
     private static IDataReader ApplyEntityJoinsToReader(SharpSqlEntity entity, IDataReader reader, QueryBuilder queryBuilder)
