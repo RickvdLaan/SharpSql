@@ -224,6 +224,9 @@ internal class QueryMapper
             dataTable.Columns.Add(columnName, rootDataTable.Columns[i].DataType);
         }
 
+        var isTableTypeRight = m2mTableType == null && 
+            SharpSqlUtilities.ManyToManyRelations.Any(x => x.Value.CollectionTypeRight == SharpSqlUtilities.CollectionEntityRelations[tableType]);
+
         for (int i = 0; i < rootDataTable.Rows.Count; i++)
         {
             if (i > 0 && tableType != null
@@ -233,6 +236,10 @@ internal class QueryMapper
                 // if its a many-to-many record.
                 if (Enumerable.SequenceEqual(rootDataTable.Rows[i - 1].ItemArray[tableIndex..(tableColumnCount + tableIndex)],
                                              rootDataTable.Rows[i].ItemArray[tableIndex..(tableColumnCount + tableIndex)]))
+                {
+                    continue;
+                }
+                else if (isTableTypeRight && ContainsDataTableEntry(dataTable, rootDataTable.Rows[i].ItemArray[tableIndex..(tableColumnCount + tableIndex)]))
                 {
                     continue;
                 }
@@ -255,6 +262,16 @@ internal class QueryMapper
         }
 
         return dataTable;
+    }
+
+    private static bool ContainsDataTableEntry(DataTable dataTable, object[] values)
+    {
+        for (int i = 0; i < dataTable.Rows.Count; i++)
+        {
+            if (Enumerable.SequenceEqual(values, dataTable.Rows[i].ItemArray))
+                return true;
+        }
+        return false;
     }
 
     private static void ProcessManyToManySection(DataTable dataTable, QueryBuilder queryBuilder, ref int tableOrderIndex, Type tableType, out Type m2mTableType)

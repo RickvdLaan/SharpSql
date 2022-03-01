@@ -719,9 +719,15 @@ public class SharpSqlCollectionTests
 
         Assert.AreEqual(1, users[0].Id);
         Assert.AreEqual(2, users[1].Id);
+        Assert.AreEqual(3, users[2].Id);
+        Assert.AreEqual(4, users[3].Id);
+        Assert.AreEqual(5, users[4].Id);
 
         Assert.IsTrue(users[0].Roles2.Count == 2);
-        Assert.IsNull(users[1].Roles2);
+        Assert.IsTrue(users[1].Roles2.Count == 1);
+        Assert.IsTrue(users[2].Roles2.Count == 1);
+        Assert.IsNull(users[3].Roles2);
+        Assert.IsNull(users[4].Roles2);
 
         Assert.AreEqual(1, users[0].Roles2[0].RoleId);
         Assert.AreEqual("Admin", users[0].Roles2[0].Description);

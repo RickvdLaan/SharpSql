@@ -80,6 +80,10 @@ INSERT [dbo].[UserRoles] ([UserId], [RoleId]) VALUES (1, 1)
 GO
 INSERT [dbo].[UserRoles] ([UserId], [RoleId]) VALUES (1, 2)
 GO
+INSERT [dbo].[UserRoles] ([UserId], [RoleId]) VALUES (2, 1)
+GO
+INSERT [dbo].[UserRoles] ([UserId], [RoleId]) VALUES (3, 2)
+GO
 SET IDENTITY_INSERT [dbo].[Users] ON 
 GO
 INSERT [dbo].[Users] ([Id], [Username], [Password], [Organisation], [DateCreated], [DateLastModified]) VALUES (1, N'Imaani', N'qwerty', 1, CAST(N'2020-07-23T16:50:38.213' AS DateTime), CAST(N'2020-07-23T16:50:38.213' AS DateTime))

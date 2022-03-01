@@ -25,7 +25,6 @@
     <None Remove="MemoryCollectionTables\ComplexJoinE.xml" />
     <None Remove="MemoryCollectionTables\ComplexWhereLike.xml" />
     <None Remove="MemoryCollectionTables\FetchCompareOutsideScope.xml" />
-    <None Remove="MemoryCollectionTables\JoinAndManyToMany.xml" />
     <None Remove="MemoryCollectionTables\JoinWithManyToManyUsers.xml" />
     <None Remove="MemoryCollectionTables\ManyToManyEntityRoles.xml" />
     <None Remove="MemoryCollectionTables\ManyToManyUsers.xml" />
@@ -50,7 +49,6 @@
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereLessThanOrEqual.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\BasicWhereNotEqualTo.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinB.xml" />
-    <EmbeddedResource Include="MemoryCollectionTables\JoinAndManyToMany.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ManyToManyEntityRoles.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinE.xml" />
     <EmbeddedResource Include="MemoryCollectionTables\ComplexJoinD.xml" />
