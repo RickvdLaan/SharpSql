@@ -17,6 +17,8 @@ public class SharpSqlPrimaryKey : IEqualityComparer<SharpSqlPrimaryKey>
 
     public List<ISharpSqlPrimaryKey> Keys { get; private set; }
 
+    public bool IsEmpty => Keys.Any(x => x.Value == null);
+
     internal SharpSqlPrimaryKey() { }
 
     public SharpSqlPrimaryKey(int totalAmountOfKeys)

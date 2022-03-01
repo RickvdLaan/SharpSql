@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using SharpSql.Attributes;
 using SharpSql.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -263,22 +264,17 @@ public sealed class DatabaseUtilities
     {
         if (!DoesTableHaveUC(collectionType.Name))
         {
-            var constraints = SharpSqlUtilities.CollectionEntityRelations[collectionType].GetCustomAttributes(typeof(UniqueConstraint), true);
+            var constraints = SharpSqlUtilities.CollectionEntityRelations[collectionType].GetProperties().Where(x => x.GetCustomAttributes(typeof(SharpSqlUniqueConstraintAttribute), true).Any());
 
-            foreach (var constraint in constraints)
+            using SqlConnection connection = new(ConnectionString);
+            using var command = new SqlCommand(new QueryBuilder().CreateUniqueConstraint(collectionType.Name, constraints.Select(x => x.Name).ToArray()), connection);
+
+            if (!UnitTestUtilities.IsUnitTesting)
             {
-                using SqlConnection connection = new(ConnectionString);
-                // @Todo: column names
-                using var command = new SqlCommand(new QueryBuilder().CreateUniqueConstraint(collectionType.Name, "columnNames"), connection);
-
-                if (!UnitTestUtilities.IsUnitTesting)
-                {
-                    command.Connection.Open();
-                }
-
-                ExecuteReader(command);
+                command.Connection.Open();
             }
 
+            ExecuteReader(command);
         }
     }
 

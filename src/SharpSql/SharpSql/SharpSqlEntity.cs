@@ -360,6 +360,9 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
             return;
         }
 
+        if (PrimaryKey.IsEmpty)
+            throw new EmptyPrimaryKeyException();
+        
         if (IsDirty)
         {
             var queryBuilder = new QueryBuilder();
@@ -490,6 +493,9 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
     /// </summary>
     public virtual void Delete()
     {
+        if (PrimaryKey.IsEmpty)
+            throw new EmptyPrimaryKeyException();
+
         ScheduleForDeletion();
 
         if (ObjectState == ObjectState.ScheduledForDeletion)

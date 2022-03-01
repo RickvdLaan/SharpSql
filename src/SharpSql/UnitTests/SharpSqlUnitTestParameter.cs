@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SharpSql.UnitTests;
+﻿namespace SharpSql.UnitTests;
 
 public sealed class SharpSqlUnitTestParameter
 {
