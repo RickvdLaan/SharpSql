@@ -1,13 +1,12 @@
-﻿namespace SharpSql.Interfaces
+﻿namespace SharpSql.Interfaces;
+
+public interface ISharpSqlPrimaryKey
 {
-    public interface ISharpSqlPrimaryKey
-    {
-        string PropertyName { get; set; }
+    string PropertyName { get; set; }
 
-        string ColumnName { get; set; }
+    string ColumnName { get; set; }
 
-        object Value { get; set; }
+    object Value { get; set; }
 
-        bool IsAutoIncrement { get; set; }
-    }
+    bool IsAutoIncrement { get; set; }
 }

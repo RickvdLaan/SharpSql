@@ -2,15 +2,14 @@
 using SharpSql.UnitTests;
 using System.Reflection;
 
-namespace SharpSql.NUnit
+namespace SharpSql.NUnit;
+
+[SetUpFixture, SharpSqlUnitTest]
+internal class NUnitSetupFixture
 {
-    [SetUpFixture, SharpSqlUnitTest]
-    internal class NUnitSetupFixture
+    [OneTimeSetUp]
+    public void Initialize()
     {
-        [OneTimeSetUp]
-        public void Initialize()
-        {
-            _ = new SharpSqlInitializer(Assembly.GetAssembly(GetType()), "MemoryEntityTables", "MemoryCollectionTables");
-        }
+        _ = new SharpSqlInitializer(Assembly.GetAssembly(GetType()), "MemoryEntityTables", "MemoryCollectionTables");
     }
 }

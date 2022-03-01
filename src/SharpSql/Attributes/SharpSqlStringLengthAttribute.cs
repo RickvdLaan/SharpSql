@@ -1,14 +1,14 @@
 ﻿using System;
 
-namespace SharpSql.Attributes
-{
-    public sealed class SharpSqlStringLengthAttribute : Attribute
-    {
-        public int Length { get; private set; }
+namespace SharpSql.Attributes;
 
-        public SharpSqlStringLengthAttribute(int length)
-        {
-            Length = length;
-        }
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class SharpSqlStringLengthAttribute : Attribute
+{
+    public int Length { get; private set; }
+
+    public SharpSqlStringLengthAttribute(int length)
+    {
+        Length = length;
     }
 }

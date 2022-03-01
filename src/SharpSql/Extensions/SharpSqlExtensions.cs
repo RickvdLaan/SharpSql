@@ -1,8 +1,9 @@
-﻿using SharpSql;
-using SharpSql.Attributes;
+﻿using SharpSql.Attributes;
 using System;
 using System.Linq;
 using System.Reflection;
+
+namespace SharpSql;
 
 public static class SharpSqlExtensions
 {
@@ -62,7 +63,7 @@ public static class SharpSqlExtensions
 
     public static PropertyInfo GetPropertyInfo(this SharpSqlEntity entity, string propertyName)
     {
-        return entity.GetType().GetProperty(propertyName, entity.PublicIgnoreCaseFlags)
+        return entity.GetType().GetProperty(propertyName, SharpSqlEntity.PublicIgnoreCaseFlags)
             ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).FirstOrDefault() as SharpSqlColumnAttribute)?.ColumnName == propertyName);
     }
 

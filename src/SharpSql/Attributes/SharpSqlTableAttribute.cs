@@ -1,48 +1,48 @@
 ﻿using System;
 
-namespace SharpSql.Attributes
+namespace SharpSql.Attributes;
+
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class SharpSqlTableAttribute : Attribute
 {
-    public sealed class SharpSqlTableAttribute : Attribute
+    public string TableName { get { return CollectionType.Name; } }
+
+    public Type CollectionType { get; private set; }
+
+    public Type CollectionTypeLeft { get; private set; }
+
+    public Type CollectionTypeRight { get; private set; }
+
+    public Type EntityType { get; private set; }
+
+    public SharpSqlTableAttribute(Type collectionType, Type entityType)
     {
-        public string TableName { get { return CollectionType.Name; } }
+        // Example usage:
+        // Users (CollectionType)
+        // User (EntityType)
+        // 
+        // SharpSqlTable(typeof(Users), typeof(User))
 
-        public Type CollectionType { get; private set; }
-
-        public Type CollectionTypeLeft { get; private set; }
-
-        public Type CollectionTypeRight { get; private set; }
-
-        public Type EntityType { get; private set; }
-
-        public SharpSqlTableAttribute(Type collectionType, Type entityType)
+        if (!entityType.IsSubclassOf(typeof(SharpSqlEntity)))
         {
-            // Example usage:
-            // Users (CollectionType)
-            // User (EntityType)
-            // 
-            // SharpSqlTable(typeof(Users), typeof(User))
-
-            if (!entityType.IsSubclassOf(typeof(SharpSqlEntity)))
-            {
-                throw new ArgumentException();
-            }
-
-            CollectionType = collectionType;
-            EntityType = entityType;
+            throw new ArgumentException(null, nameof(entityType));
         }
 
-        public SharpSqlTableAttribute(Type collectionType, Type entityType, Type collectionTypeLeft, Type collectionTypeRight)
-            : this(collectionType, entityType)
-        {
-            // Example usage:
-            // Users->User (CollectionTypeLeft)
-            // UserRoles (CollectionType)-> UserRole (EntityType)
-            // Roles->Role (CollectionTypeRight)
-            // 
-            // SharpSqlTable(nameof(UserRoles), typeof(UserRole), typeof(Users), typeof(Roles)
+        CollectionType = collectionType;
+        EntityType = entityType;
+    }
 
-            CollectionTypeLeft = collectionTypeLeft;
-            CollectionTypeRight = collectionTypeRight;
-        }
+    public SharpSqlTableAttribute(Type collectionType, Type entityType, Type collectionTypeLeft, Type collectionTypeRight)
+        : this(collectionType, entityType)
+    {
+        // Example usage:
+        // Users->User (CollectionTypeLeft)
+        // UserRoles (CollectionType)-> UserRole (EntityType)
+        // Roles->Role (CollectionTypeRight)
+        // 
+        // SharpSqlTable(nameof(UserRoles), typeof(UserRole), typeof(Users), typeof(Roles)
+
+        CollectionTypeLeft = collectionTypeLeft;
+        CollectionTypeRight = collectionTypeRight;
     }
 }

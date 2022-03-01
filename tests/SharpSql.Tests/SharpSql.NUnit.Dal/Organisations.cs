@@ -1,10 +1,9 @@
 ﻿using SharpSql.Attributes;
 
-namespace SharpSql.NUnit
+namespace SharpSql.NUnit;
+
+[SharpSqlTable(typeof(Organisations), typeof(Organisation))]
+public class Organisations : SharpSqlCollection<Organisation>
 {
-    [SharpSqlTable(typeof(Organisations), typeof(Organisation))]
-    public class Organisations : SharpSqlCollection<Organisation>
-    {
-        public Organisations() { }
-    }
+    public Organisations() { }
 }

@@ -1,10 +1,9 @@
 ﻿using SharpSql.Attributes;
 
-namespace SharpSql
+namespace SharpSql;
+
+[SharpSqlTable(typeof(Orders), typeof(Order))]
+public class Orders : SharpSqlCollection<Order>
 {
-    [SharpSqlTable(typeof(Orders), typeof(Order))]
-    public class Orders : SharpSqlCollection<Order>
-    {
-        public Orders() { }
-    }
+    public Orders() { }
 }

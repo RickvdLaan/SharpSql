@@ -1,19 +1,18 @@
-﻿namespace SharpSql.Interfaces
+﻿namespace SharpSql.Interfaces;
+
+public interface ISharpSqlCollection<EntityType> where EntityType : SharpSqlEntity
 {
-    public interface ISharpSqlCollection<EntityType> where EntityType : SharpSqlEntity
-    {
-        public string ExecutedQuery { get; }
+    public string ExecutedQuery { get; }
 
-        public bool DisableChangeTracking { get; }
+    public bool DisableChangeTracking { get; }
 
-        ISharpSqlCollection<EntityType> Fetch();
+    ISharpSqlCollection<EntityType> Fetch();
 
-        ISharpSqlCollection<EntityType> Fetch(long maxNumberOfItemsToReturn);
+    ISharpSqlCollection<EntityType> Fetch(long maxNumberOfItemsToReturn);
 
-        void SaveChanges();
+    void SaveChanges();
 
-        void Add(EntityType entity);
+    void Add(EntityType entity);
 
-        void Remove(EntityType entity);
-    }
+    void Remove(EntityType entity);
 }

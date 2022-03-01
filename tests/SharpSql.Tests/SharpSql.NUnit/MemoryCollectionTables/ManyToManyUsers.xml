@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DATA>
+  <MANYTOMANYUSERS Id="1" Username="Imaani" Password="qwerty" Organisation="1" DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" UserRoles_UserId="1" UserRoles_RoleId="1" Role_Id="1" Role_Name="Admin" />
+  <MANYTOMANYUSERS Id="1" Username="Imaani" Password="qwerty" Organisation="1" DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" UserRoles_UserId="1" UserRoles_RoleId="2" Role_Id="2" Role_Name="Moderator" />
+  <MANYTOMANYUSERS Id="2" Username="Clarence" Password="password" Organisation="1" DateCreated="2020-07-23 16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" UserRoles_UserId="2" UserRoles_RoleId="1" Role_Id="1" Role_Name="Admin" />
+  <MANYTOMANYUSERS Id="3" Username="Beverley" Password="abc123" Organisation="2" DateCreated="2020-07-23 16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" UserRoles_UserId="3" UserRoles_RoleId="2" Role_Id="2" Role_Name="Moderator" />
+  <MANYTOMANYUSERS Id="4" Username="Adyan" Password="123456"  DateCreated="2020-07-23 16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" />
+  <MANYTOMANYUSERS Id="5" Username="Chloe" Password="dragon" Organisation="2" DateCreated="2020-07-23 16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" />
+</DATA>

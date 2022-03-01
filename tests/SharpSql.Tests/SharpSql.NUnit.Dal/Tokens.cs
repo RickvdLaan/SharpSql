@@ -1,10 +1,9 @@
 ﻿using SharpSql.Attributes;
 
-namespace SharpSql.NUnit
+namespace SharpSql.NUnit;
+
+[SharpSqlTable(typeof(Tokens), typeof(Token))]
+public class Tokens : SharpSqlCollection<User>
 {
-    [SharpSqlTable(typeof(Tokens), typeof(Token))]
-    public class Tokens : SharpSqlCollection<User>
-    {
-        public Tokens() { }
-    }
+    public Tokens() { }
 }

@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace SharpSql.Attributes
+namespace SharpSql.Attributes;
+
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class SharpSqlManyToManyAttribute : Attribute
 {
-    public sealed class SharpSqlManyToMany : Attribute
-    {
-        public SharpSqlManyToMany() { }
-    }
+    public SharpSqlManyToManyAttribute() { }
 }

@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DATA>
+  <JOINWITHMANYTOMANYUSERS Id="1" Username="Imaani" Password="qwerty" Organisation="1" DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" Organisation_Id="1" Organisation_Name="The Boring Company" UserRoles_UserId="1" UserRoles_RoleId="1" Role_Id="1" Role_Name="Admin" />
+  <JOINWITHMANYTOMANYUSERS Id="1" Username="Imaani" Password="qwerty" Organisation="1" DateCreated="2020-07-23T16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" Organisation_Id="1" Organisation_Name="The Boring Company" UserRoles_UserId="1" UserRoles_RoleId="2" Role_Id="2" Role_Name="Moderator" />
+  <JOINWITHMANYTOMANYUSERS Id="2" Username="Clarence" Password="password" Organisation="1" DateCreated="2020-07-23 16:50:38.213" DateLastModified="2020-07-23T16:50:38.213" Organisation_Id="1" Organisation_Name="The Boring Company" />
+</DATA>
