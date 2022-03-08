@@ -1,10 +1,11 @@
 ﻿using SharpSql.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SharpSql;
 
-internal struct PrimaryKey : ISharpSqlPrimaryKey
+internal struct PrimaryKey : IEqualityComparer<PrimaryKey>, ISharpSqlPrimaryKey
 {
     public string PropertyName { get; set; }
 
@@ -27,22 +28,47 @@ internal struct PrimaryKey : ISharpSqlPrimaryKey
         return $"{ColumnName}: {Value} in {PropertyName}";
     }
 
+    public static bool operator ==(PrimaryKey x, PrimaryKey y)
+    {
+        return x.Equals(y);
+    }
+
+    public static bool operator !=(PrimaryKey x, PrimaryKey y)
+    {
+        return !x.Equals(y);
+    }
+
+    public bool Equals(PrimaryKey x, PrimaryKey y)
+    {
+        return x.GetHashCode() == y.GetHashCode() && x.Value.Equals(y.Value);
+    }
+
     public override bool Equals(object obj)
     {
-        return obj is PrimaryKey other &&
-               ColumnName == other.ColumnName &&
-               EqualityComparer<object>.Default.Equals(Value, other.Value);
+        //Check for null and compare run-time types.
+        if ((obj == null) || obj is not PrimaryKey key)
+        {
+            return false;
+        }
+        else
+        {
+            return Equals(this, key);
+        }
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(ColumnName, Value);
+        return GetHashCode(this);
     }
 
-    public void Deconstruct(out string columnName, out object id)
+    public int GetHashCode([DisallowNull] PrimaryKey obj)
     {
-        columnName = ColumnName;
-        id = Value;
+        var hashCode = new HashCode();
+        hashCode.Add(PropertyName);
+        hashCode.Add(ColumnName);
+        hashCode.Add(Value);
+        hashCode.Add(IsAutoIncrement);   
+        return hashCode.ToHashCode();
     }
 
     public static implicit operator (string propertyName, string ColumnName, object Id)(PrimaryKey value)

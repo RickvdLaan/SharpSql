@@ -118,6 +118,8 @@ internal class QueryMapper
             }
         }
 
+        entity.PrimaryKey.Update(entity);
+
         if (UnitTestUtilities.IsUnitTesting)
         {
             // With unit tests, the SharpSqlPrimaryKey isn't always set - e.g:

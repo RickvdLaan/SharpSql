@@ -36,6 +36,42 @@ public class SharpSqlEntityTests
     }
 
     [Test]
+    public void Entity_PrimaryKeyEquality_Existing()
+    {
+        var user = new User(1);
+
+        var primaryKey = new SharpSqlPrimaryKey(1);
+        primaryKey.Add(nameof(User.Id), nameof(User.Id), 1, true);
+        primaryKey.Update(user);
+
+        Assert.AreEqual(primaryKey, user.PrimaryKey);
+    }
+
+
+    [Test]
+    public void Entity_PrimaryKeyEquality_New()
+    {
+        var userId = Guid.NewGuid();
+        var tokenId = Guid.NewGuid();
+
+        var token = new Token()
+        {
+            UserId = userId,
+            TokenId = tokenId
+        };
+
+        Assert.AreEqual(true, token.PrimaryKey.IsEmpty);
+        Assert.IsNull(token.PrimaryKey.Keys[0].Value);
+        Assert.IsNull(token.PrimaryKey.Keys[1].Value);
+
+        token.Save();
+
+        Assert.AreEqual(false, token.PrimaryKey.IsEmpty);
+        Assert.AreEqual(userId, token.PrimaryKey.Keys[0].Value);
+        Assert.AreEqual(tokenId, token.PrimaryKey.Keys[1].Value);
+    }
+
+    [Test]
     public void Fetch_Dirty()
     {
         var expectedUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";

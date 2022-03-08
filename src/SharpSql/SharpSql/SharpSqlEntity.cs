@@ -254,6 +254,8 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
         }
         set
         {
+            // @Todo: PK cannot be modified (except IsNew == true).
+
             var propertyInfo = GetType().GetProperty(columnName);
 
             if (propertyInfo == null)
@@ -351,6 +353,9 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
     /// </summary>
     public virtual void Save()
     {
+        if (IsNew || ObjectState == ObjectState.ExternalRecord)
+            PrimaryKey.Update(this);    
+
         if (IsMarkedAsDeleted)
             return;
 
@@ -493,6 +498,9 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
     /// </summary>
     public virtual void Delete()
     {
+        if (ObjectState == ObjectState.ExternalRecord)
+            PrimaryKey.Update(this);
+
         if (PrimaryKey.IsEmpty)
             throw new EmptyPrimaryKeyException();
 
