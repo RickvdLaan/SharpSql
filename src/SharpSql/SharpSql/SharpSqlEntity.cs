@@ -734,10 +734,10 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
             // Fetches the data.
             collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.Fetch), NonPublicFlags, null, new Type[] { typeof(SharpSqlEntity), typeof(long), typeof(Expression) }, null).Invoke(collection, new object[] { this, joinExpression == null ? 1 : -1, joinExpression });
 
-            ObjectState = ObjectState.Fetched;
-
             if (!UnitTestUtilities.IsUnitTesting && IsNew)
                 return null;
+            
+            ObjectState = ObjectState.Fetched;
 
             ExecutedQuery = (string)collection.GetType().GetProperty(nameof(SharpSqlCollection<SharpSqlEntity>.ExecutedQuery)).GetValue(collection);
 
