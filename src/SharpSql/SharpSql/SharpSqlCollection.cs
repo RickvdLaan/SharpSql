@@ -118,7 +118,6 @@ public class SharpSqlCollection<EntityType> : ISharpSqlCollection<EntityType>, I
             switch (MutableEntityCollection[i].ObjectState)
             {
                 case ObjectState.New:
-                case ObjectState.Untracked:
                     MutableEntityCollection[i].Save();
                     break;
                 case ObjectState.Fetched:

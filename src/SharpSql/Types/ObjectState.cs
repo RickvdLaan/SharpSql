@@ -34,10 +34,6 @@ public enum ObjectState
     /// </summary>
     OriginalFetchedValue,
     /// <summary>
-    /// An untracked object, could be new, or existing, and is always dirty.
-    /// </summary>
-    Untracked,
-    /// <summary>
     /// Scheduled for deletion.
     /// </summary>
     ScheduledForDeletion,

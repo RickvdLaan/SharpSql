@@ -881,12 +881,16 @@ public class SharpSqlEntityTests
 
         var user = new User(2, x => x.Organisation.Left())
         {
-            Organisation = new Organisation(1, true)
+            Organisation = new Organisation(2, true)
         };
 
         // Initial User query
         Assert.AreEqual(expectedInitialUserQuery, user.ExecutedQuery);
         Assert.AreEqual(true, user.IsDirty);
+        Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
+        Assert.AreEqual(false, user.Organisation.IsDirty);
+        Assert.AreEqual(2, user.Organisation.Id);
+        Assert.AreEqual(1, user.OriginalFetchedValue.ValueAs<User>().Organisation.Id);
         Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
         Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.DisableChangeTracking);
         Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
@@ -945,13 +949,21 @@ public class SharpSqlEntityTests
 
         var user = new User(2, x => x.Organisation.Left())
         {
-            Organisation = new Organisation(1, true)
+            Organisation = new Organisation(2, true)
         };
 
         // Initial User query
         Assert.AreEqual(expectedInitialUserQuery, user.ExecutedQuery);
+        Assert.IsNull(user.Organisation.OriginalFetchedValue);
+        Assert.IsNull(user.OriginalFetchedValue.ValueAs<User>().Organisation.OriginalFetchedValue);
         Assert.AreEqual(true, user.IsDirty);
+        Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
+        Assert.AreEqual(false, user.Organisation.IsDirty);
+        Assert.AreEqual(2, user.Organisation.Id);
+        Assert.AreEqual(1, user.OriginalFetchedValue.ValueAs<User>().Organisation.Id);
         Assert.AreEqual(expectedOriginalUserQuery, user.OriginalFetchedValue.ExecutedQuery);
+        Assert.AreEqual(true, user.Organisation.DisableChangeTracking);
+        Assert.AreEqual(false, user.DisableChangeTracking);
         Assert.AreEqual(false, user.OriginalFetchedValue.ValueAs<User>().Organisation.DisableChangeTracking);
         Assert.AreNotEqual(user.Organisation, user.OriginalFetchedValue.ValueAs<User>().Organisation);
         Assert.AreEqual(expectedOriginalOrganisationQuery, user.OriginalFetchedValue.ValueAs<User>().Organisation.ExecutedQuery);
@@ -1007,6 +1019,8 @@ public class SharpSqlEntityTests
 
         user.Save();
         Assert.AreEqual(expectedOrganisationQueryAfterChanges, user.Organisation.ExecutedQuery);
+
+        Assert.AreEqual(false, user.Organisation.IsDirty);
     }
 
     [Test]

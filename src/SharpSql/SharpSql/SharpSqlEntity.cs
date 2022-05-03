@@ -88,7 +88,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
     /// can be set to <see langword="true"/> through the <see cref="SharpSqlEntity"/> constructor.
     /// </summary>
     [JsonIgnore]
-    public bool DisableChangeTracking { get; internal set; } = false; // Refactor to ObjectState.
+    public bool DisableChangeTracking { get; internal set; } = false;
 
     /// <summary>
     /// Gets the <see cref="SharpSqlPrimaryKey"/> of the current <see cref="SharpSqlEntity"/>.
