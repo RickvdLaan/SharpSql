@@ -1,9 +1,6 @@
 ﻿using SharpSql.Attributes;
-using SharpSql.UnitTests;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 
 namespace SharpSql;
 
@@ -25,7 +22,6 @@ public sealed class SharpSqlCache
 
     public SharpSqlCache()
     {
-        UnitTestUtilities.IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(SharpSqlUnitTestAttribute), false).Any());
         CollectionEntityRelations = new Dictionary<Type, Type>();
         ManyToManyRelations = new Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), SharpSqlTableAttribute>();
         UniqueConstraints = new HashSet<(Type EntityType, string ColumnName)>();

@@ -5,6 +5,8 @@ using SharpSql.Attributes;
 using System.Linq;
 using System.IO;
 using System.Reflection;
+using System.Diagnostics;
+using SharpSql.UnitTests;
 
 namespace SharpSql;
 
@@ -14,6 +16,8 @@ public sealed class SharpSqlInitializer
 
     internal SharpSqlInitializer(Assembly callingAssembly, string xmlEntityFilePath, string xmlCollectionFilePath)
     {
+        UnitTestUtilities.IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(SharpSqlUnitTestAttribute), false).Any());
+
         SharpSqlUtilities.MemoryEntityDatabase = new MemoryEntityDatabase(Assembly.GetCallingAssembly());
         SharpSqlUtilities.MemoryEntityDatabase.LoadMemoryTables(LoadMemoryDatabase(callingAssembly, xmlEntityFilePath));
 
