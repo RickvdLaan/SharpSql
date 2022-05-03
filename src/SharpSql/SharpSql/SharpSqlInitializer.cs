@@ -87,6 +87,7 @@ public sealed class SharpSqlInitializer
     // @Todo: create unit tests for each smaller method. (validate cache)
     public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false, bool allowAnonymousTypes = false)
     {
+        _ = new SharpSqlCache();
         _ = new DatabaseUtilities(configuration);
         _ = new SharpSqlUtilities();
 
