@@ -57,7 +57,7 @@ internal sealed class UnitTestUtilities
         if (!entity.PrimaryKey.IsCombinedPrimaryKey)
         {
             var primaryKey = entity.PrimaryKey.Keys[0];
-            var tableName = SharpSqlUtilities.GetTableNameFromEntity(entity);
+            var tableName = SharpSqlCache.GetTableNameFromEntity(entity);
             var id = queryBuilder.SqlParameters.Where(x => x.SourceColumn == primaryKey.PropertyName).FirstOrDefault().Value;
 
             var reader = MemoryEntityDatabase.FetchEntityById(tableName, primaryKey, id);
@@ -73,7 +73,7 @@ internal sealed class UnitTestUtilities
         }
         else
         {
-            var tableName = SharpSqlUtilities.GetTableNameFromEntity(entity);
+            var tableName = SharpSqlCache.GetTableNameFromEntity(entity);
 
             var ids = new List<object>(entity.PrimaryKey.Keys.Count);
 
@@ -172,7 +172,7 @@ internal sealed class UnitTestUtilities
                         var parentDataTable = new DataTable();
                         parentDataTable.Load(reader);
 
-                        var childTableName = SharpSqlUtilities.CollectionEntityRelations[join.LeftPropertyInfo.PropertyType].Name;
+                        var childTableName = SharpSqlCache.CollectionEntityRelations[join.LeftPropertyInfo.PropertyType].Name;
                         var childEntity = Activator.CreateInstance(join.LeftPropertyInfo.PropertyType);
                         var childId = parentDataTable.Rows[0][entity.TableScheme.IndexOf(field)];
 

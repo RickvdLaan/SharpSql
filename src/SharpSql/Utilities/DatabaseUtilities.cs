@@ -264,7 +264,7 @@ public sealed class DatabaseUtilities
     {
         if (!DoesTableHaveUC(collectionType.Name))
         {
-            var constraints = SharpSqlUtilities.CollectionEntityRelations[collectionType].GetProperties().Where(x => x.GetCustomAttributes(typeof(SharpSqlUniqueConstraintAttribute), true).Any());
+            var constraints = SharpSqlCache.CollectionEntityRelations[collectionType].GetProperties().Where(x => x.GetCustomAttributes(typeof(SharpSqlUniqueConstraintAttribute), true).Any());
 
             using SqlConnection connection = new(ConnectionString);
             using var command = new SqlCommand(new QueryBuilder().CreateUniqueConstraint(collectionType.Name, constraints.Select(x => x.Name).ToArray()), connection);

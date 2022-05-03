@@ -105,7 +105,7 @@ public sealed class QueryBuilder
     {
         var stringBuilder = new StringBuilder();
 
-        var tableName = SharpSqlUtilities.GetTableNameFromEntity(entity);
+        var tableName = SharpSqlCache.GetTableNameFromEntity(entity);
 
         stringBuilder.Append($"INSERT INTO [DBO].[{tableName}] (");
 
@@ -163,8 +163,8 @@ public sealed class QueryBuilder
         {
             foreach (var (name, type) in TableOrder)
             {
-                TableNameColumnCount[name] = SharpSqlUtilities.CachedColumns.ContainsKey(type) ?
-                    SharpSqlUtilities.CachedColumns[type].Count : 0;
+                TableNameColumnCount[name] = SharpSqlCache.EntityColumns.ContainsKey(type) ?
+                    SharpSqlCache.EntityColumns[type].Count : 0;
             }
             return Select(top);
         }
@@ -259,8 +259,8 @@ public sealed class QueryBuilder
 
                         //foreach (var type in newArrayExpression.Expressions[i].Type.BaseType.GenericTypeArguments)
                         //{
-                        //    var result = SharpSqlUtilities.ManyToManyRelations.Keys.FirstOrDefault(x => x.CollectionTypeLeft == SharpSqlUtilities.CollectionEntityRelations[type]);
-                        //    var attribute = SharpSqlUtilities.ManyToManyRelations[result];
+                        //    var result = SharpSqlCache.ManyToManyRelations.Keys.FirstOrDefault(x => x.CollectionTypeLeft == SharpSqlCache.CollectionEntityRelations[type]);
+                        //    var attribute = SharpSqlCache.ManyToManyRelations[result];
 
                         //    var parameterExpression = Expression.Parameter(attribute.CollectionType, "x");
 
@@ -345,7 +345,7 @@ public sealed class QueryBuilder
         if (!entity.DirtyTracker.AnyDirtyRelations(entity)
           || entity.DirtyTracker.Any)
         {
-            stringBuilder.Append(From(new SharpSqlTableAttribute(SharpSqlUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType())));
+            stringBuilder.Append(From(new SharpSqlTableAttribute(SharpSqlCache.CollectionEntityRelations[entity.GetType()], entity.GetType())));
 
             var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
 
@@ -374,7 +374,7 @@ public sealed class QueryBuilder
     {
         var stringBuilder = new StringBuilder();
 
-        AddQueryTableName(new SharpSqlTableAttribute(SharpSqlUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType()));
+        AddQueryTableName(new SharpSqlTableAttribute(SharpSqlCache.CollectionEntityRelations[entity.GetType()], entity.GetType()));
 
         var tableAlias = TableOrder.First(x => x.Type == entity.GetType()).Name;
 
@@ -442,7 +442,7 @@ public sealed class QueryBuilder
 
     private string Delete(SharpSqlEntity entity)
     {
-        AddQueryTableName(new SharpSqlTableAttribute(SharpSqlUtilities.CollectionEntityRelations[entity.GetType()], entity.GetType()));
+        AddQueryTableName(new SharpSqlTableAttribute(SharpSqlCache.CollectionEntityRelations[entity.GetType()], entity.GetType()));
 
         var stringBuilder = new StringBuilder("DELETE ");
 
@@ -490,7 +490,7 @@ public sealed class QueryBuilder
 
     internal static string DropUniqueConstraint<EntityType>(EntityType entity) where EntityType : SharpSqlEntity
     {
-        string tableName = SharpSqlUtilities.GetTableNameFromEntity(entity);
+        string tableName = SharpSqlCache.GetTableNameFromEntity(entity);
 
         return $"ALTER TABLE { tableName } DROP CONSTRAINT UC_{ tableName };";
     }
@@ -523,7 +523,7 @@ public sealed class QueryBuilder
                     }
 
                     var entityType = memberExpression.Member.ReflectedType;
-                    var collectionType = SharpSqlUtilities.CollectionEntityRelations[entityType];
+                    var collectionType = SharpSqlCache.CollectionEntityRelations[entityType];
 
                     if (memberExpression.Member.GetCustomAttributes(typeof(SharpSqlColumnAttribute), true).FirstOrDefault() is SharpSqlColumnAttribute columnAttribute)
                     {
@@ -590,7 +590,7 @@ public sealed class QueryBuilder
                 }
             case NewExpression newExpression:
                 {
-                    if (SharpSqlUtilities.AllowAnonymouseTypes)
+                    if (SharpSqlInitializer.AllowAnonymouseTypes)
                     {
                         var query = string.Empty;
 
@@ -655,7 +655,7 @@ public sealed class QueryBuilder
     {
         var propertyInfo = tableAttribute.EntityType.GetProperty(tableName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-        var rightTableAttribute = SharpSqlUtilities.CollectionEntityRelations[propertyInfo.PropertyType].GetCustomAttributes(typeof(SharpSqlTableAttribute), true).First() as SharpSqlTableAttribute;
+        var rightTableAttribute = SharpSqlCache.CollectionEntityRelations[propertyInfo.PropertyType].GetCustomAttributes(typeof(SharpSqlTableAttribute), true).First() as SharpSqlTableAttribute;
         AddQueryTableName(rightTableAttribute);
 
         var rightInstance = (SharpSqlEntity)Activator.CreateInstance(propertyInfo.PropertyType);
@@ -681,7 +681,7 @@ public sealed class QueryBuilder
     {
         var targetProperty = expression.Member.DeclaringType.GetProperty(expression.Member.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
 
-        var manyToManyRelations = SharpSqlUtilities.ManyToManyRelations.GetValueOrDefault((SharpSqlUtilities.CollectionEntityRelations[expression.Member.DeclaringType], targetProperty.PropertyType));
+        var manyToManyRelations = SharpSqlCache.ManyToManyRelations.GetValueOrDefault((SharpSqlCache.CollectionEntityRelations[expression.Member.DeclaringType], targetProperty.PropertyType));
         var stringBuilder = new StringBuilder();
 
         if (manyToManyRelations != null)
@@ -712,14 +712,14 @@ public sealed class QueryBuilder
             {
                 IsManyToMany = true,
                 LeftTableAttribute = manyToManyRelations.CollectionType.GetCustomAttribute<SharpSqlTableAttribute>(),
-                LeftPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(SharpSqlForeignKeyAttribute), true).FirstOrDefault() as SharpSqlForeignKeyAttribute)?.Relation == SharpSqlUtilities.CollectionEntityRelations[targetProperty.PropertyType]).FirstOrDefault(),
+                LeftPropertyInfo = properties.Where(x => (x.GetCustomAttributes(typeof(SharpSqlForeignKeyAttribute), true).FirstOrDefault() as SharpSqlForeignKeyAttribute)?.Relation == SharpSqlCache.CollectionEntityRelations[targetProperty.PropertyType]).FirstOrDefault(),
                 RightTableAttribute = targetProperty.PropertyType.GetCustomAttribute<SharpSqlTableAttribute>(),
-                RightPropertyInfo = SharpSqlUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties().Where(x => (x.GetCustomAttributes(typeof(SharpSqlPrimaryKeyAttribute), true).FirstOrDefault() as SharpSqlPrimaryKeyAttribute) != null).ToArray()
+                RightPropertyInfo = SharpSqlCache.CollectionEntityRelations[targetProperty.PropertyType].GetProperties().Where(x => (x.GetCustomAttributes(typeof(SharpSqlPrimaryKeyAttribute), true).FirstOrDefault() as SharpSqlPrimaryKeyAttribute) != null).ToArray()
             };
 
             if (secondJoin.LeftPropertyInfo == null)
             {
-                var propertyInfo = SharpSqlUtilities.CollectionEntityRelations[targetProperty.PropertyType].GetProperties()
+                var propertyInfo = SharpSqlCache.CollectionEntityRelations[targetProperty.PropertyType].GetProperties()
                                                .Where(x => (x.GetCustomAttributes(typeof(SharpSqlPrimaryKeyAttribute), true).FirstOrDefault() as SharpSqlPrimaryKeyAttribute) != null
                                                   && (x.GetCustomAttributes(typeof(SharpSqlForeignKeyAttribute), true).FirstOrDefault() as SharpSqlForeignKeyAttribute) == null)
                                                      .FirstOrDefault();

@@ -1,7 +1,4 @@
-﻿using SharpSql.Attributes;
-using SharpSql.UnitTests;
-using System;
-using System.Collections.Generic;
+﻿using SharpSql.UnitTests;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
@@ -10,37 +7,13 @@ namespace SharpSql;
 
 public sealed class SharpSqlUtilities
 {
-    internal static bool AllowAnonymouseTypes { get; set; }
-
     internal static MemoryEntityDatabase MemoryEntityDatabase { get; set; }
 
     internal static MemoryCollectionDatabase MemoryCollectionDatabase { get; set; }
 
-    internal static Dictionary<Type, Type> CollectionEntityRelations { get; private set; }
-
-    internal static Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), SharpSqlTableAttribute> ManyToManyRelations { get; private set; }
-
-    internal static HashSet<(Type EntityType, string ColumnName)> UniqueConstraints { get; private set; }
-
-    internal static Dictionary<Type, Dictionary<string, ColumnType>> CachedColumns { get; private set; }
-
-    internal static Dictionary<Type, List<string>> CachedMutableColumns { get; private set; }
-
-    internal static Dictionary<Type, SharpSqlPrimaryKey> CachedPrimaryKeys { get; private set; }
-
-    // Todo make private and a internal bool to check for key
-    internal static Dictionary<Type, byte> CachedManyToMany { get; private set; }
-
     public SharpSqlUtilities()
     {
         UnitTestUtilities.IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(SharpSqlUnitTestAttribute), false).Any());
-        CollectionEntityRelations = new Dictionary<Type, Type>();
-        ManyToManyRelations = new Dictionary<(Type CollectionTypeLeft, Type CollectionTypeRight), SharpSqlTableAttribute>();
-        UniqueConstraints = new HashSet<(Type EntityType, string ColumnName)>();
-        CachedColumns = new Dictionary<Type, Dictionary<string, ColumnType>>();
-        CachedMutableColumns = new Dictionary<Type, List<string>>();
-        CachedManyToMany = new Dictionary<Type, byte>();
-        CachedPrimaryKeys = new Dictionary<Type, SharpSqlPrimaryKey>();
     }
 
     public static CollectionType ConvertTo<CollectionType, EntityType>(DataTable dataTable, bool disableChangeTracking)
@@ -58,10 +31,5 @@ public sealed class SharpSqlUtilities
         }
 
         return collection;
-    }
-
-    public static string GetTableNameFromEntity(SharpSqlEntity entity)
-    {
-        return CollectionEntityRelations[entity.GetType()].Name;
     }
 }

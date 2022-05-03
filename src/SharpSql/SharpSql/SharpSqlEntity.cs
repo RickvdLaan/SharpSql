@@ -128,7 +128,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
     /// Gets the table scheme from the current <see cref="SharpSqlEntity"/>.
     /// </summary>
     [JsonIgnore]
-    public ReadOnlyCollection<string> TableScheme { get { return SharpSqlUtilities.CachedColumns[GetType()].Keys.ToList().AsReadOnly(); } } // Ouch performance!
+    public ReadOnlyCollection<string> TableScheme { get { return SharpSqlCache.EntityColumns[GetType()].Keys.ToList().AsReadOnly(); } } // Ouch performance!
 
     internal List<SharpSqlEntity> Relations { get; private set; } = new List<SharpSqlEntity>();
 
@@ -203,9 +203,9 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
 
     private void InitializeMutableTableSchema(Type externalType = null)
     {
-        if (SharpSqlUtilities.CachedMutableColumns.ContainsKey(externalType ?? GetType()))
+        if (SharpSqlCache.MutableColumns.ContainsKey(externalType ?? GetType()))
         {
-            MutableTableScheme = SharpSqlUtilities.CachedMutableColumns[externalType ?? GetType()];
+            MutableTableScheme = SharpSqlCache.MutableColumns[externalType ?? GetType()];
             return;
         }
 
@@ -219,7 +219,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
             MutableTableScheme.Add(columnName);
         }
 
-        SharpSqlUtilities.CachedMutableColumns[externalType ?? GetType()] = MutableTableScheme;
+        SharpSqlCache.MutableColumns[externalType ?? GetType()] = MutableTableScheme;
     }
 
     /// <summary>
@@ -732,7 +732,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
         }
 
         // Instantiates and fetches the run-time collection.
-        var collection = Activator.CreateInstance(SharpSqlUtilities.CollectionEntityRelations[GetType()]);
+        var collection = Activator.CreateInstance(SharpSqlCache.CollectionEntityRelations[GetType()]);
 
         // Sets the InternalWhere with the WhereExpression.
         collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.InternalWhere), NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(collection, new object[] { whereExpression });
@@ -764,7 +764,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
             throw new ArgumentNullException(nameof(columnName));
         if (value == null)
             throw new ArgumentNullException(nameof(value));
-        if (!SharpSqlUtilities.UniqueConstraints.Contains((GetType(), columnName)))
+        if (!SharpSqlCache.UniqueConstraints.Contains((GetType(), columnName)))
             throw new IllegalUniqueConstraintException(columnName);
 
         // Contains the UC represented as a MemberExpression: {x.columnName}.
@@ -777,7 +777,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
         var whereExpression = Expression.Equal(memberExpression, constantExpression);
 
         // Instantiates and fetches the run-time collection.
-        var collection = Activator.CreateInstance(SharpSqlUtilities.CollectionEntityRelations[GetType()]);
+        var collection = Activator.CreateInstance(SharpSqlCache.CollectionEntityRelations[GetType()]);
 
         // Sets the InternalWhere with the WhereExpression.
         collection.GetType().GetMethod(nameof(SharpSqlCollection<SharpSqlEntity>.InternalWhere), NonPublicFlags, null, new Type[] { typeof(BinaryExpression) }, null).Invoke(collection, new object[] { whereExpression });

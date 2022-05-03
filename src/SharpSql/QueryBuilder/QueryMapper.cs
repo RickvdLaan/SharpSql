@@ -168,14 +168,14 @@ internal class QueryMapper
         var tableType = queryBuilder.TableOrder[tableOrderIndex].Type;
         var tableColumnCount = queryBuilder.TableNameColumnCount[tableName];
 
-        dataTable.TableName = SharpSqlUtilities.CollectionEntityRelations[tableType].Name;
+        dataTable.TableName = SharpSqlCache.CollectionEntityRelations[tableType].Name;
 
         ProcessManyToManySection(dataTable, queryBuilder, ref tableOrderIndex, tableType, out Type m2mTableType);
 
         var removeIndices = new HashSet<int>(queryBuilder.AllJoins.Count);
         
         // @Memory
-        var cachedColumns = SharpSqlUtilities.CachedColumns[tableType].Keys.ToArray();
+        var cachedColumns = SharpSqlCache.EntityColumns[tableType].Keys.ToArray();
 
         // Since rootDataTable is read-only (at least, it should be) we can safely use the indexes without losing/overriding data.
         for (int i = tableIndex; i < tableColumnCount + tableIndex; i++)
@@ -188,7 +188,7 @@ internal class QueryMapper
                 columnName = columnName.Split('_').Last();
             }
   
-            if (SharpSqlUtilities.CachedColumns[tableType][columnName] == ColumnType.ManyToMany)
+            if (SharpSqlCache.EntityColumns[tableType][columnName] == ColumnType.ManyToMany)
             {
                 if (queryBuilder.HasManyToManyJoins)
                 {
@@ -199,7 +199,7 @@ internal class QueryMapper
 
                 removeIndices.Add(i);
             }
-            else if (SharpSqlUtilities.CachedColumns[tableType][columnName] == ColumnType.Join)
+            else if (SharpSqlCache.EntityColumns[tableType][columnName] == ColumnType.Join)
             {
                 if (queryBuilder.HasJoins)
                 {
@@ -213,7 +213,7 @@ internal class QueryMapper
                 {
                     // If one is found, it's actually a many-to-many.
                     if (queryBuilder.AllJoins.Where(x => x.LeftTableAttribute.EntityType == tableType && x.IsManyToMany == false).Any()
-                     || SharpSqlUtilities.CachedManyToMany.ContainsKey(tableType))
+                     || SharpSqlCache.ManyToMany.ContainsKey(tableType))
                     {
                         dataTable.Columns.Add(columnName, rootDataTable.Columns[i].DataType);
                         continue;
@@ -227,12 +227,12 @@ internal class QueryMapper
         }
 
         var isTableTypeRight = m2mTableType == null && 
-            SharpSqlUtilities.ManyToManyRelations.Any(x => x.Value.CollectionTypeRight == SharpSqlUtilities.CollectionEntityRelations[tableType]);
+            SharpSqlCache.ManyToManyRelations.Any(x => x.Value.CollectionTypeRight == SharpSqlCache.CollectionEntityRelations[tableType]);
 
         for (int i = 0; i < rootDataTable.Rows.Count; i++)
         {
             if (i > 0 && tableType != null
-            || (i > 0 && m2mTableType != null && SharpSqlUtilities.CachedManyToMany.ContainsKey(m2mTableType)))
+            || (i > 0 && m2mTableType != null && SharpSqlCache.ManyToMany.ContainsKey(m2mTableType)))
             {
                 // We check if the current rows equals the previous rows, because we only want to add duplicates
                 // if its a many-to-many record.
@@ -281,7 +281,7 @@ internal class QueryMapper
         m2mTableType = null;
 
         // Misschien versimpeling door te kijken naar tableType in cache?
-        foreach (var m2m in SharpSqlUtilities.ManyToManyRelations)
+        foreach (var m2m in SharpSqlCache.ManyToManyRelations)
         {
             if (m2m.Value.EntityType == tableType)
             {
@@ -293,8 +293,8 @@ internal class QueryMapper
 
                 dataTable.ExtendedProperties[Constants.IsManyToMany] = true;
                 ((List<(Type, Type)>)dataTable.ExtendedProperties[Constants.ManyToMany])
-                    .Add((SharpSqlUtilities.CollectionEntityRelations[tableOrderLeft.Type],
-                          SharpSqlUtilities.CollectionEntityRelations[tableOrderRight.Type]));
+                    .Add((SharpSqlCache.CollectionEntityRelations[tableOrderLeft.Type],
+                          SharpSqlCache.CollectionEntityRelations[tableOrderRight.Type]));
 
                 break;
             }
@@ -437,10 +437,10 @@ internal class QueryMapper
                 throw new NotImplementedException();
 
             // @Todo: implement proper multiple primary key usage, and refactor primary key on entity level.
-            var leftPk = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionTypeLeft]].Keys[0];
-            var m2mPkLeft = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionType]].Keys[0];
-            var m2mPkRight = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionType]].Keys[1];
-            var rightPk = SharpSqlUtilities.CachedPrimaryKeys[SharpSqlUtilities.CollectionEntityRelations[manyToManyTableAttribute.CollectionTypeRight]].Keys[0];
+            var leftPk = SharpSqlCache.PrimaryKeys[SharpSqlCache.CollectionEntityRelations[manyToManyTableAttribute.CollectionTypeLeft]].Keys[0];
+            var m2mPkLeft = SharpSqlCache.PrimaryKeys[SharpSqlCache.CollectionEntityRelations[manyToManyTableAttribute.CollectionType]].Keys[0];
+            var m2mPkRight = SharpSqlCache.PrimaryKeys[SharpSqlCache.CollectionEntityRelations[manyToManyTableAttribute.CollectionType]].Keys[1];
+            var rightPk = SharpSqlCache.PrimaryKeys[SharpSqlCache.CollectionEntityRelations[manyToManyTableAttribute.CollectionTypeRight]].Keys[0];
 
             foreach (DataRow rightRow in dataTableRight.Rows)
             {
@@ -465,7 +465,7 @@ internal class QueryMapper
             }
         }
 
-        PopulateManyToManyCollectionFromDataReader(entityCollection, SharpSqlUtilities.CollectionEntityRelations[manyToManyProperty.Property.PropertyType], correctData.CreateDataReader(), entity.DisableChangeTracking);
+        PopulateManyToManyCollectionFromDataReader(entityCollection, SharpSqlCache.CollectionEntityRelations[manyToManyProperty.Property.PropertyType], correctData.CreateDataReader(), entity.DisableChangeTracking);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -35,7 +35,7 @@ public class SharpSqlCollection<EntityType> : ISharpSqlCollection<EntityType>, I
     /// <summary>
     /// Gets the table scheme of the current collection of <see cref="SharpSqlEntity"/> objects.
     /// </summary>
-    public ReadOnlyCollection<string> TableScheme => SharpSqlUtilities.CachedColumns[SharpSqlUtilities.CollectionEntityRelations[GetType()]].Keys.ToList().AsReadOnly(); // Ouch performance!
+    public ReadOnlyCollection<string> TableScheme => SharpSqlCache.EntityColumns[SharpSqlCache.CollectionEntityRelations[GetType()]].Keys.ToList().AsReadOnly(); // Ouch performance!
 
     /// <summary>
     /// Gets a read-only collection of fetched <see cref="SharpSqlEntity"/> entities.
@@ -172,7 +172,7 @@ public class SharpSqlCollection<EntityType> : ISharpSqlCollection<EntityType>, I
     /// <returns>The record count in the database for the current table</returns>
     public static int Records()
     {
-        return (int)DatabaseUtilities.ExecuteDirectQuery(QueryBuilder.Count(new SharpSqlTableAttribute(SharpSqlUtilities.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
+        return (int)DatabaseUtilities.ExecuteDirectQuery(QueryBuilder.Count(new SharpSqlTableAttribute(SharpSqlCache.CollectionEntityRelations[typeof(EntityType)], typeof(EntityType)))).Rows[0].ItemArray[0];
     }
 
     #region IEnumerable<SharpSqlEntity>
