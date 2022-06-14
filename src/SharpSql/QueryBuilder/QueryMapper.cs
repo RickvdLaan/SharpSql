@@ -134,31 +134,6 @@ internal class QueryMapper
         }
     }
 
-
-
-    //SELECT U.Id, U.Username, U.Organisation, U.DateCreated, U.DateLastModified, R.Id, R.Name FROM [DBO].[USERS] AS [U]
-    //LEFT JOIN[DBO].[USERROLES] AS[UU] ON [U].[ID] = [UU].[USERID]
-    //LEFT JOIN [DBO].[ROLES] AS[R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = 1);
-
-
-    //SELECT U.Id, U.Username, U.Organisation, U.DateCreated, U.DateLastModified, O.Id, O.Name, R.Id, R.Name FROM [DBO].[USERS] AS [U]
-    //LEFT JOIN[DBO].[Organisations] AS[O] ON [U].[ID] = [O].[Id]
-    //LEFT JOIN [DBO].[USERROLES] AS[UU] ON [U].[ID] = [UU].[USERID]
-    //LEFT JOIN [DBO].[ROLES] AS[R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = 1);
-
-
-    //SELECT* FROM [DBO].[USERS] AS[U]
-    //LEFT JOIN[DBO].[USERROLES] AS[UU] ON[U].[ID] = [UU].[USERID]
-    //LEFT JOIN[DBO].[ROLES] AS[R] ON[UU].[ROLEID] = [R].[ID] WHERE([U].[ID] = 1);
-
-
-    //SELECT* FROM [DBO].[USERS] AS[U]
-    //LEFT JOIN[DBO].[Organisations] AS[O] ON[U].[ID] = [O].[Id]
-    //LEFT JOIN[DBO].[USERROLES] AS[UU] ON[U].[ID] = [UU].[USERID]
-    //LEFT JOIN[DBO].[ROLES] AS[R] ON[UU].[ROLEID] = [R].[ID] WHERE([U].[ID] = 1);
-
-    // ALSO make unit tests for INNER variants!!!!!!!!!!!
-
     private static DataTable CopyDataTableSection(DataTable rootDataTable, ref int tableIndex, QueryBuilder queryBuilder, ref int tableOrderIndex)
     {
         var dataTable = new DataTable();

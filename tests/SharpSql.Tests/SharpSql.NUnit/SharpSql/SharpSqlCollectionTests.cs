@@ -45,7 +45,7 @@ public class SharpSqlCollectionTests
         Assert.IsFalse(users.All(x => x.IsNew == true));
         Assert.IsFalse(users.All(x => x.IsDirty == true));
         Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-        Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
+        Assert.IsFalse(users.All(x => x.ObjectState == ObjectState.Deleted));
         Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
         Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -84,7 +84,7 @@ public class SharpSqlCollectionTests
         Assert.IsFalse(users.All(x => x.IsNew == true));
         Assert.IsFalse(users.All(x => x.IsDirty == true));
         Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-        Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
+        Assert.IsFalse(users.All(x => x.ObjectState == ObjectState.Deleted));
         Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
         Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -117,7 +117,7 @@ public class SharpSqlCollectionTests
         Assert.IsFalse(user.IsNew == true);
         Assert.IsFalse(user.IsDirty == true);
         Assert.IsFalse(user.IsAutoIncrement == false);
-        Assert.IsFalse(user.IsMarkedAsDeleted == true);
+        Assert.IsFalse(user.ObjectState == ObjectState.Deleted);
         Assert.IsFalse(user.DisableChangeTracking == true);
 
         Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -145,7 +145,7 @@ public class SharpSqlCollectionTests
         Assert.IsFalse(users.All(x => x.IsNew == true));
         Assert.IsFalse(users.All(x => x.IsDirty == true));
         Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-        Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
+        Assert.IsFalse(users.All(x => x.ObjectState == ObjectState.Deleted));
         Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
         var user1 = users.FirstOrDefault();
@@ -196,7 +196,7 @@ public class SharpSqlCollectionTests
         Assert.IsFalse(users.All(x => x.IsNew == true));
         Assert.IsFalse(users.All(x => x.IsDirty == true));
         Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-        Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
+        Assert.IsFalse(users.All(x => x.ObjectState == ObjectState.Deleted));
         Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
         user1 = users.FirstOrDefault();
@@ -252,7 +252,7 @@ public class SharpSqlCollectionTests
         Assert.IsFalse(users.All(x => x.IsNew == true));
         Assert.IsFalse(users.All(x => x.IsDirty == true));
         Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-        Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
+        Assert.IsFalse(users.All(x => x.ObjectState == ObjectState.Deleted));
         Assert.IsFalse(users.All(x => x.DisableChangeTracking == true));
 
         var user = users.FirstOrDefault();
@@ -270,7 +270,7 @@ public class SharpSqlCollectionTests
         Assert.IsFalse(user.IsNew == true);
         Assert.IsFalse(user.IsDirty == true);
         Assert.IsFalse(user.IsAutoIncrement == false);
-        Assert.IsFalse(user.IsMarkedAsDeleted == true);
+        Assert.IsFalse(user.ObjectState == ObjectState.Deleted);
         Assert.IsFalse(user.DisableChangeTracking == true);
 
         Assert.AreEqual(user, user.OriginalFetchedValue);
@@ -820,7 +820,7 @@ public class SharpSqlCollectionTests
 
         users.SaveChanges();
 
-        var expectedDeletionQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+        var expectedDeletionQuery = "DELETE FROM [DBO].[USERS] WHERE ([ID] = @PARAM1);";
 
         Assert.AreEqual(4, users.Count);
         Assert.AreEqual(expectedDeletionQuery, userToBeRemoved.ExecutedQuery);

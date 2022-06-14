@@ -369,20 +369,20 @@ public class SharpSqlEntityTests
         Assert.AreEqual(ObjectState.NewRecord, user.OriginalFetchedValue.ObjectState);
         Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
         Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-        Assert.AreEqual(false, user.OriginalFetchedValue.IsMarkedAsDeleted);
+        Assert.AreEqual(false, user.OriginalFetchedValue.ObjectState == ObjectState.Deleted);
     }
 
     [Test]
     public void DeleteDirectById()
     {
-        var expectedUpdateQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+        var expectedUpdateQuery = "DELETE FROM [DBO].[USERS] WHERE ([ID] = @PARAM1);";
         var user = DatabaseUtilities.Delete<User>(1);
 
         Assert.AreEqual(expectedUpdateQuery, user.ExecutedQuery);
         Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
         Assert.AreEqual(false, user.IsDirty);
         Assert.AreEqual(false, user.IsNew);
-        Assert.AreEqual(true, user.IsMarkedAsDeleted);
+        Assert.AreEqual(true, user.ObjectState == ObjectState.Deleted);
 
         Assert.IsNull(user.OriginalFetchedValue);
     }
@@ -390,7 +390,7 @@ public class SharpSqlEntityTests
     [Test]
     public void DeleteDirectByEntity()
     {
-        var expectedUpdateQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+        var expectedUpdateQuery = "DELETE FROM [DBO].[USERS] WHERE ([ID] = @PARAM1);";
         var expectedOriginalQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
         var user = DatabaseUtilities.Delete(new User(1));
@@ -399,7 +399,7 @@ public class SharpSqlEntityTests
         Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
         Assert.AreEqual(false, user.IsDirty);
         Assert.AreEqual(false, user.IsNew);
-        Assert.AreEqual(true, user.IsMarkedAsDeleted);
+        Assert.AreEqual(true, user.ObjectState == ObjectState.Deleted);
 
         Assert.IsNotNull(user.OriginalFetchedValue);
 
@@ -407,14 +407,14 @@ public class SharpSqlEntityTests
         Assert.AreEqual(ObjectState.OriginalFetchedValue, user.OriginalFetchedValue.ObjectState);
         Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
         Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
-        Assert.AreEqual(false, user.OriginalFetchedValue.IsMarkedAsDeleted);
+        Assert.AreEqual(false, user.OriginalFetchedValue.ObjectState == ObjectState.Deleted);
     }
 
     [Test]
     public void Delete()
     {
         var expectedInitialUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
-        var expectedDeleteQuery = "DELETE FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
+        var expectedDeleteQuery = "DELETE FROM [DBO].[USERS] WHERE ([ID] = @PARAM1);";
         var expectedOriginalUserQuery = "SELECT TOP (1) * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);";
 
         var user = new User(1);
@@ -441,7 +441,7 @@ public class SharpSqlEntityTests
         Assert.AreEqual(ObjectState.Deleted, user.ObjectState);
         Assert.AreEqual(false, user.IsDirty);
         Assert.AreEqual(false, user.IsNew);
-        Assert.AreEqual(true, user.IsMarkedAsDeleted);
+        Assert.AreEqual(true, user.ObjectState == ObjectState.Deleted);
         Assert.IsNotNull(user.OriginalFetchedValue);
         Assert.AreEqual(false, user.OriginalFetchedValue.IsDirty);
         Assert.AreEqual(false, user.OriginalFetchedValue.IsNew);
@@ -697,7 +697,7 @@ public class SharpSqlEntityTests
         Assert.IsTrue(user.IsAutoIncrement);
         Assert.IsTrue(user.IsDirty);
 
-        Assert.IsFalse(user.IsMarkedAsDeleted);
+        Assert.IsFalse(user.ObjectState == ObjectState.Deleted);
 
         Assert.IsEmpty(user.ExecutedQuery);
         Assert.IsEmpty(user.Relations);
@@ -714,7 +714,7 @@ public class SharpSqlEntityTests
         Assert.IsTrue(user.Organisation.IsAutoIncrement);
         Assert.IsTrue(user.Organisation.IsDirty);
 
-        Assert.IsFalse(user.Organisation.IsMarkedAsDeleted);
+        Assert.IsFalse(user.Organisation.ObjectState == ObjectState.Deleted);
 
         Assert.IsEmpty(user.Organisation.ExecutedQuery);
         Assert.IsEmpty(user.Organisation.Relations);
@@ -741,7 +741,7 @@ public class SharpSqlEntityTests
 
         Assert.IsFalse(user.IsDirty);
         Assert.IsFalse(user.IsNew);
-        Assert.IsFalse(user.IsMarkedAsDeleted);
+        Assert.IsFalse(user.ObjectState == ObjectState.Deleted);
 
         Assert.IsNotEmpty(user.Relations);
 
@@ -756,7 +756,7 @@ public class SharpSqlEntityTests
 
         Assert.IsFalse(user.Organisation.IsDirty);
         Assert.IsFalse(user.Organisation.IsNew);
-        Assert.IsFalse(user.Organisation.IsMarkedAsDeleted);
+        Assert.IsFalse(user.Organisation.ObjectState == ObjectState.Deleted);
 
         Assert.IsEmpty(user.Organisation.Relations);
 
@@ -777,7 +777,7 @@ public class SharpSqlEntityTests
 
         Assert.IsFalse(user.OriginalFetchedValue.IsDirty);
         Assert.IsFalse(user.OriginalFetchedValue.IsNew);
-        Assert.IsFalse(user.OriginalFetchedValue.IsMarkedAsDeleted);
+        Assert.IsFalse(user.OriginalFetchedValue.ObjectState == ObjectState.Deleted);
 
         Assert.IsNotEmpty(user.OriginalFetchedValue.Relations);
 
@@ -793,7 +793,7 @@ public class SharpSqlEntityTests
 
         Assert.IsFalse(user.OriginalFetchedValue.ValueAs<User>().Organisation.IsDirty);
         Assert.IsFalse(user.OriginalFetchedValue.ValueAs<User>().Organisation.IsNew);
-        Assert.IsFalse(user.OriginalFetchedValue.ValueAs<User>().Organisation.IsMarkedAsDeleted);
+        Assert.IsFalse(user.OriginalFetchedValue.ValueAs<User>().Organisation.ObjectState == ObjectState.Deleted);
 
         Assert.IsEmpty(user.OriginalFetchedValue.ValueAs<User>().Organisation.Relations);
 
@@ -810,7 +810,7 @@ public class SharpSqlEntityTests
 
         Assert.IsFalse(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().IsDirty);
         Assert.IsFalse(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().IsNew);
-        Assert.IsFalse(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().IsMarkedAsDeleted);
+        Assert.IsFalse(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().ObjectState == ObjectState.Deleted);
 
         Assert.IsEmpty(user.Organisation.OriginalFetchedValue.ValueAs<Organisation>().Relations);
 

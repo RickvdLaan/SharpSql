@@ -16,8 +16,6 @@ public interface ISharpSqlEntity
 
     public bool IsDirty { get; }
 
-    public bool IsMarkedAsDeleted { get; }
-
     public ObjectState ObjectState { get; }
 
     public SharpSqlPrimaryKey PrimaryKey { get; }

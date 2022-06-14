@@ -79,11 +79,6 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
     }
 
     /// <summary>
-    /// Gets whether the <see cref="ObjectState"/> is <see cref="ObjectState.Deleted"/>.
-    /// </summary>
-    public bool IsMarkedAsDeleted => ObjectState == ObjectState.Deleted;
-
-    /// <summary>
     /// Gets whether change tracking is enabled or disabled, it's <see langword="false"/> by <see langword="default"/> and
     /// can be set to <see langword="true"/> through the <see cref="SharpSqlEntity"/> constructor.
     /// </summary>
@@ -107,7 +102,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
             if (IsNew)
                 return true;
             // An object that has been deleted cannot be dirty.
-            if (IsMarkedAsDeleted)
+            if (ObjectState == ObjectState.Deleted)
                 return false;
             // An original fetched value is immutable; therefore it can't be dirty.
             if (ObjectState == ObjectState.OriginalFetchedValue)
@@ -356,7 +351,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
         if (IsNew || ObjectState == ObjectState.ExternalRecord)
             PrimaryKey.Update(this);    
 
-        if (IsMarkedAsDeleted)
+        if (ObjectState == ObjectState.Deleted)
             return;
 
         if (ObjectState == ObjectState.ScheduledForDeletion)
@@ -518,7 +513,7 @@ public class SharpSqlEntity : object, IEquatable<SharpSqlEntity>, ISharpSqlEntit
 
     internal void ScheduleForDeletion()
     {
-        if (!IsNew && ObjectState != ObjectState.ScheduledForDeletion && !IsMarkedAsDeleted)
+        if (!IsNew && ObjectState != ObjectState.ScheduledForDeletion && ObjectState != ObjectState.Deleted)
         {
             ObjectState = ObjectState.ScheduledForDeletion;
         }

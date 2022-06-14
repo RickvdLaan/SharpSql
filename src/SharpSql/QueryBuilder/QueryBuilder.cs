@@ -35,9 +35,16 @@ public sealed class QueryBuilder
     /// </summary>
     public ReadOnlyCollection<SqlParameter> Parameters => SqlParameters.AsReadOnly();
 
+    /// <summary>
+    /// This unique runtime identifier was made to make sure the delete path in ParseExpression can't be executed by accident by an end-user.
+    /// </summary>
+    private static readonly string DeleteIdentifier = Guid.NewGuid().ToString();
+    
     private readonly Dictionary<string, string> _queryTableNames = new(5);
 
     private readonly Dictionary<char, int> _tableCharCounts = new(5);
+
+    internal static string SchemaAlias { get; set; }
 
     internal NonQueryType NonQueryType { get; private set; }
 
@@ -107,12 +114,12 @@ public sealed class QueryBuilder
 
         var tableName = SharpSqlCache.GetTableNameFromEntity(entity);
 
-        stringBuilder.Append($"INSERT INTO [DBO].[{tableName}] (");
+        stringBuilder.Append($"INSERT INTO [{SchemaAlias}].[{tableName}] (");
 
         for (int i = 0; i < entity.MutableTableScheme.Count; i++)
         {
             var addon = (i >= entity.MutableTableScheme.Count - 1) ? string.Empty : ", ";
-            stringBuilder.Append($"[DBO].[{tableName}].[{entity.MutableTableScheme[i]}]{addon}");
+            stringBuilder.Append($"[{SchemaAlias}].[{tableName}].[{entity.MutableTableScheme[i]}]{addon}");
         }
 
         stringBuilder.Append(") VALUES(");
@@ -181,14 +188,15 @@ public sealed class QueryBuilder
 
     private string From()
     {
-        return $"FROM [DBO].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
+        return $"FROM [{SchemaAlias}].[{TableAttribute.TableName}] AS [{_queryTableNames[TableAttribute.TableName]}]";
     }
 
-    private string From(SharpSqlTableAttribute tableAttribute)
+    private string From(SharpSqlTableAttribute tableAttribute, bool isDeleteClause = false)
     {
-        return $"FROM [DBO].[{tableAttribute.TableName}] AS [{_queryTableNames[tableAttribute.TableName]}]";
+        return isDeleteClause ? $"FROM [{SchemaAlias}].[{tableAttribute.TableName}]"
+                              : $"FROM [{SchemaAlias}].[{tableAttribute.TableName}] AS [{_queryTableNames[tableAttribute.TableName]}]";
     }
-
+    
     private string Join(Expression expression)
     {
         // If no join type has been provided, it'll automatically use a left join.
@@ -345,13 +353,16 @@ public sealed class QueryBuilder
         if (!entity.DirtyTracker.AnyDirtyRelations(entity)
           || entity.DirtyTracker.Any)
         {
-            stringBuilder.Append(From(new SharpSqlTableAttribute(SharpSqlCache.CollectionEntityRelations[entity.GetType()], entity.GetType())));
+            var isScheduledForDeletion = entity.ObjectState == ObjectState.ScheduledForDeletion;
+
+            stringBuilder.Append(From(new SharpSqlTableAttribute(SharpSqlCache.CollectionEntityRelations[entity.GetType()], entity.GetType()), isScheduledForDeletion));
 
             var propertyInfo = entity.GetPrimaryKeyPropertyInfo();
 
             for (int i = 0; i < propertyInfo.Length; i++)
             {
-                var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), "x"), propertyInfo[i]);
+                var parameterName = isScheduledForDeletion ? DeleteIdentifier : "x";
+                var memberExpression = Expression.Property(Expression.Parameter(entity.GetType(), parameterName), propertyInfo[i]);
                 var constantExpression = Expression.Constant(propertyInfo[i].GetValue(entity), propertyInfo[i].GetValue(entity).GetType());
 
                 stringBuilder.Append(Where(Expression.Equal(memberExpression, constantExpression)));
@@ -525,13 +536,19 @@ public sealed class QueryBuilder
                     var entityType = memberExpression.Member.ReflectedType;
                     var collectionType = SharpSqlCache.CollectionEntityRelations[entityType];
 
+                    var isDeleteExpression = memberExpression.Expression is ParameterExpression expression && expression.Name == DeleteIdentifier;
+
                     if (memberExpression.Member.GetCustomAttributes(typeof(SharpSqlColumnAttribute), true).FirstOrDefault() is SharpSqlColumnAttribute columnAttribute)
                     {
-                        return $"[{_queryTableNames[collectionType.Name]}].[{columnAttribute.ColumnName}]";
+                        return isDeleteExpression
+                            ? $"[{columnAttribute.ColumnName}]"
+                            : $"[{_queryTableNames[collectionType.Name]}].[{columnAttribute.ColumnName}]";
                     }
                     else
                     {
-                        return $"[{_queryTableNames[collectionType.Name]}].[{memberExpression.Member.Name}]";
+                        return isDeleteExpression
+                            ? $"[{memberExpression.Member.Name}]"
+                            : $"[{_queryTableNames[collectionType.Name]}].[{memberExpression.Member.Name}]";
                     }
                 }
             case ConstantExpression constantExpression:
@@ -758,7 +775,7 @@ public sealed class QueryBuilder
     {
         for (int i = 0; i < join.RightPropertyInfo.Length; i++)
         {
-            stringBuilder.Append($" {joinType} JOIN [DBO].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name()}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo[i].Name()}]");
+            stringBuilder.Append($" {joinType} JOIN [{SchemaAlias}].[{join.RightTableAttribute.TableName}] AS [{_queryTableNames[join.RightTableAttribute.TableName]}] ON [{_queryTableNames[join.LeftTableAttribute.TableName]}].[{join.LeftPropertyInfo.Name()}] = [{_queryTableNames[join.RightTableAttribute.TableName]}].[{join.RightPropertyInfo[i].Name()}]");
         }
     }
 
