@@ -6,7 +6,15 @@
 
 **Summary**
 
-A pre-alpha O/R mapping framework for .NET Standard 2.1, licensed under the MIT license. 
+A beta O/R mapping framework for .NET 6.0, licensed under the MIT license.
+
+This project is pure a hobby project - with certain goals and limitations for the developers. The limitations we've set ourselves are as follows:
+- Only use official documentation for the used software, programming languages and libraries;
+- No Google, stackoverflow, et cetera.
+
+Even though the last rule might seem a bit strange, since in a real world scenario you'd make use of this resource. We did set this rule in place for a reason; mainly to challenge ourselves and to tackle and solve the problems together we find along the ways. Rather than quickly finding the solution to our problems and learn nothing.
+
+One time during the project we've made an exception. We ran into a problem with linq expression trees and our unit tests (our [question](https://stackoverflow.com/questions/66017666/c-sharp-net-standard-expression-tree-value-not-parsed-as-expected)) and we're unable to understand the problem. After asking for an explaination on stackoverflow  someone helped us understand the underlying problem by explaining 'closing' variables in c# and by providing us with this [SharpLab IO](https://sharplab.io/#v2:D4AQTAjAsAUCAMACEEB0AZAlgOwI6oFEAPABwCcBTAZyswHtsqBuWWbAQwFtqT2BjCogDyAJQCyAOQCu2TABdEAb1gBIEAGZkYYeIDCdADYGKfOfWwAVanKpLVazSAAsiYuWq0GAfQBi7TAYAFACUdjAqEQBu7GSIUlQUZBzciAC8iABEctYZLOERAOoAFokUgURpAHyIFanp8YnJFMF5EQC+rPkayC5ulDTmXgDKUnwCNCFhESrFpeVVNWnpWTkt9h0w9t3OiLOUgX0e5ogAPMgArKeIdABGAFYmcgA0iDd0hoiV1RSk/Z7YoWU+Q2Kg2bSAA==) link to see what the compiler does under the hood. Which made it possible for us to solve our problem. 
 
 ## Table of contents
 
