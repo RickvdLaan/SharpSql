@@ -19,31 +19,31 @@ One time during the project we've made an exception. We ran into a problem with 
 ## Table of contents
 
 * [Chapter 1. Getting started](#chapter-1-getting-started)
-* [Chapter 2. CRUD operations](#chapter-3-crud-operations)
-	* [2.1 Create](#31-create)
-	* [2.2 Read](#32-read)
-		* [2.2.1 Basic fetch](#321-basic-fetch)
-		* [2.2.2 Select](#322-select)
-		* [2.2.3 Join](#323-join)
-		* [2.2.4 Where](#324-where)
-		* [2.2.5 OrderBy](#325-orderby)
-		* [2.2.6 Many-to-many relations](#326-many-to-many-relations)
-	* [2.3 Update](#33-update)
-	* [2.4 Delete](#34-delete)
-* [Chapter 3. Direct queries](#chapter-4-direct-queries)
-* [Chapter 4. Virtual methods](#chapter-5-virtual-methods)
-	* [4.1 SharpSqlObject](#51-sharpsqlobject)
-	* [4.2 SharpSqlEntity](#52-sharpsqlentity)
-	* [4.3 SharpSqlCollection](#53-ormcollection)
-* [Chapter 5. Attributes](#chapter-6-attributes)
-	* [5.1 SharpSqlColumnAttribute](#61-sharpsqlcolumnattribute)
-	* [5.2 SharpSqlPrimaryKeyAttribute](#62-sharpsqlprimarykeyattribute)
-	* [5.3 SharpSqlTableAttribute](#63-sharpsqltableattribute)
-	* [5.4 SharpSqlUnitTestAttribute](#64-sharpsqlunittestattribute)
-* [Chapter 6. Specifications](#chapter-7-specifications)
-	* [6.1 Version information](#71-version-information)
-	* [6.2 Supported databases](#72-supported-databases)
-	* [6.3 Supported .NET versions](#73-supported-net-versions)
+* [Chapter 2. CRUD operations](#chapter-2-crud-operations)
+	* [2.1 Create](#21-create)
+	* [2.2 Read](#22-read)
+		* [2.2.1 Basic fetch](#221-basic-fetch)
+		* [2.2.2 Select](#222-select)
+		* [2.2.3 Join](#223-join)
+		* [2.2.4 Where](#224-where)
+		* [2.2.5 OrderBy](#225-orderby)
+		* [2.2.6 Many-to-many relations](#226-many-to-many-relations)
+	* [2.3 Update](#23-update)
+	* [2.4 Delete](#24-delete)
+* [Chapter 3. Direct queries](#chapter-3-direct-queries)
+* [Chapter 4. Virtual methods](#chapter-4-virtual-methods)
+	* [4.1 SharpSqlObject](#41-sharpsqlobject)
+	* [4.2 SharpSqlEntity](#42-sharpsqlentity)
+	* [4.3 SharpSqlCollection](#43-ormcollection)
+* [Chapter 5. Attributes](#chapter-5-attributes)
+	* [5.1 SharpSqlColumnAttribute](#51-sharpsqlcolumnattribute)
+	* [5.2 SharpSqlPrimaryKeyAttribute](#52-sharpsqlprimarykeyattribute)
+	* [5.3 SharpSqlTableAttribute](#53-sharpsqltableattribute)
+	* [5.4 SharpSqlUnitTestAttribute](#54-sharpsqlunittestattribute)
+* [Chapter 6. Specifications](#chapter-6-specifications)
+	* [6.1 Version information](#61-version-information)
+	* [6.2 Supported databases](#62-supported-databases)
+	* [6.3 Supported .NET versions](#63-supported-net-versions)
 
 ## Chapter 1. Getting started
 
@@ -98,9 +98,9 @@ public SharpSqlInitializer(IConfiguration configuration = null,
 
 The first parameter ```IConfiguration``` is used for the connection string, so the framework knows what database to connect to. The second parameter ```loadAllReferencesAssemblies``` can forcefully load all assemblies on start-up before SharpSql.dll is initialized. The third parameter ```allowAnonymousTypes``` enables the use of anonymous types in the expression trees, and the finaly parameter ```schemaAlias``` allows an override for existing databases aliases.
 
-And that's it!  SharpSql is now fully initialized and now you're ready to set-up your entities to start loading and writing data.
+And that's it! SharpSql is now fully initialized and ready for the next step - setting up entities and collection classes.
 
-**Step 4.** The framework works with both a code first and database first approach, and coding your database is fairly straightforward - for each table in your database you'll create a collection class and give this class the same name as your table. Then place the ```SharpSqlTable``` attribute above the class with the following parameters: the type of the current collection class, and the type of the entity class (*see Step 4.*). And as a last step, inherit from the ```SharpSqlCollection<EntityType>``` class and your collection class is all set!
+**Step 4.** SharpSql works only with a database first approach, thankfully coding your database is fairly straightforward - for each table in your database you'll create a collection class and give this class the same name as your table. Then place the ```SharpSqlTable``` attribute above the class with the following parameters: the type of the current collection class, the type of the entity class (*see Step 5.*). And as a last step, inherit from the ```SharpSqlCollection<EntityType>``` class and your collection class is all set!
 
 ```cs
 // The collection class of the database table Users.
@@ -111,7 +111,7 @@ public class Users : SharpSqlCollection<User>
 }
 ```
 
-**Step 4.** As seen in the previous step (*Step 3.*) every collection class also requires an entity class, create an entity class (name can't be the same as an existing column name) and inherit from the ```SharpSqlEntity``` class. After that - create a property for each column in the table and provide it with a getter and setter (setters are allowed to be private) and mark the primary key with the ```SharpSqlPrimaryKey``` attribute. In this example, we have an Id as primary key (the default -1 is not mandatory), a username, password and an organisation whereas the organisation is a foreign key (join) and last, an empty constructor for the entity class.
+**Step 5.** As seen in the previous step (*Step 4.*) every collection class also requires an entity class. Create an entity class and inherit from the ```SharpSqlEntity``` class. After that - create a property for each column in the table and provide it with a getter and setter (setters are allowed to be private) and mark the primary key with the ```SharpSqlPrimaryKey``` attribute. In this example, we have an Id as primary key (the default -1 is not mandatory), a username, password and an organisation whereas the organisation is a foreign key (join) and last, an empty constructor for the entity class.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
@@ -130,7 +130,7 @@ public class User : SharpSqlEntity
 }
 ```
 
-**Step 5.** The base class of SharpSqlEntity provides one optional parameter for the constructor: 
+**Step 6.** The base class of SharpSqlEntity provides one optional parameter for the constructor: 
 ```cs
 protected SharpSqlEntity(bool disableChangeTracking = false) { }
 ```
@@ -159,9 +159,9 @@ public class User : SharpSqlEntity
 }
 ```
 
-And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD operations](#chapter-2-crud-operations)* for more examples regarding all the CRUD actions or check out *[ Chapter 4. Virtual methods](#chapter-4-virtual-methods)* to see what else can be expanded on.
+And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD operations](#chapter-2-crud-operations)* for more examples regarding all the CRUD actions or check out *[ Chapter 4. Virtual methods](#chapter-4-virtual-methods)* to see what else can be expanded on. In the next (optional) step (*Step 7.*) we're gonna look at an example of a many-to-many relation.
 
-**Step 6.**  Many-to-many relations - this requires the use of the same ```SharpSqlTable``` attribute, but with a different constructor. In this example we'll use the previously delcared Users and User types and a collection of type Roles with entity type Role with the parameters Id as primary key and Name which will be the name of the role itself and so creating the many-to-many table UserRoles. The constructor requires the following parameters: the collection type of the current many-to-many class (in this case UserRoles), the entity type of the current many-to-many class (in this case UserRole) the first collection class (in this case Users) and the second collection class (in this case Roles).
+**Step 7.**  Many-to-many relations - this requires the use of the same ```SharpSqlTable``` attribute, but with a different constructor. In this example we'll use the previously delcared Users and User types and a collection of type Roles with entity type Role with the parameters Id as primary key and Name which will be the name of the role itself and so creating the many-to-many table UserRoles. The constructor requires the following parameters: the collection type of the current many-to-many class (in this case UserRoles), the entity type of the current many-to-many class (in this case UserRole) the first collection class (in this case Users) and the second collection class (in this case Roles).
 
 ```cs
 [SharpSqlTable(typeof(UserRoles), typeof(UserRole), typeof(Users), typeof(Roles))]
@@ -176,18 +176,17 @@ Next we'll set-up the basic UserRole entity class and we'll add the primary keys
 ```cs
 public class UserRole : SharpSqlEntity
 {
-    [SharpSqlPrimaryKey]
-    public int UserId { get; private set; }
+    [SharpSqlPrimaryKey, SharpSqlForeignKey(typeof(User)), SharpSqlColumn("UserId")]
+    public int Column_UserId { get; private set; }
 
-    [SharpSqlPrimaryKey]
-    public int RoleId { get; private set; }
+    [SharpSqlPrimaryKey, SharpSqlForeignKey(typeof(Role)), SharpSqlColumn("RoleId")]
+    public int Column_RoleId { get; private set; }
+
+    internal UserRole() { }
 
     public UserRole(int userId, int roleId)
     {
-        base.FetchEntityByCombinedPrimaryKey<UserRoles, UserRole>(userId, roleId);
-    
-        User = new User(UserId);
-        Role = new RoleEntity(RoleId);
+        base.FetchEntityByPrimaryKey(userId, roleId);
     }
 }
 ```
