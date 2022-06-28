@@ -159,7 +159,7 @@ public class User : SharpSqlEntity
 }
 ```
 
-And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 3. CRUD operations](#chapter-3-crud-operations)* for more examples regarding all the CRUD actions or check out *[ Chapter 5. Virtual methods](#chapter-5-virtual-methods)* to see what else can be expanded on.
+And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 2. CRUD operations](#chapter-2-crud-operations)* for more examples regarding all the CRUD actions or check out *[ Chapter 4. Virtual methods](#chapter-4-virtual-methods)* to see what else can be expanded on.
 
 **Step 6.**  Many-to-many relations - this requires the use of the same ```SharpSqlTable``` attribute, but with a different constructor. In this example we'll use the previously delcared Users and User types and a collection of type Roles with entity type Role with the parameters Id as primary key and Name which will be the name of the role itself and so creating the many-to-many table UserRoles. The constructor requires the following parameters: the collection type of the current many-to-many class (in this case UserRoles), the entity type of the current many-to-many class (in this case UserRole) the first collection class (in this case Users) and the second collection class (in this case Roles).
 
@@ -191,7 +191,7 @@ public class UserRole : SharpSqlEntity
     }
 }
 ```
-Now we have a many-to-many relation set-up with basic functionalities and accessability. For information on how many-to-many relations work within the framework and what else can be done with them see *[ 3.2.6 Many-to-many relations](#326-many-to-many-relations)*.
+Now we have a many-to-many relation set-up with basic functionalities and accessability. For information on how many-to-many relations work within the framework and what else can be done with them see *[ 2.2.6 Many-to-many relations](#226-many-to-many-relations)*.
 
 *[ Back to top](#table-of-contents)*
 
@@ -245,7 +245,7 @@ This will result in the following query:
 SELECT TOP (10) * FROM [DBO].[USERS] AS [U];
 ```
 
-And as you may have noticed: ```SELECT *``` is being generated, this is because no columns have been specified. If you do want to get only a certain amount of columns you can do this through the ```Select()``` method, see *[ 3.2.2 Select](#322-select)*.
+And as you may have noticed: ```SELECT *``` is being generated, this is because no columns have been specified. If you do want to get only a certain amount of columns you can do this through the ```Select()``` method, see *[ 2.2.2 Select](#222-select)*.
 
 If you want to count the amount of rows you have fetched from the specified table you can use ```users.Collection.Count```. But if you want to know the amount of records in the database table it's quite inefficient to first fetch all the data and then count it. This could be achieved through the static ```Records()``` method on the collection class.
 
