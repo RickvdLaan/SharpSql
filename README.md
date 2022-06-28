@@ -19,32 +19,31 @@ One time during the project we've made an exception. We ran into a problem with 
 ## Table of contents
 
 * [Chapter 1. Getting started](#chapter-1-getting-started)
-* [Chapter 2. Configuration](#chapter-2-configuration)
-* [Chapter 3. CRUD operations](#chapter-3-crud-operations)
-	* [3.1 Create](#31-create)
-	* [3.2 Read](#32-read)
-		* [3.2.1 Basic fetch](#321-basic-fetch)
-		* [3.2.2 Select](#322-select)
-		* [3.2.3 Join](#323-join)
-		* [3.2.4 Where](#324-where)
-		* [3.2.5 OrderBy](#325-orderby)
-		* [3.2.6 Many-to-many relations](#326-many-to-many-relations)
-	* [3.3 Update](#33-update)
-	* [3.4 Delete](#34-delete)
-* [Chapter 4. Direct queries](#chapter-4-direct-queries)
-* [Chapter 5. Virtual methods](#chapter-5-virtual-methods)
-	* [5.1 SharpSqlObject](#51-sharpsqlobject)
-	* [5.2 SharpSqlEntity](#52-sharpsqlentity)
-	* [5.3 SharpSqlCollection](#53-ormcollection)
-* [Chapter 6. Attributes](#chapter-6-attributes)
-	* [6.1 SharpSqlColumnAttribute](#61-sharpsqlcolumnattribute)
-	* [6.2 SharpSqlPrimaryKeyAttribute](#62-sharpsqlprimarykeyattribute)
-	* [6.3 SharpSqlTableAttribute](#63-sharpsqltableattribute)
-	* [6.4 SharpSqlUnitTestAttribute](#64-sharpsqlunittestattribute)
-* [Chapter 7. Specifications](#chapter-7-specifications)
-	* [7.1 Version information](#71-version-information)
-	* [7.2 Supported databases](#72-supported-databases)
-	* [7.3 Supported .NET versions](#73-supported-net-versions)
+* [Chapter 2. CRUD operations](#chapter-3-crud-operations)
+	* [2.1 Create](#31-create)
+	* [2.2 Read](#32-read)
+		* [2.2.1 Basic fetch](#321-basic-fetch)
+		* [2.2.2 Select](#322-select)
+		* [2.2.3 Join](#323-join)
+		* [2.2.4 Where](#324-where)
+		* [2.2.5 OrderBy](#325-orderby)
+		* [2.2.6 Many-to-many relations](#326-many-to-many-relations)
+	* [2.3 Update](#33-update)
+	* [2.4 Delete](#34-delete)
+* [Chapter 3. Direct queries](#chapter-4-direct-queries)
+* [Chapter 4. Virtual methods](#chapter-5-virtual-methods)
+	* [4.1 SharpSqlObject](#51-sharpsqlobject)
+	* [4.2 SharpSqlEntity](#52-sharpsqlentity)
+	* [4.3 SharpSqlCollection](#53-ormcollection)
+* [Chapter 5. Attributes](#chapter-6-attributes)
+	* [5.1 SharpSqlColumnAttribute](#61-sharpsqlcolumnattribute)
+	* [5.2 SharpSqlPrimaryKeyAttribute](#62-sharpsqlprimarykeyattribute)
+	* [5.3 SharpSqlTableAttribute](#63-sharpsqltableattribute)
+	* [5.4 SharpSqlUnitTestAttribute](#64-sharpsqlunittestattribute)
+* [Chapter 6. Specifications](#chapter-7-specifications)
+	* [6.1 Version information](#71-version-information)
+	* [6.2 Supported databases](#72-supported-databases)
+	* [6.3 Supported .NET versions](#73-supported-net-versions)
 
 ## Chapter 1. Getting started
 
@@ -196,21 +195,13 @@ Now we have a many-to-many relation set-up with basic functionalities and access
 
 *[ Back to top](#table-of-contents)*
 
-## Chapter 3. CRUD operations
+## Chapter 2. CRUD operations
 
 ```cs
 Todo
 ```
 
-### 3.1. Create
-
-```cs
-Todo
-```
-
-*[ Back to top](#table-of-contents)*
-
-### 3.2. Read
+### 2.1. Create
 
 ```cs
 Todo
@@ -218,7 +209,15 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-#### 3.2.1 Basic fetch
+### 2.2. Read
+
+```cs
+Todo
+```
+
+*[ Back to top](#table-of-contents)*
+
+#### 2.2.1 Basic fetch
 
 When you want to fetch all the data from a specific collection class, you can easily do so with the following lines of code:
 
@@ -262,7 +261,7 @@ SELECT COUNT(*) FROM USERS AS INT;
 
 *[ Back to top](#table-of-contents)*
 
-#### 3.2.2 Select
+#### 2.2.2 Select
 
 The collection class has a method ```Select()``` which can be used to specify which column names you want to return, let's say we want to fetch all users with only the column ```Username```.
 
@@ -294,7 +293,7 @@ SELECT [U].[USERNAME], [U].[PASSWORD] FROM [DBO].[USERS] AS [U];
 
 *[ Back to top](#table-of-contents)*
 
-#### 3.2.3 Join
+#### 2.2.3 Join
 
 When you want to join between two tables you can use the ```Join()``` method on your collection class to retrieve the information of your sub-object(s), when no join is provided the sub-object will remain ```null```. The type of join can be specified by using either the ```Left()``` or ```Inner()``` method on the user entity (lambda expression). The left join will be used by default if none are specified.
 
@@ -316,7 +315,7 @@ Todo - advanced cases
 
 *[ Back to top](#table-of-contents)*
 
-#### 3.2.4 Where
+#### 2.2.4 Where
 
 When you want to filter records, you can use the ```Where()``` method and use the comparison operators (see *[ SQL Comparison Operators](#sql-comparison-operators)*) on any of the entities fields. In the example below we filter on the Users Id with the equals operator.
 
@@ -344,7 +343,7 @@ SELECT * FROM [DBO].[USERS] AS [U] WHERE ([U].[ID] = @PARAM1);
 
 *[ Back to top](#table-of-contents)*
 
-#### 3.2.5 OrderBy
+#### 2.2.5 OrderBy
 
 We can also order our data before retrieving it through the ```OrderBy()``` method. In this method we can order on each column with the ```Ascending()``` and ```Descending()``` methods. 
 
@@ -376,7 +375,7 @@ SELECT * FROM [DBO].[USERS] AS [U] ORDER BY [U].[USERNAME] DESC, [U].[ORGANISATI
 
 *[ Back to top](#table-of-contents)*
 
-#### 3.2.6 Many-to-many relations
+#### 2.2.6 Many-to-many relations
 
 ```cs
 Todo
@@ -384,7 +383,7 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-### 3.3. Update
+### 2.3. Update
 
 ```cs
 Todo
@@ -392,13 +391,13 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-### 3.4. Delete
+### 2.4. Delete
 
 Currently the ```Delete()``` method throws a ```NotImplementedException()```. In alpha 0.2 the delete method will be available, but drop tables will never be implemented (but can still be achieved through a direct query).
 
 *[ Back to top](#table-of-contents)*
 
-## Chapter 4. Direct queries
+## Chapter 3. Direct queries
 
 ```cs
 Todo
@@ -406,13 +405,13 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-## Chapter 5. Virtual methods
+## Chapter 4. Virtual methods
 
 ```cs
 Todo
 ```
 
-### 5.1. SharpSqlObject
+### 4.1. SharpSqlObject
 
 ```cs
 Todo
@@ -420,7 +419,7 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-### 5.2 SharpSqlEntity
+### 4.2 SharpSqlEntity
 
 In [Chapter 1. Getting started](#chapter-1-getting-started) (*Step 5.*) we left off with a fairly basic entity class, let's expand on this entity class by adding two more properties to our entity: DateCreated and DateLastModified.
 
@@ -497,7 +496,7 @@ public class User : SharpSqlEntity
 
 *[ Back to top](#table-of-contents)*
 
-### 5.3. SharpSqlCollection<SharpSqlEntity>
+### 4.3. SharpSqlCollection<SharpSqlEntity>
 
 ```cs
 Todo
@@ -505,11 +504,11 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-## Chapter 6. Attributes
+## Chapter 5. Attributes
 
 Within this framework we have created multiple attributes. In this chapter we'll explain how each attribute can be used and how the attributes are used within the framework itself.
 
-### 6.1 SharpSqlColumnAttribute
+### 5.1 SharpSqlColumnAttribute
 
 Sometimes you want to name your entity property different than the actual column name, to achieve this you can use the ```SharpSqlColumn``` attribute. The framework will automatically assume the name of the property is the same name as the column name, when it doesn't find any matches it'll try and resolve it through the ```SharpSqlColumn``` attribute and throws an ```NotImplementedException``` when neither was found.
 
@@ -520,7 +519,7 @@ public string Description { get; private set; }
 
 *[ Back to top](#table-of-contents)*
 
-### 6.2 SharpSqlPrimaryKeyAttribute
+### 5.2 SharpSqlPrimaryKeyAttribute
 
 To tell the framework what the primary or shared key of the table is, you can use the ```SharpSqlPrimaryKey``` attribute. If there is a shared primary key, it'll map them in the same top-to-down order from the entity class, this means that any parameters regarding the primary keys which are passed on to the framework has to be passed in the exact same order.
 
@@ -541,7 +540,7 @@ public int RoleId { get; private set; }
 
 *[ Back to top](#table-of-contents)*
 
-### 6.3 SharpSqlTableAttribute
+### 5.3 SharpSqlTableAttribute
 
 ```cs
 Todo
@@ -549,7 +548,7 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-### 6.4 SharpSqlUnitTestAttribute
+### 5.4 SharpSqlUnitTestAttribute
 
 The ```SharpSqlUnitTest``` attribute is an internally used attribute. This project make use of the NUnit testing framework for all of our unit tests and the project is named "SharpSqlNUnit", which has access to all of the internal classes, methods, properties and variables through the ```SharpSqlUnitTest``` attribute which is used on the initialization class.
 
@@ -588,19 +587,19 @@ internal class NUnitSetupFixture
 
 *[ Back to top](#table-of-contents)*
 
-## Chapter 7. Specifications
+## Chapter 6. Specifications
 
 All of the specifications of SharpSql.
 
-### 7.1 Version information
+### 6.1 Version information
 
 The latest version of this framework is version beta-0.3, released on 2022-03-01.
 
-### 7.2 Supported databases
+### 6.2 Supported databases
 
 SQL Server 2005 or higher
 
-### 7.3 Supported .NET versions
+### 6.3 Supported .NET versions
 
 NET Standard 2.2., .NET 6.0+.
 	
