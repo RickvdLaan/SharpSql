@@ -33,14 +33,14 @@ One time during the project we've made an exception. We ran into a problem with 
 	* [3.4 Delete](#34-delete)
 * [Chapter 4. Direct queries](#chapter-4-direct-queries)
 * [Chapter 5. Virtual methods](#chapter-5-virtual-methods)
-	* [5.1 ORMObject](#51-ormobject)
-	* [5.2 ORMEntity](#52-ormentity)
-	* [5.3 ORMCollection](#53-ormcollection)
+	* [5.1 SharpSqlObject](#51-sharpsqlobject)
+	* [5.2 SharpSqlEntity](#52-sharpsqlentity)
+	* [5.3 SharpSqlCollection](#53-ormcollection)
 * [Chapter 6. Attributes](#chapter-6-attributes)
-	* [6.1 ORMColumnAttribute](#61-ormcolumnattribute)
-	* [6.2 ORMPrimaryKeyAttribute](#62-ormprimarykeyattribute)
-	* [6.3 ORMTableAttribute](#63-ormtableattribute)
-	* [6.4 ORMUnitTestAttribute](#64-ormunittestattribute)
+	* [6.1 SharpSqlColumnAttribute](#61-sharpsqlcolumnattribute)
+	* [6.2 SharpSqlPrimaryKeyAttribute](#62-sharpsqlprimarykeyattribute)
+	* [6.3 SharpSqlTableAttribute](#63-sharpsqltableattribute)
+	* [6.4 SharpSqlUnitTestAttribute](#64-sharpsqlunittestattribute)
 * [Chapter 7. Specifications](#chapter-7-specifications)
 	* [7.1 Version information](#71-version-information)
 	* [7.2 Supported databases](#72-supported-databases)
@@ -48,50 +48,77 @@ One time during the project we've made an exception. We ran into a problem with 
 
 ## Chapter 1. Getting started
 
+This chapter quickly guides you through how to install SharpSql and on how to set it up in your project.
+
+**Step 1.** Install SharpSql via the NuGet package: [SharpSql](https://www.nuget.org/packages/SharpSql/)
+
+```
+PM> Install-Package SharpSql
+```
+
+**Step 2.** Create a connection
+
+Once you've installed the NuGet package you can start initializing the framework in your source code.
+
+First create an appsettings.json file in your project folder, and set your ConnectionStrings:
+
+```json
+{
+    "ConnectionStrings": {
+        "DefaultConnection": "Server=localhost; Database=SharpSqlDatabase; Trusted_Connection=True; MultipleActiveResultSets=true"
+    }
+}
+```
+
+For a more detailed guide on creating connection strings, see Microsoft's documentation: *[Creating a Connection String](https://docs.microsoft.com/en-us/sql/ado/guide/data/creating-a-connection-string?view=sql-server-ver15)*.
+
+Next you can create a variable named ```configuration``` (as shown below) which uses the appsettings.json file which will be needed later.
+
 ```cs
-Todo
-```
-
-**Step 1.** Install the ORM Framework via the NuGet package: [ORM Framework](https://www.nuget.org/packages/Todo/)
-
-```
-PM> Install-Package Todo
-```
-
-**Step 2.**
-
-Initialize the ORM Framework somewhere as follows:
-
-```cs
-
 IConfiguration configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
+```
 
-new ORMInitialize(configuration);
+**Step 3.** Initialize SharpSql
+
+Next you can  initialize SharpSql with the following line of code to let SharpSql connect to the database.
+
+```cs
+_ = new SharpSqlInitializer(configuration);
 
 ```
 
-For a more detailed step on setting up the configuration see *[ Chapter 2. Configuration](#chapter-2-configuration)*.
+Even though the example above would be sufficient, the initializer does accept multiple parameters as shown here:
+```cs
+public SharpSqlInitializer(IConfiguration configuration = null, 
+                    	  bool loadAllReferencedAssemblies = false, 
+		    	  bool allowAnonymousTypes = false, 
+		    	  string schemaAlias = "DBO")
+```
 
-**Step 3.** The framework works with both a code first and database first approach, and coding your database is fairly straightforward - for each table in your database you'll create a collection class and give this class the same name as your table. Then place the ```ORMTable``` attribute above the class with the following parameters: the type of the current collection class, and the type of the entity class (*see Step 4.*). And as a last step, inherit from the ```ORMCollection<EntityType>``` class and your collection class is all set!
+The first parameter ```IConfiguration``` is used for the connection string, so the framework knows what database to connect to. The second parameter ```loadAllReferencesAssemblies``` can forcefully load all assemblies on start-up before SharpSql.dll is initialized. The third parameter ```allowAnonymousTypes``` enables the use of anonymous types in the expression trees, and the finaly parameter ```schemaAlias``` allows an override for existing databases aliases.
+
+And that's it!  SharpSql is now fully initialized and now you're ready to set-up your entities to start loading and writing data.
+
+**Step 4.** The framework works with both a code first and database first approach, and coding your database is fairly straightforward - for each table in your database you'll create a collection class and give this class the same name as your table. Then place the ```SharpSqlTable``` attribute above the class with the following parameters: the type of the current collection class, and the type of the entity class (*see Step 4.*). And as a last step, inherit from the ```SharpSqlCollection<EntityType>``` class and your collection class is all set!
 
 ```cs
 // The collection class of the database table Users.
-[ORMTable(typeof(Users), typeof(User))]
-public class Users : ORMCollection<User>
+[SharpSqlTable(typeof(Users), typeof(User))]
+public class Users : SharpSqlCollection<User>
 {
     public Users() { }
 }
 ```
 
-**Step 4.** As seen in the previous step (*Step 3.*) every collection class also requires an entity class, create an entity class (name can't be the same as an existing column name) and inherit from the ```ORMEntity``` class. After that - create a property for each column in the table and provide it with a getter and setter (setters are allowed to be private) and mark the primary key with the ```ORMPrimaryKey``` attribute. In this example, we have an Id as primary key (the default -1 is not mandatory), a username, password and an organisation whereas the organisation is a foreign key (join) and last, an empty constructor for the entity class.
+**Step 4.** As seen in the previous step (*Step 3.*) every collection class also requires an entity class, create an entity class (name can't be the same as an existing column name) and inherit from the ```SharpSqlEntity``` class. After that - create a property for each column in the table and provide it with a getter and setter (setters are allowed to be private) and mark the primary key with the ```SharpSqlPrimaryKey``` attribute. In this example, we have an Id as primary key (the default -1 is not mandatory), a username, password and an organisation whereas the organisation is a foreign key (join) and last, an empty constructor for the entity class.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
-public class User : ORMEntity
+public class User : SharpSqlEntity
 {
-    [ORMPrimaryKey]
+    [SharpSqlPrimaryKey]
     public int Id { get; private set; } = -1;
 
     public string Username { get; set; }
@@ -104,17 +131,17 @@ public class User : ORMEntity
 }
 ```
 
-**Step 5.** The base class of ORMEntity provides one optional parameter for the constructor: 
+**Step 5.** The base class of SharpSqlEntity provides one optional parameter for the constructor: 
 ```cs
-protected ORMEntity(bool disableChangeTracking = false) { }
+protected SharpSqlEntity(bool disableChangeTracking = false) { }
 ```
 With this parameter you can provide whether or not you want to enable or disable ```DisableChangeTracking``` (```false``` by default). Note that disabling change tracking causes the ```IsDirty``` property to always return true, because then the framework has to assume changes were made to the object.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
-public class User : ORMEntity
+public class User : SharpSqlEntity
 {
-    [ORMPrimaryKey]
+    [SharpSqlPrimaryKey]
     public int Id { get; private set; } = -1;
 
     public string Username { get; set; }
@@ -135,11 +162,11 @@ public class User : ORMEntity
 
 And that's it for the regular tables! With this set-up you're able to perform all CRUD (Create, Read, Update and Delete) actions on your table. See *[ Chapter 3. CRUD operations](#chapter-3-crud-operations)* for more examples regarding all the CRUD actions or check out *[ Chapter 5. Virtual methods](#chapter-5-virtual-methods)* to see what else can be expanded on.
 
-**Step 6.**  Many-to-many relations - this requires the use of the same ```ORMTable``` attribute, but with a different constructor. In this example we'll use the previously delcared Users and User types and a collection of type Roles with entity type Role with the parameters Id as primary key and Name which will be the name of the role itself and so creating the many-to-many table UserRoles. The constructor requires the following parameters: the collection type of the current many-to-many class (in this case UserRoles), the entity type of the current many-to-many class (in this case UserRole) the first collection class (in this case Users) and the second collection class (in this case Roles).
+**Step 6.**  Many-to-many relations - this requires the use of the same ```SharpSqlTable``` attribute, but with a different constructor. In this example we'll use the previously delcared Users and User types and a collection of type Roles with entity type Role with the parameters Id as primary key and Name which will be the name of the role itself and so creating the many-to-many table UserRoles. The constructor requires the following parameters: the collection type of the current many-to-many class (in this case UserRoles), the entity type of the current many-to-many class (in this case UserRole) the first collection class (in this case Users) and the second collection class (in this case Roles).
 
 ```cs
-[ORMTable(typeof(UserRoles), typeof(UserRole), typeof(Users), typeof(Roles))]
-public class UserRoles : ORMCollection<UserRole>
+[SharpSqlTable(typeof(UserRoles), typeof(UserRole), typeof(Users), typeof(Roles))]
+public class UserRoles : SharpSqlCollection<UserRole>
 {
     public UserRole() { }
 }
@@ -148,12 +175,12 @@ public class UserRoles : ORMCollection<UserRole>
 Next we'll set-up the basic UserRole entity class and we'll add the primary keys as parameters to the constructor and call the ```base.FetchEntityByCombinedPrimaryKey<CollectionType, EntityType>()``` to be able to fetch specific records.
 
 ```cs
-public class UserRole : ORMEntity
+public class UserRole : SharpSqlEntity
 {
-    [ORMPrimaryKey]
+    [SharpSqlPrimaryKey]
     public int UserId { get; private set; }
 
-    [ORMPrimaryKey]
+    [SharpSqlPrimaryKey]
     public int RoleId { get; private set; }
 
     public UserRole(int userId, int roleId)
@@ -166,35 +193,6 @@ public class UserRole : ORMEntity
 }
 ```
 Now we have a many-to-many relation set-up with basic functionalities and accessability. For information on how many-to-many relations work within the framework and what else can be done with them see *[ 3.2.6 Many-to-many relations](#326-many-to-many-relations)*.
-
-*[ Back to top](#table-of-contents)*
-
-## Chapter 2. Configuration
-
-First create an appsettings.json file in your project folder, and set your ConnectionStrings:
-
-```json
-{
-    "ConnectionStrings": {
-        "DefaultConnection": "Server=localhost; Database=ORM; Trusted_Connection=True; MultipleActiveResultSets=true"
-    }
-}
-```
-
-For a more detailed guide on creating connection strings, see Microsoft's documentation: *[Creating a Connection String](https://docs.microsoft.com/en-us/sql/ado/guide/data/creating-a-connection-string?view=sql-server-ver15)*.
-
-Next initialize the ORM Framework somewhere once as follows:
-
-```cs
-
-IConfiguration configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .Build();
-
-new ORMInitialize(configuration);
-```
-
-After that point, your code base will be able to communicate with your database.
 
 *[ Back to top](#table-of-contents)*
 
@@ -414,7 +412,7 @@ Todo
 Todo
 ```
 
-### 5.1. ORMObject
+### 5.1. SharpSqlObject
 
 ```cs
 Todo
@@ -422,15 +420,15 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-### 5.2 ORMEntity
+### 5.2 SharpSqlEntity
 
 In [Chapter 1. Getting started](#chapter-1-getting-started) (*Step 5.*) we left off with a fairly basic entity class, let's expand on this entity class by adding two more properties to our entity: DateCreated and DateLastModified.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
-public class User : ORMEntity
+public class User : SharpSqlEntity
 {
-    [ORMPrimaryKey]
+    [SharpSqlPrimaryKey]
     public int Id { get; private set; } = -1;
 
     public string Username { get; set; }
@@ -453,13 +451,13 @@ public class User : ORMEntity
 }
 ```
 
-The ```ORMEntity``` class provides multiple virtual methods, so let's say we want to override the ```Save()``` method to change it's behaviour when posting data to the database by always setting the DateCreated to the current date and time, including the DateLastModified.
+The ```SharpSqlEntity``` class provides multiple virtual methods, so let's say we want to override the ```Save()``` method to change it's behaviour when posting data to the database by always setting the DateCreated to the current date and time, including the DateLastModified.
 
 ```cs
 // The entity class User which represents a single (new) row in the collection Users.
-public class User : ORMEntity
+public class User : SharpSqlEntity
 {
-    [ORMPrimaryKey]
+    [SharpSqlPrimaryKey]
     public int Id { get; private set; } = -1;
 
     public string Username { get; set; }
@@ -499,7 +497,7 @@ public class User : ORMEntity
 
 *[ Back to top](#table-of-contents)*
 
-### 5.3. ORMCollection<ORMEntity>
+### 5.3. SharpSqlCollection<SharpSqlEntity>
 
 ```cs
 Todo
@@ -511,39 +509,39 @@ Todo
 
 Within this framework we have created multiple attributes. In this chapter we'll explain how each attribute can be used and how the attributes are used within the framework itself.
 
-### 6.1 ORMColumnAttribute
+### 6.1 SharpSqlColumnAttribute
 
-Sometimes you want to name your entity property different than the actual column name, to achieve this you can use the ```ORMColumn``` attribute. The framework will automatically assume the name of the property is the same name as the column name, when it doesn't find any matches it'll try and resolve it through the ```ORMColumn``` attribute and throws an ```NotImplementedException``` when neither was found.
+Sometimes you want to name your entity property different than the actual column name, to achieve this you can use the ```SharpSqlColumn``` attribute. The framework will automatically assume the name of the property is the same name as the column name, when it doesn't find any matches it'll try and resolve it through the ```SharpSqlColumn``` attribute and throws an ```NotImplementedException``` when neither was found.
 
 ```cs
-[ORMColumn(ColumnName)]
+[SharpSqlColumn(ColumnName)]
 public string Description { get; private set; }
 ```
 
 *[ Back to top](#table-of-contents)*
 
-### 6.2 ORMPrimaryKeyAttribute
+### 6.2 SharpSqlPrimaryKeyAttribute
 
-To tell the framework what the primary or shared key of the table is, you can use the ```ORMPrimaryKey``` attribute. If there is a shared primary key, it'll map them in the same top-to-down order from the entity class, this means that any parameters regarding the primary keys which are passed on to the framework has to be passed in the exact same order.
+To tell the framework what the primary or shared key of the table is, you can use the ```SharpSqlPrimaryKey``` attribute. If there is a shared primary key, it'll map them in the same top-to-down order from the entity class, this means that any parameters regarding the primary keys which are passed on to the framework has to be passed in the exact same order.
 
 ```cs
 // a single primary key:
 
-[ORMPrimaryKey]
+[SharpSqlPrimaryKey]
 public int Id { get; private set; } = -1;
 
 // a shared primary key:
 
-[ORMPrimaryKey]
+[SharpSqlPrimaryKey]
 public int UserId { get; private set; }
 
-[ORMPrimaryKey]
+[SharpSqlPrimaryKey]
 public int RoleId { get; private set; }
 ```
 
 *[ Back to top](#table-of-contents)*
 
-### 6.3 ORMTableAttribute
+### 6.3 SharpSqlTableAttribute
 
 ```cs
 Todo
@@ -551,12 +549,12 @@ Todo
 
 *[ Back to top](#table-of-contents)*
 
-### 6.4 ORMUnitTestAttribute
+### 6.4 SharpSqlUnitTestAttribute
 
-The ```ORMUnitTest``` attribute is an internally used attribute. This project make use of the NUnit testing framework for all of our unit tests and the project is named "ORMNUnit", which has access to all of the internal classes, methods, properties and variables through the ```ORMUnitTest``` attribute which is used on the initialization class.
+The ```SharpSqlUnitTest``` attribute is an internally used attribute. This project make use of the NUnit testing framework for all of our unit tests and the project is named "SharpSqlNUnit", which has access to all of the internal classes, methods, properties and variables through the ```SharpSqlUnitTest``` attribute which is used on the initialization class.
 
 ```cs
-[SetUpFixture, ORMUnitTest]
+[SetUpFixture, SharpSqlUnitTest]
 internal class NUnitSetupFixture
 {
     [OneTimeSetUp]
@@ -583,7 +581,7 @@ internal class NUnitSetupFixture
             "MemoryCollectionTables/ComplexWhereLike.xml"
         };
 
-        _ = new ORMInitialize(memoryEntityTables, memoryCollectionTables);
+        _ = new SharpSqlInitialize(memoryEntityTables, memoryCollectionTables);
     }
 }
 ```
@@ -592,11 +590,11 @@ internal class NUnitSetupFixture
 
 ## Chapter 7. Specifications
 
-All of the specifications of the ORM framework.
+All of the specifications of SharpSql.
 
 ### 7.1 Version information
 
-The latest version of this framework is version alpha-0.1, released on 2020-11-30.
+The latest version of this framework is version beta-0.3, released on 2022-03-01.
 
 ### 7.2 Supported databases
 
@@ -604,6 +602,6 @@ SQL Server 2005 or higher
 
 ### 7.3 Supported .NET versions
 
-NET Standard 2.1., .NET Core 3.1.
-
+NET Standard 2.2., .NET 6.0+.
+	
 *[ Back to top](#table-of-contents)*
