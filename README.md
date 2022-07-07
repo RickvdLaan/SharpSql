@@ -34,7 +34,7 @@ One time during the project we've made an exception. We ran into a problem with 
 * [Chapter 4. Virtual methods](#chapter-4-virtual-methods)
 	* [4.1 SharpSqlObject](#41-sharpsqlobject)
 	* [4.2 SharpSqlEntity](#42-sharpsqlentity)
-	* [4.3 SharpSqlCollection](#43-ormcollection)
+	* [4.3 SharpSqlCollection](#43-sharpsqlcollection)
 * [Chapter 5. Attributes](#chapter-5-attributes)
 	* [5.1 SharpSqlColumnAttribute](#51-sharpsqlcolumnattribute)
 	* [5.2 SharpSqlPrimaryKeyAttribute](#52-sharpsqlprimarykeyattribute)
@@ -49,7 +49,7 @@ One time during the project we've made an exception. We ran into a problem with 
 
 This chapter quickly guides you through how to install SharpSql and on how to set it up in your project.
 
-**Step 1.** Install SharpSql via the NuGet package: [SharpSql](https://www.nuget.org/packages/SharpSql/)
+**Step 1.** Install SharpSql via the NuGet package: [SharpSql](https://www.nuget.org/packages/SharpSql/).
 
 ```
 PM> Install-Package SharpSql
