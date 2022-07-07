@@ -59,7 +59,14 @@ internal class QueryMapper
                 UnitTestUtilities.PopulateChildEntity(ref propertyName, ref value, childEntity);
             }
 
-            childEntity[propertyName] = value;
+            if (value == DBNull.Value)
+            {
+                childEntity[propertyName] = null;
+            }
+            else
+            {
+                childEntity[propertyName] = value;
+            }
         }
 
         childEntity.ExecutedQuery = "Initialised through parent";
@@ -479,14 +486,29 @@ internal class QueryMapper
             throw new ReadOnlyException($"Property [{columnName}] is read-only in [{entity.GetType().Name}].");
         }
 
+        if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(SharpSqlEntity))
+          && SharpSqlCache.EntityColumns[entity.GetType()][columnName] == ColumnType.Join)
+        {
+            var virutalForeignKey = entityPropertyInfo.GetCustomAttribute<SharpSqlVirtualForeignKeyAttribute>();
+
+            if (virutalForeignKey == null)
+            {
+                throw new Exception("Todo");
+            }
+
+            entityPropertyInfo = entity.GetPropertyInfo(virutalForeignKey.PropertyLink);
+        }
+
         object value = null;
 
         switch (entityPropertyInfo.PropertyType)
         {
-            case Type type when type == typeof(DateTime?):
+            case Type dateTimeType when dateTimeType == typeof(DateTime?):
+            case Type guidType when guidType == typeof(Guid?):
                 value = reader.GetValue(iteration);
                 break;
-            case Type type when type == typeof(DateTime):
+            case Type dateTimeType when dateTimeType == typeof(DateTime):
+            case Type guidType when guidType == typeof(DateTime):
                 if (reader.GetValue(iteration) == DBNull.Value)
                 {
                     throw new PropertyNotNullableException($"Property [{columnName}] is not nullable, but the database column equivelant is.");

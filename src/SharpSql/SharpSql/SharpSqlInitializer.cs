@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Diagnostics;
 using SharpSql.UnitTests;
+using SharpSql.Exceptions;
 
 namespace SharpSql;
 
@@ -205,6 +206,17 @@ public sealed class SharpSqlInitializer
                         break;
                     }
                 }
+            }
+            
+            if (SharpSqlCache.EntityColumns.ContainsKey(tableAttribute.EntityType)
+            && !SharpSqlCache.EntityColumns[tableAttribute.EntityType].ContainsKey(columnName))
+            {
+                if (columnName == tableAttribute.EntityType.Name)
+                {
+                    throw new IllegalColumnNameException($"The column [{columnName}] has not been implemented in entity [{tableAttribute.EntityType.Name}], but can't have the same name as its enclosing type.");
+                }
+
+                throw new NotImplementedException($"The column [{columnName}] has not been implemented in entity [{tableAttribute.EntityType.Name}].");
             }
         }
     }

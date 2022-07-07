@@ -67,6 +67,7 @@ public static class SharpSqlExtensions
             ?? entity.GetType().GetProperties().FirstOrDefault(x => (x.GetCustomAttributes(typeof(SharpSqlColumnAttribute), false).FirstOrDefault() as SharpSqlColumnAttribute)?.ColumnName == propertyName);
     }
 
+    // @Todo: can be deleted?
     public static bool IsForeignKeyOfType(this SharpSqlEntity entity, string propertyName, Type type)
     {
         var propertyInfo = entity.GetPropertyInfo(propertyName);
