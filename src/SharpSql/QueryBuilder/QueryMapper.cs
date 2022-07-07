@@ -59,7 +59,14 @@ internal class QueryMapper
                 UnitTestUtilities.PopulateChildEntity(ref propertyName, ref value, childEntity);
             }
 
-            childEntity[propertyName] = value;
+            if (value == DBNull.Value)
+            {
+                childEntity[propertyName] = null;
+            }
+            else
+            {
+                childEntity[propertyName] = value;
+            }
         }
 
         childEntity.ExecutedQuery = "Initialised through parent";
@@ -133,31 +140,6 @@ internal class QueryMapper
             }
         }
     }
-
-
-
-    //SELECT U.Id, U.Username, U.Organisation, U.DateCreated, U.DateLastModified, R.Id, R.Name FROM [DBO].[USERS] AS [U]
-    //LEFT JOIN[DBO].[USERROLES] AS[UU] ON [U].[ID] = [UU].[USERID]
-    //LEFT JOIN [DBO].[ROLES] AS[R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = 1);
-
-
-    //SELECT U.Id, U.Username, U.Organisation, U.DateCreated, U.DateLastModified, O.Id, O.Name, R.Id, R.Name FROM [DBO].[USERS] AS [U]
-    //LEFT JOIN[DBO].[Organisations] AS[O] ON [U].[ID] = [O].[Id]
-    //LEFT JOIN [DBO].[USERROLES] AS[UU] ON [U].[ID] = [UU].[USERID]
-    //LEFT JOIN [DBO].[ROLES] AS[R] ON [UU].[ROLEID] = [R].[ID] WHERE ([U].[ID] = 1);
-
-
-    //SELECT* FROM [DBO].[USERS] AS[U]
-    //LEFT JOIN[DBO].[USERROLES] AS[UU] ON[U].[ID] = [UU].[USERID]
-    //LEFT JOIN[DBO].[ROLES] AS[R] ON[UU].[ROLEID] = [R].[ID] WHERE([U].[ID] = 1);
-
-
-    //SELECT* FROM [DBO].[USERS] AS[U]
-    //LEFT JOIN[DBO].[Organisations] AS[O] ON[U].[ID] = [O].[Id]
-    //LEFT JOIN[DBO].[USERROLES] AS[UU] ON[U].[ID] = [UU].[USERID]
-    //LEFT JOIN[DBO].[ROLES] AS[R] ON[UU].[ROLEID] = [R].[ID] WHERE([U].[ID] = 1);
-
-    // ALSO make unit tests for INNER variants!!!!!!!!!!!
 
     private static DataTable CopyDataTableSection(DataTable rootDataTable, ref int tableIndex, QueryBuilder queryBuilder, ref int tableOrderIndex)
     {
@@ -504,14 +486,29 @@ internal class QueryMapper
             throw new ReadOnlyException($"Property [{columnName}] is read-only in [{entity.GetType().Name}].");
         }
 
+        if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(SharpSqlEntity))
+          && SharpSqlCache.EntityColumns[entity.GetType()][columnName] == ColumnType.Join)
+        {
+            var virutalForeignKey = entityPropertyInfo.GetCustomAttribute<SharpSqlVirtualForeignKeyAttribute>();
+
+            if (virutalForeignKey == null)
+            {
+                throw new Exception("Todo");
+            }
+
+            entityPropertyInfo = entity.GetPropertyInfo(virutalForeignKey.PropertyLink);
+        }
+
         object value = null;
 
         switch (entityPropertyInfo.PropertyType)
         {
-            case Type type when type == typeof(DateTime?):
+            case Type dateTimeType when dateTimeType == typeof(DateTime?):
+            case Type guidType when guidType == typeof(Guid?):
                 value = reader.GetValue(iteration);
                 break;
-            case Type type when type == typeof(DateTime):
+            case Type dateTimeType when dateTimeType == typeof(DateTime):
+            case Type guidType when guidType == typeof(DateTime):
                 if (reader.GetValue(iteration) == DBNull.Value)
                 {
                     throw new PropertyNotNullableException($"Property [{columnName}] is not nullable, but the database column equivelant is.");

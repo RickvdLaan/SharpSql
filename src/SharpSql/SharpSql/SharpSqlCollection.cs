@@ -127,7 +127,7 @@ public class SharpSqlCollection<EntityType> : ISharpSqlCollection<EntityType>, I
                 case ObjectState.Record:
                     continue;
                 case ObjectState.ScheduledForDeletion:
-                    if (MutableEntityCollection[i].IsMarkedAsDeleted)
+                    if (MutableEntityCollection[i].ObjectState == ObjectState.Deleted)
                         throw new Exception("Obj has already been deleted");
                     else
                     {

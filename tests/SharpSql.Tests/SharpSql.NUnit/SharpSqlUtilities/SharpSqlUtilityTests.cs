@@ -31,7 +31,7 @@ public partial class SharpSqlUtilityTests
         Assert.IsTrue(users.All(x => x.DisableChangeTracking == disableChangeTracking));
         Assert.IsFalse(users.All(x => x.IsNew == true));
         Assert.IsFalse(users.All(x => x.IsAutoIncrement == false));
-        Assert.IsFalse(users.All(x => x.IsMarkedAsDeleted == true));
+        Assert.IsFalse(users.All(x => x.ObjectState == ObjectState.Deleted));
         Assert.IsTrue(users.All(x => x.ObjectState == ObjectState.Fetched));
 
         if (disableChangeTracking)

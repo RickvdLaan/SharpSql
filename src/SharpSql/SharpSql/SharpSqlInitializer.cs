@@ -7,13 +7,14 @@ using System.IO;
 using System.Reflection;
 using System.Diagnostics;
 using SharpSql.UnitTests;
+using SharpSql.Exceptions;
 
 namespace SharpSql;
 
 public sealed class SharpSqlInitializer
 {
     internal static bool AllowAnonymouseTypes { get; set; }
-
+    
     internal SharpSqlInitializer(Assembly callingAssembly, string xmlEntityFilePath, string xmlCollectionFilePath)
     {
         UnitTestUtilities.IsUnitTesting = new StackTrace().GetFrames().Any(x => x.GetMethod().ReflectedType.GetCustomAttributes(typeof(SharpSqlUnitTestAttribute), false).Any());
@@ -85,8 +86,10 @@ public sealed class SharpSqlInitializer
 
     // @Todo: refactor to a smaller method, in which each cache type has its own method.
     // @Todo: create unit tests for each smaller method. (validate cache)
-    public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false, bool allowAnonymousTypes = false)
+    public SharpSqlInitializer(IConfiguration configuration = null, bool loadAllReferencedAssemblies = false, bool allowAnonymousTypes = false, string schemaAlias = "DBO")
     {
+        ArgumentNullException.ThrowIfNull(schemaAlias, nameof(schemaAlias));
+
         _ = new SharpSqlCache();
         _ = new DatabaseUtilities(configuration);
         _ = new SharpSqlUtilities();
@@ -97,6 +100,7 @@ public sealed class SharpSqlInitializer
         }
 
         AllowAnonymouseTypes = allowAnonymousTypes;
+        QueryBuilder.SchemaAlias = schemaAlias;
 
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
@@ -202,6 +206,17 @@ public sealed class SharpSqlInitializer
                         break;
                     }
                 }
+            }
+            
+            if (SharpSqlCache.EntityColumns.ContainsKey(tableAttribute.EntityType)
+            && !SharpSqlCache.EntityColumns[tableAttribute.EntityType].ContainsKey(columnName))
+            {
+                if (columnName == tableAttribute.EntityType.Name)
+                {
+                    throw new IllegalColumnNameException($"The column [{columnName}] has not been implemented in entity [{tableAttribute.EntityType.Name}], but can't have the same name as its enclosing type.");
+                }
+
+                throw new NotImplementedException($"The column [{columnName}] has not been implemented in entity [{tableAttribute.EntityType.Name}].");
             }
         }
     }
