@@ -493,7 +493,7 @@ internal class QueryMapper
 
             if (virutalForeignKey == null)
             {
-                throw new Exception("Todo");
+                throw new VirtualForeignKeyAttributeNotImplementedException(entityPropertyInfo, entity.GetType());
             }
 
             entityPropertyInfo = entity.GetPropertyInfo(virutalForeignKey.PropertyLink);
