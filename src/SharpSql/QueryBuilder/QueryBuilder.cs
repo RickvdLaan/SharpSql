@@ -422,21 +422,20 @@ public sealed class QueryBuilder
     {
         var addon = ((entity.DirtyTracker.Count <= ++entityFieldUpdateCount) ? " " : ", ");
 
-        if (propertyInfo.GetValue(entity) is SharpSqlEntity entityColumnJoin)
+        if (propertyInfo.GetValue(entity) is not SharpSqlEntity entityColumnJoin)
         {
-            if (!entity.PrimaryKey.IsCombinedPrimaryKey)
-            {
-                stringBuilder.Append($"[{tableAlias}].[{entity.MutableTableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + addon);
-            }
-            else
-            {
-                // Combined primary key.
-                throw new NotImplementedException();
-            }
+            stringBuilder.Append($"[{tableAlias}].[{entity.MutableTableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter(entity.SqlValue(entity.MutableTableScheme[currentTableSchemeIndex])) + addon);
+            return;
+        }
+
+        if (!entity.PrimaryKey.IsCombinedPrimaryKey)
+        {
+            stringBuilder.Append($"[{tableAlias}].[{entity.MutableTableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter((entityColumnJoin.PrimaryKey.Keys[0].Value, entityColumnJoin.PrimaryKey.Keys[0].ColumnName)) + addon);
         }
         else
         {
-            stringBuilder.Append($"[{tableAlias}].[{entity.MutableTableScheme[currentTableSchemeIndex]}] = " + AddSqlParameter(entity.SqlValue(entity.MutableTableScheme[currentTableSchemeIndex])) + addon);
+            // Combined primary key.
+            throw new NotImplementedException();
         }
     }
 
