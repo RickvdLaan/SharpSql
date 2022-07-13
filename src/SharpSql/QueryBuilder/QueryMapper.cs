@@ -470,9 +470,10 @@ internal class QueryMapper
             columnName = columnName.Split('_').Last();
         }
 
-        var entityPropertyInfo = entity.GetPropertyInfo(columnName);
-
-        if (null == entityPropertyInfo)
+        var entityPropertyInfos = new PropertyInfo[2];
+        entityPropertyInfos[0] = entity.GetPropertyInfo(columnName);        
+         
+        if (null == entityPropertyInfos[0])
         {
             if (columnName == entity.GetType().Name)
             {
@@ -481,87 +482,95 @@ internal class QueryMapper
 
             throw new NotImplementedException($"The column [{columnName}] has not been implemented in entity [{entity.GetType().Name}].");
         }
-        else if (!entityPropertyInfo.CanWrite)
+        else if (!entityPropertyInfos[0].CanWrite)
         {
             throw new ReadOnlyException($"Property [{columnName}] is read-only in [{entity.GetType().Name}].");
         }
 
-        if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(SharpSqlEntity))
+        if (!entityPropertyInfos[0].PropertyType.IsSubclassOf(typeof(SharpSqlEntity))
           && SharpSqlCache.EntityColumns[entity.GetType()][columnName] == ColumnType.Join
-          &&  !(entityPropertyInfo.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlPrimaryKeyAttribute))
-             && entityPropertyInfo.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlForeignKeyAttribute))))
+          && !(entityPropertyInfos[0].CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlPrimaryKeyAttribute))
+             && entityPropertyInfos[0].CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlForeignKeyAttribute))))
         {
-            var virutalForeignKey = entityPropertyInfo.GetCustomAttribute<SharpSqlVirtualForeignKeyAttribute>();
+            var virutalForeignKey = entityPropertyInfos[0].GetCustomAttribute<SharpSqlVirtualForeignKeyAttribute>();
 
             if (virutalForeignKey == null)
             {
-                throw new VirtualForeignKeyAttributeNotImplementedException(entityPropertyInfo, entity.GetType());
+                throw new VirtualForeignKeyAttributeNotImplementedException(entityPropertyInfos[0], entity.GetType());
             }
 
-            entityPropertyInfo = entity.GetPropertyInfo(virutalForeignKey.PropertyLink);
+            entityPropertyInfos[1] = entity.GetPropertyInfo(virutalForeignKey.PropertyLink);
         }
 
         object value = null;
 
-        switch (entityPropertyInfo.PropertyType)
+        for (int i = 0; i < entityPropertyInfos.Length; i++)
         {
-            case Type dateTimeType when dateTimeType == typeof(DateTime?):
-            case Type guidType when guidType == typeof(Guid?):
-                value = reader.GetValue(iteration);
-                break;
-            case Type dateTimeType when dateTimeType == typeof(DateTime):
-            case Type guidType when guidType == typeof(DateTime):
-                if (reader.GetValue(iteration) == DBNull.Value)
-                {
-                    throw new PropertyNotNullableException($"Property [{columnName}] is not nullable, but the database column equivelant is.");
-                }
+            if(entityPropertyInfos[i] == null)
+            {
+                continue;
+            }
 
-                value = reader.GetValue(iteration);
-                break;
-            case Type type when type.IsSubclassOf(typeof(SharpSqlEntity)):
-                if (reader.GetValue(iteration) == DBNull.Value)
-                {
+            switch (entityPropertyInfos[i].PropertyType)
+            {
+                case Type dateTimeType when dateTimeType == typeof(DateTime?):
+                case Type guidType when guidType == typeof(Guid?):
+                    value = reader.GetValue(iteration);
                     break;
-                }
-                // If there are no joins provided or none matched the current type we don't want
-                // to fetch the child-object.
-                if (queryBuilder.AllJoins.Count == 0 || !queryBuilder.AllJoins.Any(x => x.LeftPropertyInfo.PropertyType == type))
-                {
-                    value = null;
-                    break;
-                }
-
-                foreach (var join in queryBuilder.AllJoins)
-                {
-                    if (join.LeftPropertyInfo.PropertyType == type)
+                case Type dateTimeType when dateTimeType == typeof(DateTime):
+                case Type guidType when guidType == typeof(DateTime):
+                    if (reader.GetValue(iteration) == DBNull.Value)
                     {
-                        var subEntity = Activator.CreateInstance(type.UnderlyingSystemType) as SharpSqlEntity;
+                        throw new PropertyNotNullableException($"Property [{columnName}] is not nullable, but the database column equivelant is.");
+                    }
 
-                        PopulateChildEntity(entity, subEntity, reader, queryBuilder);
-
-                        value = subEntity;
-
-                        entity.Relations.Add(value as SharpSqlEntity);
+                    value = reader.GetValue(iteration);
+                    break;
+                case Type type when type.IsSubclassOf(typeof(SharpSqlEntity)):
+                    if (reader.GetValue(iteration) == DBNull.Value)
+                    {
                         break;
                     }
-                }
+                    // If there are no joins provided or none matched the current type we don't want
+                    // to fetch the child-object.
+                    if (queryBuilder.AllJoins.Count == 0 || !queryBuilder.AllJoins.Any(x => x.LeftPropertyInfo.PropertyType == type))
+                    {
+                        value = null;
+                        break;
+                    }
 
-                break;
-            default:
-                value = reader.GetValue(iteration);
-                break;
-        }
+                    foreach (var join in queryBuilder.AllJoins)
+                    {
+                        if (join.LeftPropertyInfo.PropertyType == type)
+                        {
+                            var subEntity = Activator.CreateInstance(type.UnderlyingSystemType) as SharpSqlEntity;
 
-        // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
-        UnitTestUtilities.ChangeDataTableType(entityPropertyInfo, ref value);
+                            PopulateChildEntity(entity, subEntity, reader, queryBuilder);
 
-        if (value == DBNull.Value)
-        {
-            entityPropertyInfo.SetValue(entity, null);
-        }
-        else
-        {
-            entityPropertyInfo.SetValue(entity, value);
+                            value = subEntity;
+
+                            entity.Relations.Add(value as SharpSqlEntity);
+                            break;
+                        }
+                    }
+
+                    break;
+                default:
+                    value = reader.GetValue(iteration);
+                    break;
+            }
+
+            // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
+            UnitTestUtilities.ChangeDataTableType(entityPropertyInfos[i], ref value);
+
+            if (value == DBNull.Value)
+            {
+                entityPropertyInfos[i].SetValue(entity, null);
+            }
+            else
+            {
+                entityPropertyInfos[i].SetValue(entity, value);
+            }
         }
     }
 }
