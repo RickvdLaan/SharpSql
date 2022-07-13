@@ -487,7 +487,9 @@ internal class QueryMapper
         }
 
         if (!entityPropertyInfo.PropertyType.IsSubclassOf(typeof(SharpSqlEntity))
-          && SharpSqlCache.EntityColumns[entity.GetType()][columnName] == ColumnType.Join)
+          && SharpSqlCache.EntityColumns[entity.GetType()][columnName] == ColumnType.Join
+          &&  !(entityPropertyInfo.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlPrimaryKeyAttribute))
+             && entityPropertyInfo.CustomAttributes.Any(x => x.AttributeType == typeof(SharpSqlForeignKeyAttribute))))
         {
             var virutalForeignKey = entityPropertyInfo.GetCustomAttribute<SharpSqlVirtualForeignKeyAttribute>();
 
@@ -553,7 +555,7 @@ internal class QueryMapper
         // Unit tests columns are all of type string, therefore they require to be converted to their respective type.
         UnitTestUtilities.ChangeDataTableType(entityPropertyInfo, ref value);
 
-        if (reader.GetValue(iteration) == DBNull.Value)
+        if (value == DBNull.Value)
         {
             entityPropertyInfo.SetValue(entity, null);
         }

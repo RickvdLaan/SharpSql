@@ -14,6 +14,29 @@ namespace SharpSql;
 
 public sealed class DatabaseUtilities
 {
+    public static DataTable CallStoredProcedure(string storedProcedureName, params (string ParameterName, object ParameterValue)[] parameters)
+    {
+        using var connection = new SqlConnection(ConnectionString);
+
+        using var command = new SqlCommand();
+        command.Connection = connection;
+        command.CommandText = storedProcedureName;
+        command.CommandType = CommandType.StoredProcedure;
+
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            command.Parameters.Add(new SqlParameter(parameters[i].ParameterName, parameters[i].ParameterValue));
+        }
+
+        command.Connection.Open();
+        using var reader = command.ExecuteReader();
+
+        var dataTable = new DataTable();
+        dataTable.Load(reader);
+
+        return dataTable;
+    }
+
     public static EntityType Insert<EntityType>(
         EntityType entity,
         params (Expression<Func<EntityType, object>> Expression, object Value)[] columnValuePairs)
