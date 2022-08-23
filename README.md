@@ -196,14 +196,21 @@ Now we have a many-to-many relation set-up with basic functionalities and access
 
 ## Chapter 2. CRUD operations
 
-```cs
-Todo
-```
+Creating, reading, updating and deleting records can be done really easily in SharpSql. In this chapter we're gonna give you examples on all CRUD operations.
 
 ### 2.1. Create
 
+In this example we're gonna create a ```User``` object, and save it to the database.
+
 ```cs
-Todo
+var user = new User()
+{
+    Username = "Root",
+    Password = "Password",
+    Organisation = null
+};
+
+user.Save();
 ```
 
 *[ Back to top](#table-of-contents)*
